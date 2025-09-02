@@ -12,18 +12,8 @@
                     Search and book hotels, resorts, and unique getaways worldwide.
                 </p>
 
-                {{-- Search Form --}}
-                <form action="{{ route('hotels.index') }}" method="GET" class="w-full max-w-5xl mx-auto grid md:grid-cols-4 lg:grid-cols-5 gap-4 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-3xl p-4 shadow-xl text-neutral-800 animate-slide-up-search">
-                    <input type="text" name="location" placeholder="Destination or Hotel" class="md:col-span-2 rounded-full px-5 py-3 focus:ring-2 focus:ring-indigo-500 transition">
-                    <input type="date" name="check_in" class="rounded-full px-5 py-3 focus:ring-2 focus:ring-indigo-500 transition">
-                    <input type="date" name="check_out" class="rounded-full px-5 py-3 focus:ring-2 focus:ring-indigo-500 transition">
-                    <button type="submit" class="flex items-center justify-center bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold py-3 rounded-full hover:scale-105 transition-transform shadow-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-5.2-5.2M5.2 5.2a7.5 7.5 0 1010.6 10.6 7.5 7.5 0 00-10.6-10.6z"/>
-                        </svg>
-                        Search
-                    </button>
-                </form>
+                {{-- Livewire Search Component --}}
+            <livewire:search.holiday-search />
             </div>
         </section>
 

@@ -30,7 +30,7 @@ class DestinationShow extends Component
 
     public function render()
     {
-        return view('livewire.destination-show', [
+        return view('livewire.destination.destination-show', [
             'accommodations' => $this->destination->accommodations()->paginate($this->perPage),
             'activities' => $this->destination->activities()->paginate($this->perPage),
         ]);
