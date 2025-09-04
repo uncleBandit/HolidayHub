@@ -1,10 +1,13 @@
 <?php
 
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProviderController;
 use App\Http\Livewire\WelcomePage;
 use App\Livewire\Activity\ActivityShow;
-use App\Livewire\DestinationShow;
+use App\Livewire\Destination\DestinationShow;
 use App\Livewire\Hotel\HotelShow;
 use App\Models\Destination;
 use Illuminate\Foundation\Application;
@@ -47,6 +50,19 @@ Route::middleware('auth')->group(function () {
     Route::resource('rooms', \App\Http\Controllers\RoomController::class);
     Route::resource('activities', \App\Http\Controllers\ActivityController::class);
     Route::resource('destinations', \App\Http\Controllers\DestinationController::class);
+    Route::resource('packages', \App\Http\Controllers\PackageController::class);
+    Route::group(['middleware' => ['role:admin']], function () {
+    Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
+    });
+
+    Route::group(['middleware' => ['role:provider']], function () {
+    Route::get('/provider/dashboard', [ProviderController::class, 'dashboard']);
+    });
+
+    Route::group(['middleware' => ['role:agent']], function () {
+    Route::get('/agent/dashboard', [AgentController::class, 'dashboard']);
+    });
+
 
 
 });

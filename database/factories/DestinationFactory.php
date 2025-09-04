@@ -29,19 +29,19 @@ class DestinationFactory extends Factory
             'short_description' => $this->faker->sentence(8),
             'description' => $this->faker->paragraphs(3, true),
             'thumbnail' => "https://source.unsplash.com/800x600/?travel," . Str::slug($city),
-            'gallery' => json_encode([
+            'gallery' => [
                 "https://source.unsplash.com/800x600/?travel," . Str::slug($city) . "1",
                 "https://source.unsplash.com/800x600/?travel," . Str::slug($city) . "2"
-            ]),
+            ],
             'latitude' => $this->faker->latitude(),
             'longitude' => $this->faker->longitude(),
             'popularity_score' => $this->faker->numberBetween(0, 1000),
             'is_featured' => $this->faker->boolean(40),
             'best_season' => $this->faker->randomElement(['Summer', 'Winter', 'Spring', 'Autumn', 'Year-round']),
-            'highlights' => json_encode($this->faker->words(4)),
+            'highlights' => $this->faker->words(4),
             'meta_title' => $name,
             'meta_description' => $this->faker->sentence(12),
-            'tags' => json_encode($this->faker->words(5)),
+            'tags' => $this->faker->words(5),
             'average_cost' => $this->faker->numberBetween(500, 5000),
         ];
     }

@@ -6,6 +6,7 @@ use App\Models\Destination;
 use App\Models\Hotel;
 use App\Models\Activity;
 use App\Models\Offer;
+use App\Models\Package;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -32,12 +33,18 @@ class DashboardController extends Controller
             ->take(6)
             ->get();
 
+        // Fetch featured packages
+        $featuredPackages = Package::where('is_featured', true)
+            ->take(6)
+            ->get();
+
         // Pass to view
         return view('dashboard', compact(
             'featuredDestinations',
             'featuredHotels',
             'featuredActivities',
-            'featuredOffers'
+            'featuredOffers',
+            'featuredPackages'
         ));
     }
 }

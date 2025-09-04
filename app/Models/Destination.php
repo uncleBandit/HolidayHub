@@ -93,4 +93,17 @@ class Destination extends Model
         return $this->activities()->withCount('bookings')->get()->sum('bookings_count')
             + $this->hotels()->withCount('bookings')->get()->sum('bookings_count');
     }
+
+
+    // convenience accessors:
+    public function hotels()
+    {
+    return $this->accommodations()->where('bookable_type', Hotel::class);
+    }
+
+    public function bedAndBreakfasts()
+    {
+    return $this->accommodations()->where('bookable_type', BedAndBreakfast::class);
+    }
+    
 }

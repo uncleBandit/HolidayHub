@@ -1,5 +1,5 @@
 <?php
-namespace App\Livewire;
+namespace App\Livewire\Destination;
 
 use Livewire\Component;
 use App\Models\Destination;
@@ -19,7 +19,7 @@ class DestinationShow extends Component
         'accommodations.bookable,destination_id,name,price_range,cover_image,availability',
         'activities:id,destination_id,title,price,duration,cover_image',
         'reviews:id,reviewable_id,reviewable_type,user_id,rating,comment',
-        'reviews.user:id,name,avatar'
+        'reviews.user:id,name,avatar','accommodations', 'activities', 'reviews'
     ]);
     }
 

@@ -54,6 +54,8 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             ReviewSeeder::class,
+            RolesSeeder::class,
+            ImageSeeder::class,
         ]);
 
         // Create Guests
@@ -67,7 +69,7 @@ class DatabaseSeeder extends Seeder
                 Review::factory()->for($guest)->create();
             }
 
-           
+
         }
 
         $this->command->info('✅ Database seeded with guests, hotels, destinations, activities, and reviews!');

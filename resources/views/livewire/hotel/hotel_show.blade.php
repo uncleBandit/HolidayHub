@@ -80,7 +80,7 @@
 
             <div wire:ignore class="mt-8">
                 <h2 class="text-2xl font-bold mb-4">Availability Calendar</h2>
-                @livewire('hotel.availability-calendar', ['hotelId' => $hotel->id])
+                @livewire('calendar-component', ['hotelId' => $hotel->id])
             </div>
 
             <hr class="my-8 border-gray-200">
@@ -96,7 +96,7 @@
         </div>
     </div>
 
-    
+
 
     <hr class="border-gray-200">
     <div wire:init="loadReviews" class="mt-8">
@@ -117,4 +117,6 @@
     </div>
 
 </div>
+<livewire:gallery-component />
+
 </div>

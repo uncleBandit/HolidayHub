@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use Livewire\Component;
 use App\Models\Destination;
 use App\Models\Hotel;
+use App\Models\Review;
 use App\Models\Testimonial;
 use Illuminate\Support\Facades\Route;
 
@@ -26,7 +27,7 @@ class WelcomePage extends Component
             ->take(6)
             ->get();
 
-        $this->testimonials = Testimonial::latest()
+        $this->testimonials = Review::latest()
             ->take(5)
             ->get()
             ->map(fn ($t) => [

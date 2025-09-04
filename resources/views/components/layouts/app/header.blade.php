@@ -44,7 +44,7 @@
             <flux:sidebar.toggle class="lg:hidden text-white" icon="bars-3" inset="left" />
 
             <a href="{{ route('dashboard') }}" class="flex items-center space-x-2 drop-shadow-lg">
-                <span class="text-white text-4xl font-extrabold tracking-tight">Voyage</span>
+                <span class="text-white text-4xl font-extrabold tracking-tight">HolidayHub</span>
             </a>
 
             <nav class="hidden lg:flex ml-12 space-x-8">
@@ -59,7 +59,7 @@
                 </flux:navbar.item>
                 {{-- Conditional links for authenticated users --}}
                 @auth
-                    <flux:navbar.item icon="paper-airplane" href="#" class="text-white font-medium transition duration-300 hover:text-white/80 transform hover:scale-105">
+                    <flux:navbar.item icon="paper-airplane" href="#" class="text-grey font-medium transition duration-300 hover:text-white/80 transform hover:scale-105">
                         {{ __('My Trips') }}
                     </flux:navbar.item>
                     <flux:navbar.item icon="calendar" href="#" class="text-white font-medium transition duration-300 hover:text-white/80 transform hover:scale-105">
@@ -93,27 +93,51 @@
                 </flux:tooltip>
 
                 @auth
-                    <flux:dropdown position="top" align="end">
-                        <flux:profile class="cursor-pointer text-white border-2 border-white/50 hover:border-white/90 transition-colors"
-                        :initials="auth()->user()->initials()" />
-                        <flux:menu class="w-[200px]">
-                            <div class="px-3 py-2">
-                                <div class="font-semibold">{{ auth()->user()->name }}</div>
-                                <div class="text-xs text-gray-500">{{ auth()->user()->email }}</div>
-                            </div>
-                            <flux:menu.separator />
-                            <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
-                                {{ __('Account Settings') }}
-                            </flux:menu.item>
-                            <flux:menu.separator />
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle">
-                                    {{ __('Log Out') }}
-                                </flux:menu.item>
-                            </form>
-                        </flux:menu>
-                    </flux:dropdown>
+                    @php
+    // Map roles to dashboard links
+    $dashboards = [
+        'provider' => ['route' => 'provider.dashboard', 'icon' => 'building-office', 'label' => 'Provider Dashboard'],
+        'agent' => ['route' => 'agent.dashboard', 'icon' => 'users', 'label' => 'Agent Dashboard'],
+        // Add more role dashboards here if needed
+    ];
+@endphp
+
+<flux:dropdown position="top" align="end">
+    <flux:profile class="cursor-pointer text-white border-2 border-white/50 hover:border-white/90 transition-colors"
+                  :initials="auth()->user()->initials()" />
+    <flux:menu class="w-[200px]">
+        <div class="px-3 py-2">
+            <div class="font-semibold">{{ auth()->user()->name }}</div>
+            <div class="text-xs text-gray-500">{{ auth()->user()->email }}</div>
+        </div>
+        <flux:menu.separator />
+        <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
+            {{ __('Account Settings') }}
+        </flux:menu.item>
+
+        @php
+            $userRoles = auth()->user()->getRoleNames(); // Collection of user's roles
+        @endphp
+
+        {{-- Loop through dashboards and show if user has role or is admin --}}
+        @foreach($dashboards as $role => $dashboard)
+            @if($userRoles->contains($role) || $userRoles->contains('admin'))
+                <flux:menu.item :href="route($dashboard['route'])" icon="{{ $dashboard['icon'] }}" wire:navigate>
+                    {{ __($dashboard['label']) }}
+                </flux:menu.item>
+            @endif
+        @endforeach
+
+        <flux:menu.separator />
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle">
+                {{ __('Log Out') }}
+            </flux:menu.item>
+        </form>
+    </flux:menu>
+</flux:dropdown>
+
                 @else
                     <a href="{{ route('login') }}" class="text-white font-medium hover:text-white/80 transition">Log In</a>
                 @endauth

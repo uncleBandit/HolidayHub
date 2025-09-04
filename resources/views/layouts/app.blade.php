@@ -76,7 +76,7 @@
                     </div>
                 </div>
             @else
-                <a href="{{ route('login') }}" class="px-6 py-3 bg-tropical-blue text-white rounded-full font-bold shadow-lg hover:bg-deep-ocean transition-all duration-300 transform hover:scale-105">Login</a>
+                <a href="{{ route('login') }}" class="px-6 py-3 bg-tropical-blue text-blue rounded-full font-bold shadow-lg hover:bg-deep-ocean transition-all duration-300 transform hover:scale-105">Login</a>
                 <a href="{{ route('register') }}" class="px-6 py-3 bg-sunset-orange text-white rounded-full font-bold shadow-lg hover:bg-orange-600 transition-all duration-300 transform hover:scale-105">Register</a>
             @endauth
         </nav>
@@ -91,7 +91,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-deep-ocean text-white py-8 mt-12">
+    <footer class="bg-deep-ocean text-tropical-blue py-8 mt-12">
         <div class="container mx-auto px-6 text-center">
             <p>&copy; {{ date('Y') }} HolidayHub. All rights reserved.</p>
             <p class="text-sm text-gray-400 mt-2">Designed with a love for travel and tropical escapes. </p>

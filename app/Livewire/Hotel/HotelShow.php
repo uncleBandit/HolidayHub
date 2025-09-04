@@ -14,6 +14,21 @@ class HotelShow extends Component
     public $availability = [];
     public bool $isWishlisted = false;
 
+    public $isGalleryOpen = false;
+    public $activeImageId;
+
+    public function showGallery($imageId)
+    {
+        $this->isGalleryOpen = true;
+        $this->activeImageId = $imageId;
+    }
+
+    public function closeGallery()
+    {
+        $this->isGalleryOpen = false;
+        $this->activeImageId = null;
+    }
+
     public function mount($slug)
     {
         $this->hotel = Hotel::with(['images', 'hotelAmenities', 'rooms'])->where('slug', $slug)->firstOrFail();

@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Contracts\Interface\Bookable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Room extends Model
+class Room extends Model implements Bookable
 {
     use HasFactory;
 
@@ -39,6 +41,14 @@ class Room extends Model
         return $this->hasMany(Booking::class);
     }
 
+    /**
+     * @inheritDoc
+     */
+    public function getBasePrice(): float
+    {
+        return $this->base_price;
+    }
+
     public function prices()
     {
         return $this->hasMany(RoomPrice::class);
@@ -67,5 +77,10 @@ class Room extends Model
             ->value('price');
 
         return $price ?? $this->base_price;
+    }
+
+        public function availabilities(): HasMany
+    {
+        return $this->hasMany(RoomAvailability::class);
     }
 }

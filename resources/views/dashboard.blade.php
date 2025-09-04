@@ -23,6 +23,12 @@
             <livewire:featured.featured-destinations />
         </section>
 
+        {{-- Featured Packages --}}
+        <section class="px-6 md:px-12 lg:px-24">
+            <h2 class="text-3xl md:text-4xl font-bold mb-8 text-neutral-800 dark:text-white">Featured Holiday Packages 🎁</h2>
+            <livewire:featured.featured-packages />
+        </section>
+
         {{-- Top Hotels --}}
         <section class="px-6 md:px-12 lg:px-24">
             <h2 class="text-3xl md:text-4xl font-bold mb-8 text-neutral-800 dark:text-white">Top Hotels 🏨</h2>

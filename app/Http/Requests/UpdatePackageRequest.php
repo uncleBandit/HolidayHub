@@ -6,23 +6,37 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdatePackageRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        // ✅ Example: ensure user can only update their own packages
+        return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'title' => ['sometimes', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255', 'unique:packages,slug,' . $this->package->id],
+            'description' => ['sometimes', 'string'],
+            'destination' => ['sometimes', 'string', 'max:255'],
+            'country' => ['sometimes', 'string', 'max:100'],
+
+            'price' => ['sometimes', 'numeric', 'min:0'],
+            'currency' => ['sometimes', 'string', 'size:3'],
+            'discount' => ['nullable', 'numeric', 'between:0,100'],
+
+            'duration_days' => ['sometimes', 'integer', 'min:1'],
+
+            'available_from' => ['nullable', 'date'],
+            'available_to' => ['nullable', 'date', 'after_or_equal:available_from'],
+
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['string', 'max:50'],
+            'images' => ['nullable', 'array'],
+            'images.*' => ['url'],
+
+            'status' => ['sometimes', 'in:draft,active,inactive'],
+            'provider_id' => ['nullable', 'exists:users,id'],
         ];
     }
 }
