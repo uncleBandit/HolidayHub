@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('guest_id')
                 ->constrained()
                 ->cascadeOnDelete();
+           // $table->foreignId('user_id')->nullable()->constrained()->cascadeOnDelete();
 
             // Polymorphic relation (hotel, destination, activity, testimonial, etc.)
             $table->morphs('reviewable'); // Creates reviewable_id & reviewable_type

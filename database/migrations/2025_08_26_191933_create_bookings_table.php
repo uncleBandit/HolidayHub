@@ -15,11 +15,14 @@ return new class extends Migration
             $table->id();
 
             // User who made the booking
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('guest_id')->constrained()->cascadeOnDelete();
 
-            // Hotel + Room reference
-            $table->foreignId('hotel_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('room_id')->nullable()->constrained()->cascadeOnDelete();
+            // Polymorphic relation to booked item (hotel, villa, bnb, etc.)
+            $table->morphs('bookable'); // Polymorphic relation to hotel, villa, bnb, etc.
+            $table->foreignId('offer_id')
+                  ->nullable() // optional if some bookings are not linked to offers
+                  ->constrained('offers')
+                  ->cascadeOnDelete();
 
             // Booking details
             $table->date('check_in_date');

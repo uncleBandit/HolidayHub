@@ -23,33 +23,26 @@ class HotelFactory extends Factory
         $finalPrice = $originalPrice - ($originalPrice * $discount / 100);
 
         return [
-            'destination_id'    => Destination::factory(), // ensures a destination exists
-            'name'              => $this->faker->company() . ' Hotel',
-            'slug'              => Str::slug($this->faker->unique()->company() . '-hotel'),
-            'description'       => $this->faker->paragraph(5),
-            'address'           => $this->faker->address(),
-            'city'              => $this->faker->city(),
-            'country'           => $this->faker->country(),
-            'latitude'          => $this->faker->latitude(),
-            'longitude'         => $this->faker->longitude(),
-            'stars'             => $this->faker->numberBetween(1, 5),
-            'is_featured'       => $this->faker->boolean(30),
-            'amenities'         => json_encode($this->faker->randomElements([
-                'Free WiFi', 'Pool', 'Spa', 'Gym', 'Restaurant', 'Bar', 'Airport Shuttle', 'Pet Friendly'
-            ], $this->faker->numberBetween(2, 6))),
-            'policies'          => json_encode([
-                'check_in'  => $this->faker->time('H:i'),
+            'destination_id' => Destination::factory(),
+            'name' => $this->faker->company() . ' Hotel',
+            'slug' => Str::slug($this->faker->unique()->company() . '-hotel'),
+            'description' => $this->faker->paragraph(5),
+            'address' => $this->faker->address(),
+            'city' => $this->faker->city(),
+            'country' => $this->faker->country(),
+            'latitude' => $this->faker->latitude(),
+            'longitude' => $this->faker->longitude(),
+            'stars' => $this->faker->numberBetween(1, 5),
+            'is_featured' => $this->faker->boolean(30),
+            'policies' => json_encode([
+                'check_in' => $this->faker->time('H:i'),
                 'check_out' => $this->faker->time('H:i'),
                 'cancellation' => 'Flexible'
             ]),
-            'cover_image'       => "https://source.unsplash.com/800x600/?hotel," . $this->faker->word(),
-            'gallery'           => json_encode([
-                "https://source.unsplash.com/800x600/?hotel," . $this->faker->word() . "1",
-                "https://source.unsplash.com/800x600/?hotel," . $this->faker->word() . "2"
-            ]),
+            'cover_image' => "https://source.unsplash.com/800x600/?hotel," . $this->faker->word(),
             'avg_price_per_night' => round($finalPrice, 2),
-            'avg_rating'        => $this->faker->randomFloat(1, 2.5, 5.0),
-            'reviews_count'     => $this->faker->numberBetween(10, 2000),
+            'avg_rating' => $this->faker->randomFloat(1, 2.5, 5.0),
+            'reviews_count' => $this->faker->numberBetween(10, 2000),
         ];
     }
 }

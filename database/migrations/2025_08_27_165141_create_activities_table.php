@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
 
             // Relationships
-            $table->foreignId('destination_id')->constrained()->cascadeOnDelete();
             $table->foreignId('hotel_id')->nullable()->constrained()->cascadeOnDelete();
                 // Some activities can be tied to a hotel (spa, tour, etc.), or just a destination.
 
@@ -54,6 +53,15 @@ return new class extends Migration
 
             $table->timestamps();
             $table->softDeletes();
+
+            // Relations
+            $table->foreignId('provider_id')
+                  ->constrained()
+                  ->cascadeOnDelete(); // BnB belongs to a provider/host
+            $table->foreignId('destination_id')
+                  ->constrained()
+                  ->cascadeOnDelete(); // Activity belongs to a destination/city
+
         });
     }
 

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Offer extends Model
@@ -15,18 +16,23 @@ class Offer extends Model
      * The attributes that are mass assignable.
      * Allows safe assignment for creating/updating offers.
      */
-    protected $fillable = [
+     protected $fillable = [
         'title',
         'slug',
         'description',
-        'image_url',
+        'main_image', // Corrected to match migration
+        'gallery_images', // Added to fillable
         'price',
         'discount_percent',
         'start_date',
         'end_date',
         'is_featured',
         'destination_id',
-        'hotel_id',
+        'provider_id', // Added to fillable
+        'active', // Added to fillable
+        'max_capacity', // Added to fillable
+        'rating', // Added to fillable
+        'tags', // Added to fillable
     ];
 
     /**
@@ -37,8 +43,12 @@ class Offer extends Model
         'price' => 'decimal:2',
         'discount_percent' => 'integer',
         'is_featured' => 'boolean',
+        'active' => 'boolean', // Added to casts
+        'tags' => 'array', // Casting to an array for JSON column
         'start_date' => 'datetime',
         'end_date' => 'datetime',
+        'rating' => 'decimal:2',
+        'gallery_images' => 'array', // Casting to an array for JSON column
     ];
 
     /**
@@ -63,10 +73,9 @@ class Offer extends Model
         return $this->belongsTo(Destination::class);
     }
 
-    // Offer belongs to a hotel (optional)
-    public function hotel()
+    public function bookable()
     {
-        return $this->belongsTo(Hotel::class);
+    return $this->morphTo();
     }
 
     /**
@@ -108,5 +117,13 @@ class Offer extends Model
             ? $this->start_date->format('M d, Y') . ' - ' . $this->end_date->format('M d, Y')
             : null
         );
+    }
+
+    /**
+     * One Offer can have many bookings
+     */
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
     }
 }

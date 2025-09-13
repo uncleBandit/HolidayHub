@@ -5,39 +5,46 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Review;
 use App\Models\Destination;
+use App\Models\Guest;
 use App\Models\Hotel;
 
 class ReviewSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     *
-     * @return void
      */
-    public function run()
+    public function run(): void
     {
         $this->command->info('Seeding reviews...');
 
-        // Ensure there are some reviewable models to attach reviews to
-        if (Destination::count() === 0) {
-            $this->command->line('No destinations found. Creating 10 new ones...');
-            Destination::factory()->count(10)->create();
-            $this->command->info('Created 10 destinations.');
+        // Fetch existing guests and reviewable items to link reviews to
+        $guests = Guest::all();
+        $reviewables = collect()
+            ->merge(Hotel::all())
+            ->merge(Destination::all());
+
+        // If there are no guests or reviewable items, we can't seed reviews.
+        if ($guests->isEmpty() || $reviewables->isEmpty()) {
+            $this->command->warn('Skipping review seeding. Guests or reviewable items are missing.');
+            return;
         }
 
-        if (Hotel::count() === 0) {
-            $this->command->line('No hotels found. Creating 10 new ones...');
-            Hotel::factory()->count(10)->create();
-            $this->command->info('Created 10 hotels.');
-        }
-
-        // Create 50 random reviews, half of which are approved
-        $this->command->line('Creating 25 random reviews...');
-        Review::factory()->count(25)->create();
+        // Create 25 pending reviews linked to random guests and reviewable items
+        Review::factory()->count(25)->create([
+            'status' => 'pending',
+            'guest_id' => fn () => $guests->random()->id,
+            'reviewable_id' => fn () => $reviewables->random()->id,
+            'reviewable_type' => fn () => get_class($reviewables->random()),
+        ]);
         $this->command->info('Created 25 pending reviews.');
 
-        $this->command->line('Creating 25 approved reviews...');
-        Review::factory()->count(25)->approved()->create();
+        // Create 25 approved reviews linked to random guests and reviewable items
+        Review::factory()->count(25)->create([
+            'status' => 'approved',
+            'guest_id' => fn () => $guests->random()->id,
+            'reviewable_id' => fn () => $reviewables->random()->id,
+            'reviewable_type' => fn () => get_class($reviewables->random()),
+        ]);
         $this->command->info('Created 25 approved reviews.');
 
         $this->command->info('Review seeding complete!');

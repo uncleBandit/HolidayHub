@@ -21,7 +21,7 @@
 
     <!-- Filters Sidebar (desktop only) -->
     <aside class="hidden md:block md:col-span-1 space-y-6 bg-white p-4 rounded-2xl shadow-sm">
-        @include('packages.partials.filters')
+        @include('package.partials.filters')
     </aside>
 
     <!-- Slide-over Drawer (mobile only) -->
@@ -54,7 +54,7 @@
                 </button>
             </div>
 
-            @include('packages.partials.filters')
+            @include('package.partials.filters')
 
             <div class="mt-6">
                 <button

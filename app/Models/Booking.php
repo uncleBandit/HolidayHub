@@ -10,34 +10,45 @@ class Booking extends Model
     use HasFactory;
 
     protected $fillable = [
-        'hotel_id',
-        'room_id',
-        'user_id',
-        'check_in',
-        'check_out',
-        'guests',
-        'total_price',
-        'status',  // pending, confirmed, cancelled, completed
+        'guest_id',
+        'bookable_id',
+        'bookable_type',
+        'offer_id',
+        'check_in_date',
+        'check_out_date',
+        'guests_adults',
+        'guests_children',
+        'price_per_night',
+        'total_amount',
+        'currency',
+        'payment_status',
+        'payment_method',
+        'status',
+        'special_requests',
+        'confirmation_code',
+        'cancelled_at',
     ];
 
     protected $casts = [
-        'check_in' => 'date',
-        'check_out'=> 'date',
-        'total_price' => 'float',
+        'check_in_date' => 'date',
+        'check_out_date' => 'date',
+        'total_amount' => 'float',
+        'special_requests' => 'array',
+        'cancelled_at' => 'datetime',
     ];
 
-    public function hotel()
+    public function bookable()
     {
-        return $this->belongsTo(Hotel::class);
-    }
-
-    public function room()
-    {
-        return $this->belongsTo(Room::class);
+    return $this->morphTo();
     }
 
     public function guest()
     {
         return $this->belongsTo(Guest::class);
+    }
+
+    public function offer()
+    {
+        return $this->belongsTo(Offer::class);
     }
 }

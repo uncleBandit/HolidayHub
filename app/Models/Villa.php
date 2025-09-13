@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class Villa extends Model implements Bookable
 {
@@ -17,27 +19,19 @@ class Villa extends Model implements Bookable
 
     /**
      * Mass assignable attributes.
+     *
+     * @var array<string>
      */
     protected $fillable = [
-        'name',
-        'description',
-        'base_price',      // default nightly rate
-        'max_guests',
-        'bedrooms',
-        'bathrooms',
-        'address',
-        'city',
-        'country',
-        'latitude',
-        'longitude',
-        'gallery',
-        'amenities',
-        'destination_id',
-        'status',          // available, maintenance, inactive
+        'name', 'description', 'base_price', 'max_guests', 'bedrooms', 'bathrooms',
+        'address', 'city', 'country', 'latitude', 'longitude', 'gallery',
+        'amenities', 'destination_id', 'status',
     ];
 
     /**
-     * Casts for JSON-friendly data handling.
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
      */
     protected $casts = [
         'gallery' => 'array',
@@ -47,97 +41,222 @@ class Villa extends Model implements Bookable
         'longitude' => 'float',
     ];
 
+    /** Relationships */
+
     /**
-     * Relationships
+     * A Villa belongs to a single destination.
+     *
+     * @return BelongsTo
      */
     public function destination(): BelongsTo
     {
         return $this->belongsTo(Destination::class);
     }
 
+    /**
+     * A Villa can have many bookings.
+     *
+     * @return HasMany
+     */
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
     }
 
-    public function reviews(): HasMany
+    /**
+     * A Villa can have many reviews.
+     *
+     * @return MorphMany
+     */
+    public function reviews(): MorphMany
     {
-        return $this->hasMany(Review::class, 'villa_id');
+        return $this->morphMany(Review::class, 'reviewable');
     }
 
-    public function availabilities(): HasMany
-    {
-        return $this->hasMany(RoomAvailability::class, 'villa_id');
-    }
-
-    // Polymorphic link to shared accommodation wrapper
+    /**
+     * Polymorphic link to the accommodation table.
+     *
+     * @return MorphOne
+     */
     public function accommodation(): MorphOne
     {
         return $this->morphOne(Accommodation::class, 'bookable');
     }
 
     /**
-     * Accessors
+     * Polymorphic many-to-many relationship to Amenity.
+     *
+     * @return MorphToMany
+     */
+    public function amenities(): MorphToMany
+    {
+        return $this->morphToMany(
+            Amenity::class,
+            'amenable'
+        );
+    }
+
+    /**
+     * Get the provider that owns the Villa.
+     *
+     * @return BelongsTo
+     */
+    public function provider(): BelongsTo
+    {
+        return $this->belongsTo(Provider::class);
+    }
+
+    /** Accessors */
+
+    /**
+     * Get the main image from the gallery.
+     *
+     * @return string|null
      */
     public function getMainImageAttribute(): ?string
     {
         return $this->gallery[0] ?? null;
     }
 
+    /**
+     * Get the average rating for the Villa.
+     *
+     * @return float
+     */
     public function getAverageRatingAttribute(): float
     {
         return round($this->reviews()->avg('rating') ?? 0, 1);
     }
 
+    /** Bookable Interface Methods */
+
     /**
-     * Bookable contract methods
+     * @inheritDoc
+     */
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getType(): string
+    {
+        return 'villa';
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getDescription(): string
+    {
+        return $this->description;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getImages(): array
+    {
+        return $this->gallery ?? [];
+    }
+
+    /**
+     * @inheritDoc
      */
     public function getBasePrice(): float
     {
         return (float) $this->base_price;
     }
 
-    public function isAvailable(string $checkIn, string $checkOut): bool
+    public function offers(): MorphMany
     {
-        return !$this->bookings()
-            ->where(function ($query) use ($checkIn, $checkOut) {
-                $query->whereBetween('check_in', [$checkIn, $checkOut])
-                      ->orWhereBetween('check_out', [$checkIn, $checkOut])
-                      ->orWhere(function ($q) use ($checkIn, $checkOut) {
-                          $q->where('check_in', '<=', $checkIn)
-                            ->where('check_out', '>=', $checkOut);
-                      });
-            })
-            ->exists();
-    }
-
-    public function getPriceForDate(string $date): float
-    {
-        $price = $this->availabilities()
-            ->where('date', $date)
-            ->value('price');
-
-        return $price ?? $this->base_price;
+        return $this->morphMany(Offer::class, 'offerable');
     }
 
     /**
-     * Scopes
+     * @inheritDoc
      */
-    public function scopeAvailable($query, $startDate, $endDate)
+    public function getPriceForDate(string $date): float
     {
-        return $query->whereDoesntHave('bookings', function ($q) use ($startDate, $endDate) {
-            $q->whereBetween('check_in', [$startDate, $endDate])
-              ->orWhereBetween('check_out', [$startDate, $endDate]);
-        });
+        // For a more advanced system, you would check for special pricing
+        // or promotions on this specific date. For now, we'll return the base price.
+        return (float) $this->base_price;
     }
 
-    public function scopeLuxury($query)
+    /**
+     * Check if the Villa is available for a given date range.
+     *
+     * @inheritDoc
+     */
+    public function isAvailable(string $checkIn, string $checkOut): bool
     {
-        return $query->where('base_price', '>=', 500); // arbitrary luxury threshold
+        $hasOverlappingBooking = $this->bookings()
+            ->where(function ($query) use ($checkIn, $checkOut) {
+                // A booking overlaps if its check-in is before the new checkout
+                // AND its check-out is after the new check-in.
+                $query->where('check_in', '<', $checkOut)
+                    ->where('check_out', '>', $checkIn);
+            })
+            ->exists();
+
+        return !$hasOverlappingBooking;
     }
 
-    public function scopeAffordable($query, float $maxPrice)
+    /**
+     * Get the associated availabilities.
+     *
+     * @return HasMany
+     */
+    /**
+     * Get the associated availabilities.
+     *
+     * @return MorphMany
+     */
+    public function availabilities(): MorphMany
     {
-        return $query->where('base_price', '<=', $maxPrice);
+        return $this->morphMany(Availability::class, 'bookable');
     }
+
+    public function getIncludedGuests(): int
+    {
+        return $this->max_guests;
+    }
+
+
+    /**
+     * Get the currency for the bookable item.
+     *
+     * @inheritDoc
+     */
+    public function getCurrency(): string
+    {
+        return 'USD';
+    }
+
+    /**
+     * Get the default number of guests for this bookable item.
+     * This method is required by the Bookable interface.
+     */
+    public function getDefaultMaxGuests(): int
+    {
+        return 2;
+    }
+
+
+    public function seasonalRates(): MorphMany
+    {
+        return $this->morphMany(SeasonalRate::class, 'seasonal_rateable');
+    }
+
+    
 }

@@ -2,87 +2,115 @@
 
 namespace App\Livewire\Forms;
 
-use Livewire\Form;
-use Livewire\Attributes\Rule;
 use App\Models\Amenity;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Form;
+use Livewire\Attributes\Rule;
 use Livewire\WithFileUploads;
 
 class AmenityForm extends Form
 {
-    // A public property to hold the Amenity model instance, used for editing.
+    use WithFileUploads;
+
     public ?Amenity $amenity = null;
 
-    // Form fields with Livewire 3 #[Rule] attributes for validation.
-    // The rules have been expanded to include the 'image' and 'type' fields.
     #[Rule('required|string|max:255')]
     public string $name = '';
 
-    #[Rule('nullable|string')]
+    #[Rule('nullable|string|max:1000')]
     public string $description = '';
 
-    #[Rule('required|string|in:hotel,package,room')] // Added validation for the type field
-    public string $type = '';
+    #[Rule('required|string|in:hotel,room,package,villa')]
+    public string $type = 'hotel';
 
-    #[Rule('nullable|image|max:2048')] // Handles a file upload, with size and type limits
-    public $image = null; // Livewire handles this as a temporary file upload property
+    #[Rule('nullable|image|max:2048')]
+    public $icon = null;
 
-    // A property to hold the path to the current image when editing
-    public ?string $currentImagePath = null;
+    public ?string $currentIconPath = null;
+
+    #[Rule('boolean')]
+    public bool $active = true;
 
     /**
-     * Set the form properties for an existing amenity.
-     * If no amenity is provided, it resets the form for creation.
+     * Set the form properties for editing or reset for creation
      */
     public function setAmenity(?Amenity $amenity = null): void
     {
         $this->amenity = $amenity;
 
-        // Populate form fields from the model
-        $this->name = $amenity->name ?? '';
-        $this->description = $amenity->description ?? '';
-        $this->type = $amenity->type ?? '';
+        if ($amenity) {
+            $this->name = $amenity->name;
+            $this->description = $amenity->description;
+            $this->type = $amenity->type;
+            $this->active = $amenity->active;
+            $this->currentIconPath = $amenity->icon;
+        } else {
+            $this->resetFields();
+        }
 
-        // Store the existing image path for display and persistence
-        $this->currentImagePath = $amenity->image ?? null;
-
-        // Reset the image upload field to avoid validation issues
-        $this->image = null;
+        $this->icon = null; // Reset the upload field
     }
 
     /**
-     * Handles the creation or update logic based on the presence of an amenity model.
+     * Save or update the amenity
      */
     public function save(): void
     {
-        // Validate the form data against the rules defined above.
         $this->validate();
 
-        $data = $this->all();
+        $data = [
+            'name' => $this->name,
+            'description' => $this->description,
+            'type' => $this->type,
+            'active' => $this->active,
+        ];
 
-        // Handle image upload logic
-        if ($this->image) {
-            // Store the new image in the 'public/amenities' directory
-            $imagePath = $this->image->store('amenities', 'public');
-            $data['image'] = $imagePath;
+        // Handle icon upload
+        if ($this->icon) {
+            $path = $this->icon->store('amenities/icons', 'public');
+            $data['icon'] = $path;
 
-            // If we are editing an amenity and a new image is uploaded, delete the old one
-            if ($this->amenity && $this->amenity->image) {
-                Storage::disk('public')->delete($this->amenity->image);
+            if ($this->amenity && $this->amenity->icon) {
+                Storage::disk('public')->delete($this->amenity->icon);
             }
         } else {
-            // If no new image is uploaded, keep the existing one
-            $data['image'] = $this->currentImagePath;
+            $data['icon'] = $this->currentIconPath;
         }
 
-        // Create or update the amenity
         if ($this->amenity) {
             $this->amenity->update($data);
         } else {
-            Amenity::create($data);
+            $this->amenity = Amenity::create($data);
         }
 
-        // Reset the form fields after a successful save.
-        $this->reset();
+        $this->resetFields();
+    }
+
+    /**
+     * Delete the amenity and remove its icon
+     */
+    public function delete(): void
+    {
+        if ($this->amenity) {
+            if ($this->amenity->icon) {
+                Storage::disk('public')->delete($this->amenity->icon);
+            }
+            $this->amenity->delete();
+            $this->resetFields();
+        }
+    }
+
+    /**
+     * Reset all form fields
+     */
+    private function resetFields(): void
+    {
+        $this->name = '';
+        $this->description = '';
+        $this->type = 'hotel';
+        $this->icon = null;
+        $this->currentIconPath = null;
+        $this->active = true;
+        $this->amenity = null;
     }
 }

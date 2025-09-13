@@ -17,6 +17,9 @@ return new class extends Migration
                 ->constrained('hotels')
                 ->cascadeOnDelete(); // If hotel is deleted, delete its rooms
 
+            $table->foreignId('room_type_id')->constrained()->cascadeOnDelete();
+            $table->integer('room_number');
+
             $table->string('name'); // "Deluxe Suite", "Standard Room"
             $table->text('description')->nullable();
             $table->integer('capacity')->default(2); // max guests

@@ -1,70 +1,71 @@
 <?php
 
-namespace App\Http\Livewire\Provider;
+namespace App\Livewire\Provider;
 
 use App\Livewire\Forms\AmenityForm;
-use App\Livewire\Forms\PackageForm;
+use App\Livewire\Forms\OfferForm;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
-use App\Models\Package;
+use App\Models\Offer;
 use App\Models\Amenity;
+use App\Models\Booking;
 
 class ProviderDashboard extends Component
 {
     use WithPagination;
 
     // Form Objects
-    public PackageForm $packageForm;
+    public OfferForm $offerForm;
     public AmenityForm $amenityForm;
 
     // Pagination
     public int $perPage = 10;
 
     // Filters & search
-    public string $searchPackage = '';
+    public string $searchOffer = '';
     public string $searchAmenity = '';
 
     // Modals
-    public bool $showPackageModal = false;
+    public bool $showOfferModal = false;
     public bool $showAmenityModal = false;
 
     // Listeners for updates
     #[On('refreshDashboard')]
-    public function refresh()
+    public function refresh(): void
     {
-        // This method does nothing, but the #[On] attribute triggers a re-render.
+        // Trigger re-render
     }
 
     // Reset pagination when search changes
     public function updated(string $property): void
     {
-        if (in_array($property, ['searchPackage', 'searchAmenity'])) {
+        if (in_array($property, ['searchOffer', 'searchAmenity'])) {
             $this->resetPage();
         }
     }
 
-    // --- Package Methods ---
-    public function openPackageModal(?Package $package = null): void
+    // --- Offer Methods ---
+    public function openOfferModal(?Offer $offer = null): void
     {
         $this->resetValidation();
-        $this->packageForm->setPackage($package);
-        $this->showPackageModal = true;
+        $this->offerForm->setOffer($offer);
+        $this->showOfferModal = true;
     }
 
-    public function savePackage(): void
+    public function saveOffer(): void
     {
-        $this->packageForm->save();
-        $this->showPackageModal = false;
-        $this->dispatch('success', 'Package saved successfully.');
+        $this->offerForm->save();
+        $this->showOfferModal = false;
+        $this->dispatch('success', 'Offer saved successfully.');
         $this->dispatch('refreshDashboard');
     }
 
-    public function deletePackage(Package $package): void
+    public function deleteOffer(Offer $offer): void
     {
-        $package->delete();
-        $this->dispatch('success', 'Package deleted successfully.');
+        $offer->delete();
+        $this->dispatch('success', 'Offer deleted successfully.');
         $this->dispatch('refreshDashboard');
     }
 
@@ -95,27 +96,64 @@ class ProviderDashboard extends Component
     {
         $provider = Auth::user()->provider;
 
-        $packages = $provider->packages()
+        // Offers with optional search
+        $offers = $provider->offers()
             ->with('destination')
-            ->when($this->searchPackage, fn($q) => $q->where('title', 'like', "%{$this->searchPackage}%"))
+            ->when($this->searchOffer, fn($q) => $q->where('title', 'like', "%{$this->searchOffer}%"))
             ->latest()
             ->paginate($this->perPage);
 
+        $services = $provider->services()
+                            ->when($this->searchService ?? '', fn($q) => $q->where('name', 'like', "%{$this->searchService}%"))
+                            ->latest()
+                            ->get(); // or ->paginate($this->perPage) if you want pagination
+
+
+        // Amenities with optional search
         $amenities = Amenity::query()
             ->when($this->searchAmenity, fn($q) => $q->where('name', 'like', "%{$this->searchAmenity}%"))
             ->latest()
             ->paginate($this->perPage);
 
-        // Optimized queries for total counts and revenue
-        $bookingsCount = $provider->packages()->withCount('bookings')->get()->sum('bookings_count');
-        $totalRevenue = $provider->packages()->withSum('bookings', 'total_price')->get()->sum('bookings_sum_total_price');
+        // Flatten all rooms for the list
+        $rooms = $offers->flatMap(fn($offer) => $offer->rooms);
+
+        // Calculate stats safely
+        $stats = [
+                'totalRooms' => $offers->sum('rooms_count') ?? 0,      // Make sure 'rooms_count' exists
+                'totalServices' => $offers->count() ?? 0,
+                'confirmedBookings' => $offers->sum(function($offer) {
+                return $offer->bookings()->where('status', 'confirmed')->count();
+                }),
+                'pendingBookings' => $offers->sum(function($offer) {
+                return $offer->bookings()->where('status', 'pending')->count();
+                }),
+                'cancelledBookings' => $offers->sum(function($offer) {
+                return $offer->bookings()->where('status', 'cancelled')->count();
+                }),
+                'todayRevenue' => $offers->sum(function($offer) {
+                return $offer->bookings()->whereDate('created_at', now())->sum('total_amount');
+                }),
+                ];
+
+        // Metrics
+        $bookingsCount = $provider->offers()->withCount('bookings')->get()->sum('bookings_count');
+        $totalRevenue = $provider->offers()->withSum('bookings', 'total_amount')->get()->sum('bookings_sum_total_amount');
+
+        $bookings = Booking::whereHas('offer', function ($query) use ($provider) {
+            $query->where('provider_id', $provider->id);
+        })->latest()->paginate(10);
 
         return view('livewire.provider.provider-dashboard', compact(
             'provider',
-            'packages',
+            'offers',
             'amenities',
             'bookingsCount',
-            'totalRevenue'
+            'totalRevenue',
+            'stats',
+            'rooms',
+            'services',
+            'bookings'
         ));
     }
 }

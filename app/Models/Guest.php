@@ -7,34 +7,64 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Guest extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
      *
-     * Keep it clear and secure for modern APIs & Livewire usage.
+     * This list now aligns with the guest migration table.
      */
     protected $fillable = [
+        // Basic details
         'first_name',
         'last_name',
         'email',
         'phone',
+        'user_id',
+
+        // Demographics
         'date_of_birth',
+        'gender',
         'nationality',
-        'preferences',    // JSON: e.g., {"room_type": "deluxe", "diet": "vegan"}
-        'loyalty_points', // Gamified experience for returning guests
-        'profile_image',
-        'user_id',        // Link if they also have an authenticated account
+
+        // Identity & Verification
+        'passport_number',
+        'id_number',
+        'verified',
+
+        // Preferences & Loyalty
+        'preferred_language',
+        'preferred_currency',
+        'loyalty_tier',
+        'loyalty_points',
+
+        // Contact & Emergency
+        'emergency_contact_name',
+        'emergency_contact_phone',
+        'emergency_contact_relation',
+
+        // Travel Information
+        'frequent_flyer_number',
+        'special_requests',
+
+        // Address
+        'address_line1',
+        'address_line2',
+        'city',
+        'state',
+        'postal_code',
+        'country',
     ];
 
     /**
-     * Casts for modern usage (API-friendly).
+     * The attributes that should be cast.
      */
     protected $casts = [
-        'preferences' => 'array',
+        'verified' => 'boolean',
         'date_of_birth' => 'date',
     ];
 

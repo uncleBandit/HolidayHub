@@ -9,33 +9,52 @@ use Carbon\CarbonPeriod;
 
 class AvailabilityEngine
 {
-    /**
-     * Check if a room is available for the given period.
-     */
-    public function isAvailable(int $roomId, Carbon $checkIn, Carbon $checkOut): bool
-    {
-        $conflict = Booking::where('room_id', $roomId)
-            ->where('status', 'confirmed')
-            ->where(function ($query) use ($checkIn, $checkOut) {
-                $query->whereBetween('check_in', [$checkIn, $checkOut])
-                      ->orWhereBetween('check_out', [$checkIn, $checkOut])
-                      ->orWhere(function ($q) use ($checkIn, $checkOut) {
-                          $q->where('check_in', '<=', $checkIn)
-                            ->where('check_out', '>=', $checkOut);
-                      });
-            })
-            ->exists();
-
-        return !$conflict;
+    public function __construct(
+        protected ?PricingEngine $pricingEngine = null, // Optional pricing engine
+    ) {
+        $this->pricingEngine ??= new PricingEngine();
     }
 
     /**
-     * Build availability data for any bookable model.
+     * Check if a specific bookable unit (room, villa, seat, etc.) is available.
+     */
+    public function isAvailable(int $bookableId, string $bookableType, Carbon $checkIn, Carbon $checkOut): bool
+    {
+        // Normalize times to prevent half-day overlaps
+        $checkIn  = $checkIn->copy()->startOfDay();
+        $checkOut = $checkOut->copy()->endOfDay();
+
+        return !Booking::where('bookable_id', $bookableId)
+            ->where('bookable_type', $bookableType)
+            ->where('status', 'confirmed')
+            ->where(function ($q) use ($checkIn, $checkOut) {
+                // Overlap occurs if check-in is before the checkout
+                // and checkout is after the check-in
+                $q->where('check_in', '<', $checkOut)
+                  ->where('check_out', '>', $checkIn);
+            })
+            ->exists();
+    }
+
+    /**
+     * Build detailed availability data for a Bookable model.
      *
-     * @return array<string, array{available: bool, price: int}>
+     * @return array<string, array{
+     *   available: bool,
+     *   price: int,
+     *   currency: string,
+     *   min_stay: int,
+     *   max_guests: int,
+     *   source: string
+     * }>
      */
     public function forBookable(Bookable $bookable, Carbon $start, Carbon $end): array
     {
+        // Normalize
+        $start = $start->copy()->startOfDay();
+        $end   = $end->copy()->endOfDay();
+
+        // Get defined availabilities for this range
         $availabilities = $bookable->availabilities()
             ->whereBetween('date', [$start, $end])
             ->orderBy('date')
@@ -50,14 +69,24 @@ class AvailabilityEngine
             if ($availabilities->has($dateStr)) {
                 $a = $availabilities[$dateStr];
                 $availability[$dateStr] = [
-                    'available' => (bool) $a->is_available,
-                    'price'     => $a->price,
+                    'available'  => (bool) $a->is_available,
+                    'price'      => $a->price,
+                    'currency'   => $a->currency ?? 'USD',
+                    'min_stay'   => $a->min_stay ?? 1,
+                    'max_guests' => $a->max_guests ?? $bookable->getDefaultMaxGuests(),
+                    'source'     => 'database',
                 ];
             } else {
-                // fallback → available at base price
+                // Fallback → dynamic pricing or base price
+                $price = $this->pricingEngine->calculate($bookable, $date);
+
                 $availability[$dateStr] = [
-                    'available' => true,
-                    'price'     => $bookable->getBasePrice(),
+                    'available'  => true,
+                    'price'      => $price,
+                    'currency'   => $bookable->getCurrency(),
+                    'min_stay'   => 1,
+                    'max_guests' => $bookable->getDefaultMaxGuests(),
+                    'source'     => 'fallback',
                 ];
             }
         }

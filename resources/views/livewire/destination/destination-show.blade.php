@@ -166,7 +166,8 @@
             @forelse($destination->reviews as $review)
                 <div class="bg-white p-6 rounded-xl shadow">
                     <div class="flex items-center justify-between">
-                        <h3 class="font-semibold">{{ $review->user->name }}</h3>
+                        <h3 class="font-semibold">{{ $review->guest?->first_name ?? 'Guest' }}</h3>
+
                         <span class="text-yellow-600">⭐ {{ $review->rating }}</span>
                     </div>
                     <p class="mt-2 text-gray-700">{{ $review->comment }}</p>

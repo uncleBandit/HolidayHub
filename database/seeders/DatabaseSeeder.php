@@ -2,77 +2,77 @@
 
 namespace Database\Seeders;
 
-use App\Models\Destination;
-use App\Models\Guest;
-use App\Models\Hotel;
-use App\Models\Review;
-use App\Models\Testimonial;
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Log;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        try {
+            $this->logSection('Roles');
+            $this->call(RoleSeeder::class);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+            $this->logSection('Admin');
+            $admin = $this->seedAdmin();
 
-        // Destinations + DestinationReviews
-        $this->call([
-            DestinationSeeder::class,
+             $this->logSection('Providers');
+            $this->call(ProviderSeeder::class);
 
-        ]);
+               $this->logSection('Agents');
+            $this->call(AgentSeeder::class);
 
-        // Hotels + Rooms + RoomPrices + HotelReviews
-        $this->call([
-            HotelSeeder::class,
-            RoomSeeder::class,
-            RoomPriceSeeder::class,
+            $this->logSection('Destinations');
+            $this->call(DestinationSeeder::class);
 
-        ]);
+            $this->logSection('Guests');
+            $this->call(GuestSeeder::class);
 
-        // Activities + ActivityReviews
-        $this->call([
-            ActivitySeeder::class,
+            $this->logSection('Amenities');
+            $this->call(AmenitySeeder::class);
 
-        ]);
+            $this->logSection('Hotels');
+            $this->call(HotelSeeder::class);
 
-        // Bookings
-        $this->call([
-            BookingSeeder::class,
-        ]);
+            $this->logSection('Bed & Breakfasts');
+            $this->call(BedAndBreakfastSeeder::class);
 
+            $this->logSection('Villas');
+            $this->call(VillaSeeder::class);
 
+            $this->logSection('Packages');
+            $this->call(PackageSeeder::class);
 
-        $this->call([
-            ReviewSeeder::class,
-            RolesSeeder::class,
-            ImageSeeder::class,
-        ]);
+            $this->logSection('Bookings & Reviews');
+            $this->call(BookingSeeder::class);
+            $this->call(ReviewSeeder::class);
 
-        // Create Guests
-        $guests = Guest::factory(30)->create();
-
-        // Create Reviews for Hotels, Destinations, Activities
-        foreach ($guests as $guest) {
-            // Each guest leaves 1–5 reviews
-            $numReviews = rand(1, 5);
-            for ($i = 0; $i < $numReviews; $i++) {
-                Review::factory()->for($guest)->create();
-            }
-
-
+            $this->command->info('✅ Database seeded successfully with realistic holiday booking data!');
+        } catch (\Throwable $e) {
+            Log::error('DatabaseSeeder failed', [
+                'message' => $e->getMessage(),
+                'trace'   => $e->getTraceAsString(),
+            ]);
+            throw $e;
         }
-
-        $this->command->info('✅ Database seeded with guests, hotels, destinations, activities, and reviews!');
-    }
     }
 
+    protected function logSection(string $name): void
+    {
+        $this->command->info("🔹 Seeding {$name}...");
+        Log::info("Seeding section: {$name}");
+    }
+
+    protected function seedAdmin(): User
+    {
+        $admin = User::factory()->create([
+            'name'  => 'Admin User',
+            'email' => 'admin@example.com',
+        ]);
+
+        $admin->assignRole('admin');
+
+        return $admin;
+    }
+}

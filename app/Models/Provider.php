@@ -84,4 +84,16 @@ class Provider extends Model
     {
         return $this->hasMany(Payout::class);
     }
+
+    // Offers relationship
+    public function offers()
+    {
+        return $this->hasMany(Offer::class);
+    }
+
+    public function services()
+    {
+    return $this->hasMany(Service::class);
+     }
+
 }

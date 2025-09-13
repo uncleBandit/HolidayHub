@@ -2,10 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Guest;
 use App\Models\User;
-use App\Models\Hotel;
-use App\Models\Room;
-use App\Models\Activity;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -36,24 +34,24 @@ class BookingFactory extends Factory
         $currencyOptions = ['USD', 'EUR', 'GBP', 'KES'];
 
         return [
-            'user_id'            => User::factory(),
-            'hotel_id'           => Hotel::factory(),
-            'room_id'            => Room::factory(),
-            'check_in_date'      => $checkIn,
-            'check_out_date'     => $checkOut,
-            'guests_adults'      => $guestsAdults,
-            'guests_children'    => $guestsChildren,
-            'price_per_night'    => $pricePerNight,
-            'total_amount'       => $totalAmount,
-            'currency'           => $this->faker->randomElement($currencyOptions),
-            'payment_status'     => $this->faker->randomElement($paymentStatuses),
-            'payment_method'     => $this->faker->randomElement($paymentMethods),
-            'status'             => $this->faker->randomElement($bookingStatuses),
-            'special_requests'   => $this->faker->optional(0.3)->paragraph(),
-            'confirmation_code'  => strtoupper(Str::random(8)),
-            'cancelled_at'       => null,
-            'created_at'         => now(),
-            'updated_at'         => now(),
+            'guest_id'          => Guest::factory(),
+            'bookable_type'     => null, // will be set in seeder
+            'bookable_id'       => null, // will be set in seeder
+            'check_in_date'     => $checkIn,
+            'check_out_date'    => $checkOut,
+            'guests_adults'     => $guestsAdults,
+            'guests_children'   => $guestsChildren,
+            'price_per_night'   => $pricePerNight,
+            'total_amount'      => $totalAmount,
+            'currency'          => $this->faker->randomElement($currencyOptions),
+            'payment_status'    => $this->faker->randomElement($paymentStatuses),
+            'payment_method'    => $this->faker->randomElement($paymentMethods),
+            'status'            => $this->faker->randomElement($bookingStatuses),
+            'special_requests'  => $this->faker->optional(0.3)->paragraph(),
+            'confirmation_code' => strtoupper(Str::random(8)),
+            'cancelled_at'      => null,
+            'created_at'        => now(),
+            'updated_at'        => now(),
         ];
     }
 
@@ -88,6 +86,17 @@ class BookingFactory extends Factory
         return $this->state(fn() => [
             'status' => 'checked_out',
             'payment_status' => 'paid',
+        ]);
+    }
+
+    /**
+     * Attach a polymorphic bookable (Package, Hotel, Villa, BnB)
+     */
+    public function forBookable($bookable, string $relationship = 'bookable'): static
+    {
+        return $this->state(fn() => [
+            'bookable_type' => get_class($bookable),
+            'bookable_id'   => $bookable->id,
         ]);
     }
 }

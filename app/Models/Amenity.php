@@ -1,88 +1,127 @@
 <?php
 
-namespace App\Livewire\Forms;
+namespace App\Models;
 
-use Livewire\Form;
-use Livewire\Attributes\Rule;
-use App\Models\Amenity;
-use Illuminate\Support\Facades\Storage;
-use Livewire\WithFileUploads;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
-class AmenityForm extends Form
+
+class Amenity extends Model
 {
-    // A public property to hold the Amenity model instance, used for editing.
-    public ?Amenity $amenity = null;
-
-    // Form fields with Livewire 3 #[Rule] attributes for validation.
-    // The rules have been expanded to include the 'image' and 'type' fields.
-    #[Rule('required|string|max:255')]
-    public string $name = '';
-
-    #[Rule('nullable|string')]
-    public string $description = '';
-
-    #[Rule('required|string|in:hotel,package,room')] // Added validation for the type field
-    public string $type = '';
-
-    #[Rule('nullable|image|max:2048')] // Handles a file upload, with size and type limits
-    public $image = null; // Livewire handles this as a temporary file upload property
-
-    // A property to hold the path to the current image when editing
-    public ?string $currentImagePath = null;
+    use HasFactory;
 
     /**
-     * Set the form properties for an existing amenity.
-     * If no amenity is provided, it resets the form for creation.
+     * Mass assignable fields
      */
-    public function setAmenity(?Amenity $amenity = null): void
+    protected $fillable = [
+        'name',
+        'description',
+        'icon',
+        'type',
+        'active',
+    ];
+
+    /**
+     * Casts
+     */
+    protected $casts = [
+        'active' => 'boolean',
+    ];
+
+    /**
+     * Scope to only active amenities
+     */
+    public function scopeActive($query)
     {
-        $this->amenity = $amenity;
-
-        // Populate form fields from the model
-        $this->name = $amenity->name ?? '';
-        $this->description = $amenity->description ?? '';
-        $this->type = $amenity->type ?? '';
-
-        // Store the existing image path for display and persistence
-        $this->currentImagePath = $amenity->image ?? null;
-
-        // Reset the image upload field to avoid validation issues
-        $this->image = null;
+        return $query->where('active', true);
     }
 
     /**
-     * Handles the creation or update logic based on the presence of an amenity model.
+     * Polymorphic relation: Hotels
      */
-    public function save(): void
+    public function hotels(): MorphToMany
     {
-        // Validate the form data against the rules defined above.
-        $this->validate();
+        return $this->morphedByMany(
+            \App\Models\Hotel::class,
+            'amenable',
+            'amenables',
+            'amenity_id',
+            'amenable_id'
+        );
+    }
 
-        $data = $this->all();
+    /**
+     * Polymorphic relation: Rooms
+     */
+    public function rooms(): MorphToMany
+    {
+        return $this->morphedByMany(
+            \App\Models\Room::class,
+            'amenable',
+            'amenables',
+            'amenity_id',
+            'amenable_id'
+        );
+    }
 
-        // Handle image upload logic
-        if ($this->image) {
-            // Store the new image in the 'public/amenities' directory
-            $imagePath = $this->image->store('amenities', 'public');
-            $data['image'] = $imagePath;
+    /**
+     * Polymorphic relation: Packages
+     */
+    public function packages(): MorphToMany
+    {
+        return $this->morphedByMany(
+            Package::class,
+            'amenable',
+            'amenables',
+            'amenity_id',
+            'amenable_id'
+        );
+    }
 
-            // If we are editing an amenity and a new image is uploaded, delete the old one
-            if ($this->amenity && $this->amenity->image) {
-                Storage::disk('public')->delete($this->amenity->image);
-            }
-        } else {
-            // If no new image is uploaded, keep the existing one
-            $data['image'] = $this->currentImagePath;
-        }
+    /**
+     * Polymorphic relation: Villas
+     */
+    public function villas(): MorphToMany
+    {
+        return $this->morphedByMany(
+            Villa::class,
+            'amenable',
+            'amenables',
+            'amenity_id',
+            'amenable_id'
+        );
+    }
 
-        // Create or update the amenity
-        if ($this->amenity) {
-            $this->amenity->update($data);
-        } else {
-            Amenity::create($data);
-        }
+    /**
+     * Attach this amenity to any model dynamically
+     */
+    public function attachTo(Model $model): void
+    {
+        $model->amenities()->syncWithoutDetaching([$this->id]);
+    }
 
-        // Reset the form fields after a successful save.
-        $this->reset();
+    /**
+     * Detach this amenity from any model
+     */
+    public function detachFrom(Model $model): void
+    {
+        $model->amenities()->detach($this->id);
+    }
+
+    /**
+     * Accessor for full icon URL
+     */
+    public function getIconUrlAttribute(): ?string
+    {
+        return $this->icon ? asset("storage/{$this->icon}") : null;
+    }
+
+    /**
+     * Group amenities by type for a collection
+     */
+    public static function groupByType($amenities)
+    {
+        return $amenities->groupBy('type');
     }
 }

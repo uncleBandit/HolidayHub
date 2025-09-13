@@ -75,6 +75,6 @@ class GalleryComponent extends Component
 
     public function render()
     {
-        return view('livewire.gallery-component');
+        return view('livewire.gallery.gallery-component');
     }
 }

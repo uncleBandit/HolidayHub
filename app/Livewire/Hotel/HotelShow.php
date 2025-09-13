@@ -5,17 +5,23 @@ namespace App\Livewire\Hotel;
 use Livewire\Component;
 use App\Models\Hotel;
 use App\Models\Review;
+use App\Models\RoomType;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
+use App\Contracts\Interface\Bookable;
+use App\Models\Room;
 
 class HotelShow extends Component
 {
     public Hotel $hotel;
     public $reviews;
+    public ?RoomType $selectedRoomType = null;
     public $availability = [];
     public bool $isWishlisted = false;
 
     public $isGalleryOpen = false;
     public $activeImageId;
+    public $roomTypes;
 
     public function showGallery($imageId)
     {
@@ -31,12 +37,13 @@ class HotelShow extends Component
 
     public function mount($slug)
     {
-        $this->hotel = Hotel::with(['images', 'hotelAmenities', 'rooms'])->where('slug', $slug)->firstOrFail();
-        $this->reviews = Review::where('reviewable_type', Hotel::class)
-            ->where('reviewable_id', $this->hotel->id)
-            ->latest()
-            ->take(5)
-            ->get();
+        $this->hotel = Hotel::with(['images', 'amenities', 'roomTypes.rooms','reviews.guest'])->where('slug', $slug)->firstOrFail();
+        $this->reviews = Review::with('guest') // 👈 eager load guest here too
+        ->where('reviewable_type', Hotel::class)
+        ->where('reviewable_id', $this->hotel->id)
+        ->latest()
+        ->take(5)
+        ->get();
 
         $this->isWishlisted = false;
 
@@ -48,9 +55,14 @@ class HotelShow extends Component
             ->exists() ?? false; // The `?? false` ensures a boolean value is always assigned.
         }
 
+        // Group rooms by their room_type to get a collection of unique types
+        $this->roomTypes = RoomType::whereIn(
+                'id',
+                $this->hotel->rooms->pluck('room_type_id')->unique()
+            )->get();
 
-        // Example: load availability from a service
-        $this->availability = $this->hotel->getAvailabilityForNextMonth();
+
+        $this->availability = $this->getMonthlyAvailability($this->hotel);
     }
 
     public function toggleWishlist()
@@ -72,6 +84,32 @@ class HotelShow extends Component
         ]);
     }
 
+    public function selectRoomType($roomTypeId)
+    {
+        $this->selectedRoomType = $this->hotel->roomTypes->find($roomTypeId);
+    }
+
+    private function getMonthlyAvailability(Bookable $bookable): array
+    {
+        $start = Carbon::today();
+        $end = $start->copy()->addMonth();
+
+        $availability = [];
+        $date = $start->copy();
+
+        while ($date->lessThan($end)) {
+            $day = $date->toDateString();
+
+            // Check the availability of the entire hotel on this day.
+            // This assumes the Hotel's isAvailable method checks all its rooms.
+            $availability[$day] = $bookable->isAvailable($day, $date->copy()->addDay()->toDateString());
+
+            $date->addDay();
+        }
+
+        return $availability;
+    }
+
     public int $reviewPage = 1;
     public bool $hasMoreReviews = true;
 
@@ -79,7 +117,8 @@ class HotelShow extends Component
     {
     $perPage = 5;
 
-    $query = Review::where('reviewable_type', Hotel::class)
+    $query = Review::with(['guest'])
+        ->where('reviewable_type', Hotel::class)
         ->where('reviewable_id', $this->hotel->id)
         ->latest()
         ->skip(($this->reviewPage - 1) * $perPage)

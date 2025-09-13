@@ -21,6 +21,7 @@ return new class extends Migration
 
             // Business/Agency Details
             $table->string('agency_name')->nullable();
+            $table->string('bio')->nullable();
             $table->string('agency_license')->nullable(); // regulatory registration number
             $table->string('specialization')->nullable(); // e.g., Hotels, Tours, Flights, Cruises
 
@@ -39,7 +40,8 @@ return new class extends Migration
             $table->timestamp('verified_at')->nullable();
 
             // Relationship to User (optional, if they also log in as platform users)
-            $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
+            // Make user_id required and cascade on delete
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
 
             // Status
             $table->boolean('active')->default(true);

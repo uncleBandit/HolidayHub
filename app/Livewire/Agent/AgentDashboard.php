@@ -17,7 +17,10 @@ class AgentDashboard extends Component
     public $dateFrom = null;
     public $dateTo = null;
 
-    protected $queryString = ['search', 'status', 'dateFrom', 'dateTo'];
+    public $sortBy = 'created_at';
+    public $sortDirection = 'desc';
+
+    protected $queryString = ['search', 'status', 'dateFrom', 'dateTo', 'sortBy', 'sortDirection'];
 
     public function updated($property)
     {
@@ -26,20 +29,39 @@ class AgentDashboard extends Component
         }
     }
 
+    public function sort($field)
+    {
+        if ($this->sortBy === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortBy = $field;
+            $this->sortDirection = 'asc';
+        }
+    }
+
+    public function updateStatus($bookingId, $status)
+    {
+        $booking = Booking::findOrFail($bookingId);
+        $booking->update(['status' => $status]);
+
+        session()->flash('message', "Booking #{$booking->id} updated to {$status}");
+    }
+
     public function render()
     {
-        $bookings = Booking::with(['package', 'customer'])
+        $bookings = Booking::with(['bookable', 'guest'])
             ->when($this->search, fn($q) =>
-                $q->whereHas('customer', fn($c) =>
+                $q->whereHas('guest', fn($c) =>
                     $c->where('name', 'like', "%{$this->search}%")
-                )->orWhereHas('package', fn($p) =>
-                    $p->where('title', 'like', "%{$this->search}%")
+                )->orWhereHas('bookable', fn($b) =>
+                    $b->where('name', 'like', "%{$this->search}%")
+                      ->orWhere('title', 'like', "%{$this->search}%")
                 )
             )
             ->when($this->status, fn($q) => $q->where('status', $this->status))
             ->when($this->dateFrom, fn($q) => $q->whereDate('created_at', '>=', $this->dateFrom))
             ->when($this->dateTo, fn($q) => $q->whereDate('created_at', '<=', $this->dateTo))
-            ->orderBy('created_at', 'desc')
+            ->orderBy($this->sortBy, $this->sortDirection)
             ->paginate($this->perPage);
 
         $stats = [

@@ -9,6 +9,7 @@ use App\Models\Hotel;
 use App\Models\Amenity;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Str;
 
 class ProviderSeeder extends Seeder
 {
@@ -38,23 +39,16 @@ class ProviderSeeder extends Seeder
                 'company_name' => "Provider Company $i",
                 'phone' => '2547' . rand(10000000, 99999999),
                 'bio' => "We are Provider $i, delivering exceptional holiday experiences!",
+                'email'=>$user->email,
             ]);
 
-            // Optionally create demo hotels for each provider
-            for ($j = 1; $j <= 2; $j++) {
-                $hotel = Hotel::create([
-                    'provider_id' => $provider->id,
-                    'name' => "Hotel {$i}-{$j}",
-                    'location' => "City " . rand(1, 20),
-                    'description' => "Luxurious Hotel {$i}-{$j} for unforgettable stays.",
-                    'price_per_night' => rand(3000, 15000),
-                    'is_featured' => rand(0, 1),
-                ]);
-
-                // Assign random amenities to hotel
-                $amenities = Amenity::inRandomOrder()->take(rand(2, 5))->pluck('id');
-                $hotel->amenities()->sync($amenities);
+            $destinations = \App\Models\Destination::all();
+                if ($destinations->isEmpty()) {
+                $this->command->warn('⚠️ No destinations found. Hotels cannot be seeded.');
+                return;
             }
+
+            
         }
     }
 }

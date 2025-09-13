@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Livewire\Package;
+namespace App\Livewire\Package;
 
 use App\Models\Package;
 use Livewire\Component;
@@ -34,7 +34,7 @@ class PackageSearchList extends Component
 
     public function render()
     {
-        $query = Package::query()
+        $query = Package::with(['destination'])
             // Always filter by destination first
             ->where('destination_id', $this->destinationId)
             ->when($this->search, fn($q) =>

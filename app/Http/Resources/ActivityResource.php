@@ -15,62 +15,59 @@ class ActivityResource extends JsonResource
         return [
             // Core identifiers
             'id'          => $this->id,
-            'slug'        => $this->slug, // SEO-friendly unique identifier
-            'title'       => $this->title,
-            'short_title' => str($this->title)->limit(40),
+            'slug'        => $this->slug,
+            'title'       => $this->name, // DB column is `name`
+            'short_title' => str($this->name)->limit(40),
 
             // Rich descriptions
             'description' => $this->description,
-            'highlights'  => $this->highlights ?? [], // quick bullet points
-            'category'    => $this->category?->name,
-            'tags'        => $this->tags->pluck('name'),
+            'highlights'  => $this->highlights ?? [], // optional: add column (json) if needed
+            'category'    => $this->type, // DB column is `type`
+            'tags'        => collect($this->tags ?? []), // DB stores JSON
 
             // Pricing & booking info
             'price'       => [
-                'base'       => $this->price,
+                'base'       => $this->base_price,
                 'currency'   => $this->currency ?? 'USD',
-                'formatted'  => money_format('%.2n', $this->price),
-                'discount'   => $this->when($this->discount, $this->discount),
+                'formatted'  => number_format($this->base_price, 2) . ' ' . $this->currency,
+                'discount'   => $this->when($this->discount, $this->discount), // only if you add `discount` col
                 'is_on_sale' => (bool) $this->discount,
             ],
             'availability' => [
-                'next_available_date' => $this->nextAvailableDate(),
-                'spots_left'          => $this->spots_left,
-                'duration'            => $this->duration_text, // e.g. "3h 30m"
-                'is_sold_out'         => $this->isSoldOut(),
+                'next_available_date' => $this->available_from,
+                'available_until'     => $this->available_to,
+                'spots_left'          => $this->capacity ? max(0, $this->capacity - $this->bookings_count) : null,
+                'duration'            => $this->duration_minutes
+                    ? sprintf('%dh %02dm', intdiv($this->duration_minutes, 60), $this->duration_minutes % 60)
+                    : null,
+                'is_sold_out'         => $this->capacity !== null && $this->capacity <= $this->bookings_count,
             ],
 
             // Media
-            'cover_image' => $this->getFirstMediaUrl('cover'),
-            'gallery'     => $this->getMedia('gallery')->map(fn($m) => $m->getUrl()),
+            'cover_image' => $this->thumbnail,
+            'gallery'     => collect($this->gallery ?? []),
+            'video_url'   => $this->video_url,
 
-            // Location details
+            // Location details (via destination relation or columns if added later)
             'location' => [
-                'city'      => $this->city,
-                'country'   => $this->country,
-                'latitude'  => $this->latitude,
-                'longitude' => $this->longitude,
-                'map_url'   => "https://maps.google.com/?q={$this->latitude},{$this->longitude}",
+                'destination_id' => $this->destination_id,
+                'map_url'        => $this->destination?->latitude && $this->destination?->longitude
+                    ? "https://maps.google.com/?q={$this->destination->latitude},{$this->destination->longitude}"
+                    : null,
             ],
 
             // Reviews & ratings
             'rating' => [
-                'average'   => round($this->reviews_avg_rating, 1),
+                'average'   => round($this->rating, 1),
                 'count'     => $this->reviews_count,
-                'breakdown' => $this->reviews_breakdown, // e.g. {5: 120, 4: 32, 3: 10, ...}
-            ],
-
-            // Personalized / smart recommendations
-            'personalization' => [
-                'is_recommended'   => $this->when($request->user(), fn() => $this->isRecommendedFor($request->user())),
-                'match_score'      => $this->when($request->user(), fn() => $this->recommendationScoreFor($request->user())),
-                'similar_activities' => ActivityResource::collection($this->whenLoaded('similarActivities')),
+                'breakdown' => $this->reviews_breakdown ?? null, // add if you implement breakdown
             ],
 
             // System metadata
-            'status'    => $this->status,
-            'created_at' => $this->created_at->toIso8601String(),
-            'updated_at' => $this->updated_at->toIso8601String(),
+            'status'     => $this->is_active ? 'active' : 'inactive',
+            'is_featured'=> (bool) $this->is_featured,
+            'created_at' => $this->created_at?->toIso8601String(),
+            'updated_at' => $this->updated_at?->toIso8601String(),
 
             // API Links (HATEOAS style for next-gen API UX)
             'links' => [

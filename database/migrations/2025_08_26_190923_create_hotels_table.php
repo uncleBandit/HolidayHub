@@ -14,9 +14,7 @@ return new class extends Migration
         Schema::create('hotels', function (Blueprint $table) {
             $table->id();
             // Core hotel info
-            $table->foreignId('destination_id')
-                  ->constrained()
-                  ->cascadeOnDelete(); // Hotel belongs to a destination
+
             $table->string('name');
             $table->string('slug')->unique(); // SEO friendly URL
             $table->text('description')->nullable();
@@ -31,7 +29,7 @@ return new class extends Migration
             // Hotel features
             $table->unsignedTinyInteger('stars')->default(3); // 1–5 stars
             $table->boolean('is_featured')->default(false); // highlight in homepage
-            $table->json('amenities')->nullable(); // e.g. wifi, spa, pool
+            //$table->json('amenities')->nullable(); // e.g. wifi, spa, pool
             $table->json('policies')->nullable(); // check-in, check-out, cancellation rules
 
             // Media
@@ -46,6 +44,14 @@ return new class extends Migration
             $table->unsignedInteger('reviews_count')->default(0);
             $table->timestamps();
             $table->softDeletes();
+
+            // Relations
+            $table->foreignId('provider_id')
+                  ->constrained()
+                  ->cascadeOnDelete(); // Hotel belongs to a provider
+            $table->foreignId('destination_id')
+                  ->constrained()
+                  ->cascadeOnDelete(); // Hotel belongs to a destination
         });
     }
 

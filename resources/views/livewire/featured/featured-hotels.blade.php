@@ -1,7 +1,8 @@
 <div>
+<div>
     <!-- Sticky Search & Filter Bar -->
-    <div class="sticky top-0 z-20 bg-white/70 backdrop-blur-md py-6 px-4 rounded-b-3xl shadow-lg border-b border-gray-100 flex items-center justify-between space-x-4 mb-8">
-        <div class="relative w-1/3">
+    <div class="sticky top-0 z-20 bg-white/70 backdrop-blur-md py-6 px-4 rounded-b-3xl shadow-lg border-b border-gray-100 flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4 mb-8">
+        <div class="relative w-full md:w-1/3">
             <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                 <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M10 4a6 6 0 0 1 6 6c0 1.25-.33 2.4-.92 3.39l4.5 4.5a.75.75 0 0 1-1.06 1.06l-4.5-4.5A5.96 5.96 0 0 1 10 16a6 6 0 0 1 0-12zm0 1.5A4.5 4.5 0 0 0 5.5 10a4.5 4.5 0 0 0 9 0A4.5 4.5 0 0 0 10 5.5z" />
@@ -9,17 +10,43 @@
             </div>
             <input
                 type="text"
-                wire:model.debounce.300ms="search"
-                placeholder="Search hotels..."
+                wire:model.live.debounce.300ms="search"
+                placeholder="Search hotels by name or city..."
                 class="w-full pl-10 pr-4 py-3 rounded-full border-none bg-gray-100 focus:ring-2 focus:ring-tropical-blue focus:outline-none transition-colors duration-200 text-lg"
             >
         </div>
 
-        <select wire:model="sortBy" class="rounded-full border-none bg-gray-100 px-6 py-3 text-lg text-gray-700 focus:ring-2 focus:ring-tropical-blue focus:outline-none transition-colors duration-200">
-            <option value="rating">Top Rated</option>
-            <option value="stars">Star Ranking</option>
-            <option value="created_at">Newest</option>
-        </select>
+        <div class="flex items-center space-x-2">
+            @php
+                $sortOptions = [
+                    'rating' => 'Top Rated',
+                    'stars' => 'Star Ranking',
+                    'created_at' => 'Newest',
+                ];
+            @endphp
+            @foreach ($sortOptions as $key => $label)
+                <button
+                    wire:click="setSortBy('{{ $key }}')"
+                    class="rounded-full px-6 py-3 text-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-tropical-blue
+                    {{ $sortBy === $key ? 'bg-deep-ocean text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}"
+                >
+                    <span class="mr-2">{{ $label }}</span>
+                    @if ($sortBy === $key)
+                        @if ($direction === 'asc')
+                            <svg xmlns="http://www.w3.org/2000/svg" class="inline-block w-4 h-4 transform rotate-180" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 21.5l-8-8 1.5-1.5L12 18.5l6.5-6.5L20 13.5z"/>
+                                <path d="M12 10.5l-8-8 1.5-1.5L12 7.5l6.5-6.5L20 2.5z"/>
+                            </svg>
+                        @else
+                            <svg xmlns="http://www.w3.org/2000/svg" class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 21.5l-8-8 1.5-1.5L12 18.5l6.5-6.5L20 13.5z"/>
+                                <path d="M12 10.5l-8-8 1.5-1.5L12 7.5l6.5-6.5L20 2.5z"/>
+                            </svg>
+                        @endif
+                    @endif
+                </button>
+            @endforeach
+        </div>
     </div>
 
     <!-- Hotel Grid -->
@@ -34,11 +61,10 @@
                         {{ $hotel->discount_percentage }}% OFF
                     </div>
                 @endif
-                <img src="{{ $hotel->cover_image }}" onerror="this.onerror=null;this.src='https://placehold.co/600x400/D9F99D/FFFFFF?text=Hotel+Image';" class="w-full h-64 object-cover rounded-t-3xl">
+                <img src="{{ $hotel->cover_image }}" onerror="this.onerror=null;this.src='https://placehold.co/600x400/D9F99D/FFFFFF?text=Hotel+Image';" class="w-full h-64 object-cover rounded-t-3xl transition-transform duration-300">
                 <div class="p-6">
                     <h3 class="text-2xl font-bold mb-1 text-deep-ocean">{{ $hotel->name }}</h3>
                     <p class="text-gray-600 mb-4">{{ $hotel->city }}, {{ $hotel->country }}</p>
-
                     <div class="flex items-center justify-between">
                         <!-- Rating Stars -->
                         <div class="flex text-sunset-orange">
@@ -73,4 +99,6 @@
     <div class="mt-12">
         {{ $hotels->links() }}
     </div>
+</div>
+
 </div>

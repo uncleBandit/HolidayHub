@@ -41,7 +41,7 @@ class Review extends Model
     // Review belongs to a guest
     public function guest(): BelongsTo
     {
-        return $this->belongsTo(Guest::class);
+        return $this->belongsTo(Guest::class,'user_id');
     }
 
     // Review can belong to Hotel, Destination, Activity, etc.
@@ -74,5 +74,5 @@ class Review extends Model
             : $this->comment;
     }
 
-    
+
 }

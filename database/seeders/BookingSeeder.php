@@ -3,63 +3,64 @@
 namespace Database\Seeders;
 
 use App\Models\Booking;
+use App\Models\Guest;
 use App\Models\Hotel;
-use App\Models\Room;
-use App\Models\User;
+use App\Models\Villa;
+use App\Models\BedAndBreakfast;
 use Illuminate\Database\Seeder;
 use Carbon\Carbon;
 
 class BookingSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $users = User::all();
-        $hotels = Hotel::with('rooms')->get();
+        $guests = Guest::with('user')->get();
 
-        if ($users->isEmpty() || $hotels->isEmpty()) {
-            $this->command->warn('No users or hotels found. Please seed users and hotels first.');
+        $accommodations = collect()
+            ->merge(Hotel::with('rooms')->get())
+            ->merge(Villa::all())
+            ->merge(BedAndBreakfast::all());
+
+        if ($guests->isEmpty() || $accommodations->isEmpty()) {
+            $this->command->warn('No guests or accommodations found.');
             return;
         }
 
-        foreach ($users as $user) {
-            // Each user gets 1–5 bookings
+        foreach ($guests as $guest) {
             $bookingCount = rand(1, 5);
 
             for ($i = 0; $i < $bookingCount; $i++) {
-                $hotel = $hotels->random();
+                $accommodation = $accommodations->random();
 
-                // Skip hotels with no rooms
-                if ($hotel->rooms->isEmpty()) {
-                    continue;
-                }
-
-                $room = $hotel->rooms->random();
+                // If Hotel, pick a room
+                $room = $accommodation instanceof Hotel && $accommodation->rooms->isNotEmpty()
+                    ? $accommodation->rooms->random()
+                    : null;
 
                 $checkIn  = Carbon::today()->addDays(rand(1, 60));
                 $checkOut = (clone $checkIn)->addDays(rand(1, 10));
                 $nights   = $checkIn->diffInDays($checkOut);
 
-                $pricePerNight = $room->price_per_night ?? rand(50, 300);
+                $pricePerNight = $room->price_per_night ?? ($accommodation->price_per_night ?? rand(50, 300));
                 $totalAmount   = $pricePerNight * $nights;
 
-                Booking::factory()->create([
-                    'user_id'         => $user->id,
-                    'hotel_id'        => $hotel->id,
-                    'room_id'         => $room->id,
-                    'check_in_date'   => $checkIn,
-                    'check_out_date'  => $checkOut,
-                    'guests_adults'   => rand(1, 3),
-                    'guests_children' => rand(0, 2),
-                    'price_per_night' => $pricePerNight,
-                    'total_amount'    => $totalAmount,
-                    'status'          => ['confirmed', 'pending', 'cancelled'][rand(0, 2)],
-                ]);
+                Booking::factory()
+                    ->for($guest, 'guest')
+                    ->for($accommodation, 'bookable') // polymorphic relation
+                    ->create([
+                        'check_in_date'   => $checkIn,
+                        'check_out_date'  => $checkOut,
+                        'guests_adults'   => rand(1, 4),
+                        'guests_children' => rand(0, 3),
+                        'price_per_night' => $pricePerNight,
+                        'total_amount'    => $totalAmount,
+                        'status'          => 'pending',
+                        'payment_status'  => 'pending',
+                        'currency'        => 'USD',
+                    ]);
             }
         }
 
-        $this->command->info('Bookings seeded successfully!');
+        $this->command->info('✅ Polymorphic bookings seeded successfully for all guests!');
     }
 }

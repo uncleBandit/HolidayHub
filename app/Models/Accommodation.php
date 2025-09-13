@@ -70,4 +70,9 @@ class Accommodation extends Model
     {
         return $query->where('bookable_type', BedAndBreakfast::class);
     }
+
+     public function accommodationable()
+    {
+        return $this->morphTo(__FUNCTION__, 'accommodation_type', 'accommodation_id');
+    }
 }

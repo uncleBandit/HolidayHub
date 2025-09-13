@@ -1,70 +1,54 @@
 <?php
 
-use App\Http\Controllers\AdminController;
-use App\Http\Controllers\Api\AgentController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\ProviderController;
-use App\Http\Livewire\WelcomePage;
-use App\Livewire\Activity\ActivityShow;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\v1\ProfileController;
+use App\Livewire\Provider\ProviderDashboard;
+use App\Livewire\Package\PackageCreate;
+use App\Livewire\Dashboard\DashboardPage;
 use App\Livewire\Destination\DestinationShow;
 use App\Livewire\Hotel\HotelShow;
-use App\Models\Destination;
-use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-/**
-*Route::get('/', function () {
-  *  return Inertia::render('Welcome', [
-    *    'canLogin' => Route::has('login'),
-     *   'canRegister' => Route::has('register'),
-     *   'laravelVersion' => Application::VERSION,
-     *   'phpVersion' => PHP_VERSION,
-   * ]);
-*});
-**/
+use App\Livewire\Activity\ActivityShow;
+use App\Livewire\Agent\AgentDashboard;
+use App\Livewire\Agent\AgentPackages;
 
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Keep your web routes clean.
+| API controllers belong in routes/api.php.
+| Livewire and frontend pages stay here.
+|
+*/
 
-//Route::get('/', WelcomePage::class)->name('welcome');
+// Public pages
+Route::get('/', fn () => view('welcome'))->name('welcome');
+Route::get('/destination/{destination}', DestinationShow::class)->name('destination.show');
+Route::get('/hotel/{slug}', HotelShow::class)->name('hotel.show');
+Route::get('/activity/{slug}', ActivityShow::class)->name('activity.show');
 
-Route::get('/', fn () => view('welcome'));
-Route::get('/destination-page/{destination}', DestinationShow::class)
-    ->name('destination.show');
-    Route::get('/hotel/{slug}', HotelShow::class)
-    ->name('hotel.show');
-    Route::get('/activity/{slug}', ActivityShow::class)
-    ->name('activity.show');
+// Authenticated user pages
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Generic dashboard (for all users)
+    Route::get('/dashboard', DashboardPage::class)->name('dashboard');
 
-
-Route::middleware('auth')->group(function () {
+    // Profile routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::resource('hotels', \App\Http\Controllers\HotelController::class);
-    Route::resource('bookings', \App\Http\Controllers\BookingController::class);
-    Route::resource('offers', \App\Http\Controllers\OfferController::class);
-    Route::resource('reviews', \App\Http\Controllers\ReviewController::class);
-    Route::resource('rooms', \App\Http\Controllers\RoomController::class);
-    Route::resource('activities', \App\Http\Controllers\ActivityController::class);
-    Route::resource('destinations', \App\Http\Controllers\DestinationController::class);
-    Route::resource('packages', \App\Http\Controllers\PackageController::class);
-    Route::group(['middleware' => ['role:admin']], function () {
-    Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
+
+    // Agent routes
+    Route::prefix('agent')->name('agent.')->group(function () {
+        Route::get('/dashboard', AgentDashboard::class)->name('dashboard');
+        Route::get('/packages', AgentPackages::class)->name('packages');
+        Route::get('/packages/create', PackageCreate::class)->name('packages.create');
     });
 
-    Route::group(['middleware' => ['role:provider']], function () {
-    Route::get('/provider/dashboard', [ProviderController::class, 'dashboard']);
-    });
-
-    Route::group(['middleware' => ['role:agent']], function () {
-    Route::get('/agent/dashboard', [AgentController::class, 'dashboard']);
-    });
-
-
-
+    // Provider routes
+    Route::middleware(['auth', 'verified'])->prefix('provider')->name('provider.')->group(function () {
+    Route::get('/dashboard', ProviderDashboard::class)->name('dashboard');
+});
 });
 
 require __DIR__.'/auth.php';

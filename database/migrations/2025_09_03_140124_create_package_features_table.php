@@ -14,50 +14,29 @@ return new class extends Migration
         Schema::create('package_features', function (Blueprint $table) {
             $table->id();
 
-            // Core details
-            $table->string('title');
-            $table->string('slug')->unique(); // SEO-friendly URLs
+            // Polymorphic relation: can belong to packages, hotels, villas, tours, etc.
+            $table->unsignedBigInteger('featureable_id');
+            $table->string('featureable_type');
+
+            // Feature details
+            $table->string('name');              // e.g. "Free Airport Pickup"
+            $table->string('icon')->nullable(); // Optional icon reference
+            $table->string('category')->nullable(); // e.g. Meals, Activities, Transport
             $table->text('description')->nullable();
 
-            // Destination / location
-            $table->string('destination')->index(); // e.g., "Mombasa, Kenya"
-            $table->string('country')->nullable()->index();
+            // Marketing/UX
+            $table->boolean('is_highlighted')->default(false);
 
-            // Pricing
-            $table->decimal('price', 10, 2)->index(); // supports filtering/sorting
-            $table->string('currency', 3)->default('USD');
-            $table->decimal('discount_price', 10, 2)->nullable(); // optional promo price
+            // Flexible structured data
+            $table->json('metadata')->nullable();
 
-            // Duration & availability
-            $table->unsignedInteger('duration_days')->default(1);
-            $table->date('start_date')->nullable()->index();
-            $table->date('end_date')->nullable()->index();
-
-            // Capacity
-            $table->unsignedInteger('max_guests')->nullable();
-
-            // Relations
-            $table->foreignId('agent_id')
-                ->nullable()
-                ->constrained()
-                ->cascadeOnDelete();
-
-            $table->foreignId('provider_id')
-                ->nullable()
-                ->constrained()
-                ->cascadeOnDelete();
-
-            // Media
-            $table->string('image_url')->nullable(); // cover image
-
-            // Status
-            $table->enum('status', ['draft', 'published', 'archived'])
-                ->default('draft')
-                ->index();
-
-            // Search/filter enhancements
-            $table->json('tags')->nullable(); // e.g., ["beach", "family", "luxury"]
             $table->timestamps();
+            $table->softDeletes();
+
+            // Indexes for performance
+            $table->index(['featureable_id', 'featureable_type']);
+            $table->index(['category']);
+            $table->index(['is_highlighted']);
         });
     }
 

@@ -11,18 +11,28 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Core amenities table
         Schema::create('amenities', function (Blueprint $table) {
-                 $table->id();
-            $table->string('name');       // e.g. "Free WiFi"
-            $table->string('icon')->nullable(); // optional (for frontend display)
+            $table->id();
+            $table->string('name')->index();            // e.g. "Free WiFi"
+            $table->string('slug')->unique();           // SEO friendly URL
+            $table->string('icon')->nullable();         // optional icon for frontend
+            $table->text('description')->nullable();    // optional details
+            $table->enum('type', ['general', 'hotel', 'room', 'package', 'villa'])->default('hotel'); // flexibility for types
+            $table->boolean('active')->default(true);   // enable/disable without deleting
             $table->timestamps();
         });
 
-        Schema::create('amenity_hotel', function (Blueprint $table) {
+        // Polymorphic pivot table for amenities
+        Schema::create('amenables', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('hotel_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('amenity_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('amenity_id')
+                ->constrained()
+                ->cascadeOnDelete();
+            $table->morphs('amenable'); // supports hotel, package, room, villa
             $table->timestamps();
+
+            $table->unique(['amenity_id', 'amenable_type', 'amenable_id'], 'amenable_unique');
         });
     }
 
@@ -31,6 +41,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('amenables');
         Schema::dropIfExists('amenities');
     }
 };

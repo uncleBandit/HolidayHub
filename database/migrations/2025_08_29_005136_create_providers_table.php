@@ -14,10 +14,11 @@ return new class extends Migration
         Schema::create('providers', function (Blueprint $table) {
             $table->id();
             // Core Identity
-            $table->string('name'); // Hotel/BnB name or Provider brand
+            $table->string('company_name'); // Provider brand
             $table->string('contact_person')->nullable();
             $table->string('email')->unique();
             $table->string('phone')->nullable()->unique();
+            $table->text('bio')->nullable()->after('phone');
 
             // Business Details
             $table->string('business_license')->nullable();
@@ -37,8 +38,8 @@ return new class extends Migration
             $table->boolean('is_verified')->default(false);
             $table->timestamp('verified_at')->nullable();
 
-            // Relationship to User (if providers log in)
-            $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
+            // Make user_id required and cascade on delete
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
 
             // Status
             $table->boolean('active')->default(true);

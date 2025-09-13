@@ -45,7 +45,7 @@ class Agent extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     /**
@@ -77,6 +77,13 @@ class Agent extends Model
      */
     public function testimonials(): MorphMany
     {
-        return $this->morphMany(Testimonial::class, 'testimonialable');
+        return $this->morphMany(Review::class, 'testimonialable');
+    }
+    /**
+     * Packages offered by this agent.
+     */
+    public function packages(): HasMany
+    {
+        return $this->hasMany(Package::class);
     }
 }

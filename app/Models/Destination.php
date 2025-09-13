@@ -38,10 +38,15 @@ class Destination extends Model
     /**
      * Casts for JSON fields & structured data.
      */
+    /**
+     * Casts for JSON fields & structured data.
+     */
     protected $casts = [
-        'highlights' => 'array',
-        'gallery'    => 'array',
-        'meta_data'  => 'array',
+        'highlights'   => 'array',
+        'gallery'      => 'array',
+        'meta_data'    => 'array',
+        'tags'         => 'array', 
+        'average_cost' => 'double',
     ];
 
     /**
@@ -105,5 +110,5 @@ class Destination extends Model
     {
     return $this->accommodations()->where('bookable_type', BedAndBreakfast::class);
     }
-    
+
 }

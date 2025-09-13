@@ -18,7 +18,8 @@ return new class extends Migration
             $table->string('last_name');
             $table->string('email')->unique();
             $table->string('phone')->nullable();
-            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
+            // Make user_id required and cascade on delete
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
 
             // Demographics
             $table->date('date_of_birth')->nullable();

@@ -2,14 +2,19 @@
 
 namespace App\Models;
 
+use App\Contracts\Interface\Bookable;
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 
-class Hotel extends Model
+class Hotel extends Model implements Bookable
 {
     use HasFactory, SoftDeletes;
 
@@ -21,47 +26,47 @@ class Hotel extends Model
         'country',
         'latitude',
         'longitude',
-        'rating',          // average guest rating
-        'stars',           // 1–5 star system
+        'rating',
+        'stars',
         'email',
         'phone',
-        'amenities',       // JSON or relation
-        'policies',        // e.g. check-in/out, cancellations
+        'policies',
         'cover_image',
-        'status',          // active, inactive, under_review
-        'is_featured'=> 'boolean',
+        'status',
+        'is_featured' => 'boolean',
     ];
 
     protected $casts = [
-        'amenities' => 'array',
         'policies' => 'array',
-        'rating'   => 'float',
+        'rating' => 'float',
         'latitude' => 'float',
-        'longitude'=> 'float',
+        'longitude' => 'float',
     ];
 
     /** Relationships */
-    public function rooms()
+    public function rooms(): HasMany
     {
         return $this->hasMany(Room::class);
     }
 
-    public function bookings()
+    public function roomTypes(): HasMany
+    {
+        return $this->hasMany(RoomType::class);
+    }
+
+    public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
     }
 
-    /**
-     * A Hotel can have many images.
-     */
-    public function images()
+    public function images(): MorphMany
     {
         return $this->morphMany(Image::class, 'imageable');
     }
 
     public function reviews(): MorphMany
     {
-    return $this->morphMany(Review::class, 'reviewable');
+        return $this->morphMany(Review::class, 'reviewable');
     }
 
     public function manager()
@@ -69,68 +74,145 @@ class Hotel extends Model
         return $this->belongsTo(Provider::class, 'manager_id');
     }
 
-    // Polymorphic link back to Accommodation
     public function accommodation(): MorphOne
     {
         return $this->morphOne(Accommodation::class, 'bookable');
     }
 
-    public function hotelAmenities()
+    public function amenities(): MorphToMany
     {
-    return $this->belongsToMany(Amenity::class, 'amenity_hotel', 'hotel_id', 'amenity_id');
+        return $this->morphToMany(
+            Amenity::class,
+            'amenable',
+            'amenables',
+            'amenable_id',
+            'amenity_id'
+        );
     }
-
 
     public function wishlistedByUsers()
     {
-    return $this->belongsToMany(Guest::class, 'hotel_user_wishlist')
-        ->withTimestamps()
-        ->withPivot('added_at');
+        return $this->belongsToMany(Guest::class, 'hotel_user_wishlist')
+            ->withTimestamps()
+            ->withPivot('added_at');
+    }
+
+    /**
+     * Get the provider that owns the hotel.
+     */
+    public function provider()
+    {
+        return $this->belongsTo(Provider::class);
+    }
+
+    public function destination()
+    {
+        return $this->belongsTo(Destination::class);
     }
 
 
-    /**
-     * Get availability for each day in the next month.
-     *
-     * @return array<string, int>  // e.g. ['2025-09-01' => 3, '2025-09-02' => 5]
-     */
-    public function getAvailabilityForNextMonth(): array
+    public function offers(): MorphMany
     {
-        $start = Carbon::today();
-        $end   = $start->copy()->addMonth();
+        return $this->morphMany(Offer::class, 'offerable');
+    }
 
-        $availability = [];
+    /**
+     * Get the currency for the bookable item.
+     *
+     * @inheritDoc
+     */
+    public function getCurrency(): string
+    {
+        return 'USD';
+    }
 
-        // get all room ids for this hotel
-        $roomIds = $this->rooms()->pluck('id');
+    /**
+     * Get the default number of guests for this bookable item.
+     * This method is required by the Bookable interface.
+     */
+    public function getDefaultMaxGuests(): int
+    {
+        return 2;
+    }
 
-        // if hotel has no rooms, return empty availability
-        if ($roomIds->isEmpty()) {
-            return [];
+
+
+    /** Bookable Interface Methods */
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    public function getType(): string
+    {
+        return 'hotel';
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getDescription(): string
+    {
+        return $this->description;
+    }
+
+    public function getImages(): array
+    {
+        return $this->images->pluck('path')->toArray();
+    }
+
+    public function getBasePrice(): float
+    {
+        // Get the minimum price of all room types associated with this hotel.
+        // This makes sense as a hotel's "base price" is often its cheapest room.
+        return (float) $this->roomtypes()->min('price_per_night');
+    }
+
+    public function getPriceForDate(string $date): float
+    {
+        // For a more advanced system, you would check for special pricing
+        // or promotions on this specific date. For now, we'll return the base price.
+        return (float) $this->roomTypes()->min('price_per_night');
+    }
+
+     /**
+     * Checks if the hotel has at least one available room for the given date range.
+     */
+    public function isAvailable(string $checkIn, string $checkOut): bool
+    {
+        // Check each room type for availability. The logic is delegated to the RoomType model.
+        foreach ($this->roomTypes as $roomType) {
+            if ($roomType->isAvailable($checkIn, $checkOut)) {
+                return true; // A single available room type means the hotel is available.
+            }
         }
 
-        // iterate through each day
-        $date = $start->copy();
-        while ($date->lessThan($end)) {
-            $day = $date->toDateString();
+        return false;
+    }
 
-            // total rooms
-            $totalRooms = $this->rooms()->count();
 
-            // rooms already booked for this day
-            $bookedRooms = \App\Models\Booking::query()
-                ->whereIn('room_id', $roomIds)
-                ->whereDate('check_in', '<=', $day)
-                ->whereDate('check_out', '>', $day)
-                ->count();
 
-            // remaining availability
-            $availability[$day] = max(0, $totalRooms - $bookedRooms);
+    /**
+     * Get the associated availabilities.
+     *
+     * @return MorphMany
+     */
+    public function availabilities(): MorphMany
+    {
+        return $this->morphMany(Availability::class, 'bookable');
+    }
 
-            $date->addDay();
-        }
+     public function seasonalRates(): MorphMany
+    {
+        return $this->morphMany(SeasonalRate::class, 'seasonal_rateable');
+    }
 
-        return $availability;
+
+    public function getIncludedGuests(): int
+    {
+        return $this->max_guests ?? 2;
     }
 
 

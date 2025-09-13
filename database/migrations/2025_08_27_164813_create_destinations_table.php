@@ -45,6 +45,7 @@ return new class extends Migration
             $table->string('meta_title')->nullable();
             $table->string('meta_description')->nullable();
             $table->json('tags')->nullable();
+            $table->json('meta_data')->nullable(); // Additional SEO metadata
 
             $table->timestamps();
             $table->softDeletes();
