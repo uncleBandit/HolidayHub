@@ -21,7 +21,7 @@ class RoomFactory extends Factory
         return [
             'name' => $this->faker->unique()->words(2, true) . ' Room',
             'room_type_id' => RoomType::factory(),
-            'room_number' => $this->faker->unique()->numberBetween(100, 500),
+            'room_number' => $this->faker->numberBetween(100, 500),
             'hotel_id' => null, // This will be handled in the seeder
             'is_available' => true,
         ];

@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-use App\Contracts\Interface\Bookable;
+use App\Contracts\Bookable;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -74,10 +75,7 @@ class Hotel extends Model implements Bookable
         return $this->belongsTo(Provider::class, 'manager_id');
     }
 
-    public function accommodation(): MorphOne
-    {
-        return $this->morphOne(Accommodation::class, 'bookable');
-    }
+
 
     public function amenities(): MorphToMany
     {
@@ -105,9 +103,16 @@ class Hotel extends Model implements Bookable
         return $this->belongsTo(Provider::class);
     }
 
-    public function destination()
+    public function destination(): HasOneThrough
     {
-        return $this->belongsTo(Destination::class);
+        return $this->hasOneThrough(
+            Destination::class,
+            Accommodation::class,
+            'bookable_id',      // Foreign key on accommodations table
+            'id',               // Foreign key on destinations table
+            'id',               // Local key on hotels table
+            'destination_id'    // Local key on accommodations table
+        )->where('bookable_type', self::class);
     }
 
 
@@ -215,5 +220,9 @@ class Hotel extends Model implements Bookable
         return $this->max_guests ?? 2;
     }
 
+    public function accommodation(): MorphOne
+    {
+        return $this->morphOne(Accommodation::class, 'bookable');
+    }
 
 }

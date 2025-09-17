@@ -50,10 +50,19 @@ class FeaturedDestinations extends Component
         // Fetch destinations from the cache or the database
         $destinations = Cache::remember($cacheKey, now()->addMinutes(10), function () {
             return Destination::query()
-                ->when($this->search, fn ($q) =>
-                    $q->where('name', 'like', "%{$this->search}%")
-                        ->orWhere('description', 'like', "%{$this->search}%")
-                )
+                ->when(empty($this->search), function ($query) {
+                    // No search → only featured destinations
+                    $query->where('is_featured', true);
+                })
+                ->when($this->search, function ($query) {
+                    // Search applied → search across all destinations
+                    $query->where(function ($q) {
+                        $q->where('name', 'like', "%{$this->search}%")
+                          ->orWhere('description', 'like', "%{$this->search}%")
+                          ->orWhere('location', 'like', "%{$this->search}%");
+                    });
+                })
+                ->orderByDesc('is_featured')
                 ->orderBy($this->sortBy, $this->direction)
                 ->paginate($this->perPage);
         });

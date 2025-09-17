@@ -19,6 +19,7 @@ class ProviderFactory extends Factory
     {
         return [
             // Core Identity
+            'user_id' => User::factory(),
             'company_name'   => $this->faker->company . ' Holidays',
             'contact_person' => $this->faker->name,
             'email'          => $this->faker->unique()->companyEmail,
@@ -43,7 +44,7 @@ class ProviderFactory extends Factory
             'is_verified' => $this->faker->boolean(70), // 70% chance verified
             'verified_at' => $this->faker->optional()->dateTimeBetween('-2 years', 'now'),
 
-       
+
 
             // Status
             'active' => $this->faker->boolean(90), // 90% active

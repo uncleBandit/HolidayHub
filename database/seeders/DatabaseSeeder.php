@@ -20,8 +20,11 @@ class DatabaseSeeder extends Seeder
              $this->logSection('Providers');
             $this->call(ProviderSeeder::class);
 
-               $this->logSection('Agents');
+            $this->logSection('Agents');
             $this->call(AgentSeeder::class);
+
+            $this->logSection('Amenities');
+            $this->call(AmenitySeeder::class);
 
             $this->logSection('Destinations');
             $this->call(DestinationSeeder::class);
@@ -29,24 +32,15 @@ class DatabaseSeeder extends Seeder
             $this->logSection('Guests');
             $this->call(GuestSeeder::class);
 
-            $this->logSection('Amenities');
-            $this->call(AmenitySeeder::class);
-
-            $this->logSection('Hotels');
-            $this->call(HotelSeeder::class);
-
-            $this->logSection('Bed & Breakfasts');
-            $this->call(BedAndBreakfastSeeder::class);
-
-            $this->logSection('Villas');
-            $this->call(VillaSeeder::class);
-
-            $this->logSection('Packages');
-            $this->call(PackageSeeder::class);
-
             $this->logSection('Bookings & Reviews');
             $this->call(BookingSeeder::class);
             $this->call(ReviewSeeder::class);
+
+            $this->logSection('Offers');
+            $this->call(OfferSeeder::class);
+
+            $this->logSection('Activities');
+            $this->call(ActivitySeeder::class);
 
             $this->command->info('✅ Database seeded successfully with realistic holiday booking data!');
         } catch (\Throwable $e) {

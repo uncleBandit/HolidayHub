@@ -2,91 +2,186 @@
 
 namespace App\Models;
 
+use App\Contracts\Bookable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Str;
 
-class Activity extends Model
+class Activity extends Model implements Bookable
 {
     use HasFactory, SoftDeletes;
 
     /**
-     * Mass assignable fields for clarity & security.
+     * The attributes that are mass assignable.
+     *
+     * @var array
      */
     protected $fillable = [
+        'hotel_id',
+        'provider_id',
         'destination_id',
-        'title',
+        'name',
         'slug',
+        'type',
         'description',
-        'category',        // e.g. adventure, culture, relaxation
-        'highlights',      // JSON (array of features)
-        'duration',        // in hours or "Half-day", "Full-day"
-        'start_time',      // nullable if flexible
-        'end_time',
-        'price',
+        'thumbnail',
+        'gallery',
+        'video_url',
+        'meta_title',
+        'meta_description',
+        'tags',
+        'base_price',
         'currency',
-        'max_group_size',
-        'availability',    // JSON e.g. ["Mon", "Wed", "Fri"]
-        'cover_image',
-        'gallery',         // JSON array of image URLs
-        'meta_data',       // flexible SEO or extra attributes
+        'duration_minutes',
+        'capacity',
+        'min_age',
+        'max_age',
+        'is_featured',
+        'is_active',
+        'available_from',
+        'available_to',
+        'rating',
+        'reviews_count',
+        'bookings_count',
     ];
 
     /**
-     * Cast JSON fields.
+     * The attributes that should be cast to native types.
+     *
+     * @var array
      */
     protected $casts = [
-        'highlights'   => 'array',
-        'gallery'      => 'array',
-        'availability' => 'array',
-        'meta_data'    => 'array',
+        'gallery' => 'array',
+        'tags' => 'array',
+        'base_price' => 'decimal:2',
+        'rating' => 'decimal:2',
+        'is_featured' => 'boolean',
+        'is_active' => 'boolean',
+        'available_from' => 'date',
+        'available_to' => 'date',
     ];
 
     /**
+     * Boot the model.
+     */
+    protected static function booted(): void
+    {
+        // Generate a unique slug before saving the model.
+        static::creating(function (Activity $activity) {
+            $activity->slug = Str::slug($activity->name);
+        });
+    }
+
+    /*
+     * Implementation of the Bookable interface.
+     */
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    public function getType(): string
+    {
+        return 'activity';
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getDescription(): string
+    {
+        return $this->description;
+    }
+
+    public function getImages(): array
+    {
+        return $this->gallery ?? [];
+    }
+
+    public function getBasePrice(): float
+    {
+        return $this->base_price;
+    }
+
+    public function getCurrency(): string
+    {
+        return $this->currency;
+    }
+
+    public function getCapacity(): int
+    {
+        return $this->capacity;
+    }
+
+    public function getPriceForDate(string $date): float
+    {
+        // Implement logic for dynamic pricing based on date.
+        // For now, return the base price.
+        return $this->base_price;
+    }
+
+    public function isAvailable(string $checkIn, string $checkOut): bool
+    {
+        // Implement availability logic based on dates and capacity.
+        // For now, assume it's always available within the general range.
+        return true;
+    }
+
+    /*
      * Relationships
      */
-
-    // Belongs to a destination
     public function destination(): BelongsTo
     {
         return $this->belongsTo(Destination::class);
     }
 
-    // An activity can have many reviews
-    public function reviews(): MorphMany
+    public function provider(): BelongsTo
     {
-    return $this->morphMany(Review::class, 'reviewable');
+        return $this->belongsTo(Provider::class);
     }
 
-    // An activity can have many bookings
+    public function hotel(): BelongsTo
+    {
+        return $this->belongsTo(Hotel::class);
+    }
+
+    public function reviews(): MorphMany
+    {
+        return $this->morphMany(Review::class, 'reviewable');
+    }
+
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
     }
 
-    /**
-     * Computed / accessors
-     */
-
-    // Average rating from reviews
-    public function getAverageRatingAttribute(): ?float
+    public function availabilities(): Relation
     {
-        return $this->reviews()->avg('rating');
+        // Assuming you have an 'Availabilities' model for tracking.
+        return $this->hasMany(Availability::class);
     }
 
-    // Check if activity is available on a given day
-    public function isAvailableOn(string $day): bool
+    public function offers(): MorphMany
     {
-        return in_array($day, $this->availability ?? [], true);
+        return $this->morphMany(Offer::class, 'offerable');
     }
 
-    // Check if spots are available for booking
-    public function hasCapacity(int $people): bool
+    public function getIncludedGuests(): int
     {
-        $booked = $this->bookings()->whereDate('date', today())->sum('people_count');
-        return $booked + $people <= $this->max_group_size;
+        // Assuming activities include 1 guest by default.
+        return 1;
+    }
+
+    public function getDefaultMaxGuests(): int
+    {
+        return $this->capacity ?? 1;
     }
 }

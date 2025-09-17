@@ -4,7 +4,8 @@ namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
-use App\Models\Destination;
+use App\Models\Hotel;
+use App\Models\Provider;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Hotel>
@@ -12,18 +13,27 @@ use App\Models\Destination;
 class HotelFactory extends Factory
 {
     /**
+     * The name of the factory's corresponding model.
+     *
+     * @var string
+     */
+    protected $model = Hotel::class;
+
+    /**
      * Define the model's default state.
+     *
+     * The HotelFactory should no longer know about a Destination.
+     * The destination relationship is handled by the AccommodationFactory.
      *
      * @return array<string, mixed>
      */
     public function definition(): array
     {
         $originalPrice = $this->faker->numberBetween(80, 500);
-        $discount = $this->faker->boolean(70) ? $this->faker->numberBetween(5, 40) : 0; // 70% chance
+        $discount = $this->faker->boolean(70) ? $this->faker->numberBetween(5, 40) : 0;
         $finalPrice = $originalPrice - ($originalPrice * $discount / 100);
 
         return [
-            'destination_id' => Destination::factory(),
             'name' => $this->faker->company() . ' Hotel',
             'slug' => Str::slug($this->faker->unique()->company() . '-hotel'),
             'description' => $this->faker->paragraph(5),
@@ -43,6 +53,10 @@ class HotelFactory extends Factory
             'avg_price_per_night' => round($finalPrice, 2),
             'avg_rating' => $this->faker->randomFloat(1, 2.5, 5.0),
             'reviews_count' => $this->faker->numberBetween(10, 2000),
+            'provider_id' =>  Provider::factory(), // A default value if not provided
+
+            // The destination_id is no longer needed on the Hotel model.
+            // This is now on the `accommodations` table.
         ];
     }
 }

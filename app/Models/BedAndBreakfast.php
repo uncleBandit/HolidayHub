@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
-use App\Contracts\Interface\Bookable;
+use App\Contracts\Bookable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -55,9 +56,16 @@ class BedAndBreakfast extends Model implements Bookable
      *
      * @return BelongsTo
      */
-    public function destination(): BelongsTo
+    public function destination(): HasOneThrough
     {
-        return $this->belongsTo(Destination::class);
+        return $this->hasOneThrough(
+            Destination::class,
+            Accommodation::class,
+            'bookable_id',      // Foreign key on accommodations table
+            'id',               // Foreign key on destinations table
+            'id',               // Local key on hotels table
+            'destination_id'    // Local key on accommodations table
+        )->where('bookable_type', self::class);
     }
 
     /**
@@ -273,5 +281,5 @@ class BedAndBreakfast extends Model implements Bookable
         return $this->morphMany(SeasonalRate::class, 'seasonal_rateable');
     }
 
-    
+
 }

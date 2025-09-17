@@ -13,14 +13,26 @@ class DestinationShow extends Component
     public string $activeTab = 'overview';
     public int $perPage = 6;
 
+
     public function mount(Destination $destination)
     {
-    $this->destination = $destination->load([
-        'accommodations.bookable,destination_id,name,price_range,cover_image,availability',
-        'activities:id,destination_id,title,price,duration,cover_image',
-        'reviews:id,reviewable_id,reviewable_type,user_id,rating,comment',
-        'reviews.guest:id,name,avatar','accommodations', 'activities', 'reviews'
-    ]);
+        // Eager-load all relationships the view will need.
+        $this->destination = $destination->load([
+            'accommodations.bookable.reviews',
+            'hotels',
+            'bedAndBreakfasts',
+            'activities',
+            'reviews.guest'
+        ])->loadCount([
+            'accommodations as hotels_count',
+            'accommodations as bnb_count',
+            'activities',
+            'reviews'
+        ])->loadAvg('reviews', 'rating');
+
+        // Filter accommodations for hotels and bnb
+        $this->destination->hotels = $this->destination->accommodations->where('bookable_type', \App\Models\Hotel::class);
+        $this->destination->bedAndBreakfasts = $this->destination->accommodations->where('bookable_type', \App\Models\BedAndBreakfast::class);
     }
 
     public function switchTab($tab)
@@ -28,11 +40,30 @@ class DestinationShow extends Component
         $this->activeTab = $tab;
     }
 
+    // app/Livewire/Destination/DestinationShow.php
+
     public function render()
     {
+        // Get the eager-loaded accommodations collection
+        $accommodations = $this->destination->accommodations;
+
+        // Manually paginate the collection
+        $currentPage = $this->getPage();
+        $pagedData = $accommodations->slice(($currentPage - 1) * $this->perPage, $this->perPage)->values();
+
+        $paginatedAccommodations = new \Illuminate\Pagination\LengthAwarePaginator(
+            $pagedData,
+            $accommodations->count(),
+            $this->perPage,
+            $currentPage,
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+        );
+
+        // Pass the paginated collections and the destination model to the view.
         return view('livewire.destination.destination-show', [
-            'accommodations' => $this->destination->accommodations()->paginate($this->perPage),
+            'accommodations' => $paginatedAccommodations,
             'activities' => $this->destination->activities()->paginate($this->perPage),
         ]);
     }
+
 }

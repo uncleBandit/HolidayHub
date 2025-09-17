@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Contracts\Interface\Bookable;
+use App\Contracts\Bookable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -171,23 +171,26 @@ class Package extends Model implements Bookable
     }
 
     /**
-     * @inheritDoc
+     * Check availability by ensuring package date window + booking conflicts.
      */
     public function isAvailable(string $checkIn, string $checkOut): bool
     {
         $startDate = Carbon::parse($checkIn);
-        $endDate = Carbon::parse($checkOut);
+        $endDate   = Carbon::parse($checkOut);
 
-        // Check if the requested dates fall within the package's overall availability window.
         if ($startDate->lessThan($this->start_date) || $endDate->greaterThan($this->end_date)) {
             return false;
         }
 
-        // Check if there are any existing bookings for the package within the date range
-        // that would make it unavailable (e.g., if there is a 'max_guests' limit).
-        // For this example, we assume unlimited availability, but in a real-world scenario
-        // you would check against the 'max_guests' and the number of current bookings.
-        return true;
+        // Check overlapping bookings (respecting max guests)
+        $overlapping = $this->bookings()
+            ->where(function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('check_in', [$startDate, $endDate])
+                    ->orWhereBetween('check_out', [$startDate, $endDate]);
+            })
+            ->count();
+
+        return $overlapping < $this->max_guests;
     }
 
     /**
@@ -236,4 +239,29 @@ class Package extends Model implements Bookable
         return $this->morphMany(SeasonalRate::class, 'seasonal_rateable');
     }
 
+    /**
+     * Calculate dynamic price based on date range, seasonal rates & guests.
+     */
+    public function calculateDynamicPrice(Carbon $checkIn, Carbon $checkOut, int $guests = 1): float
+    {
+        $days = $checkIn->diffInDays($checkOut);
+
+        $total = 0;
+
+        $date = $checkIn->copy();
+        while ($date->lessThan($checkOut)) {
+            $dayPrice = $this->getPriceForDate($date->toDateString());
+
+            // Add guest surcharges
+            if ($guests > $this->max_guests) {
+                $extraGuests = $guests - $this->max_guests;
+                $dayPrice += $extraGuests * ($this->price * 0.1); // 10% surcharge per extra guest
+            }
+
+            $total += $dayPrice;
+            $date->addDay();
+        }
+
+        return $total;
+    }
 }

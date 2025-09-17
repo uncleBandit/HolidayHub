@@ -4,7 +4,7 @@
 
 namespace App\Models;
 
-use App\Contracts\Interface\Bookable;
+use App\Contracts\Bookable;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

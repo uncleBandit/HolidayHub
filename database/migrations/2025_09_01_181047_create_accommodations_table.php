@@ -13,25 +13,19 @@ return new class extends Migration
     {
         Schema::create('accommodations', function (Blueprint $table) {
             $table->id();
-            // Core details
-            $table->string('name');
-            $table->text('description')->nullable();
-
             // Relations
             $table->foreignId('destination_id')
                   ->constrained()
                   ->cascadeOnDelete();
 
             $table->foreignId('provider_id')
-                  ->nullable()
                   ->constrained()
-                  ->nullOnDelete(); // provider can be optional
+                  ->cascadeOnDelete(); // A provider is required
 
             // Polymorphic relation: links to hotels, bnbs, villas, etc.
-            $table->string('accommodation_type'); // e.g. Hotel, BnB, Villa
-            $table->unsignedBigInteger('accommodation_id');
+            $table->morphs('bookable');
 
-            // Common attributes for faster filtering
+            // Common attributes for faster filtering and display
             $table->boolean('is_featured')->default(false);
             $table->decimal('avg_price_per_night', 10, 2)->nullable();
             $table->decimal('avg_rating', 3, 2)->default(0.00);
@@ -40,8 +34,8 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            // Indexes for performance
-            $table->index(['accommodation_type', 'accommodation_id']);
+            // Indexes for performance on polymorphic relations
+          //  $table->index(['bookable_type', 'bookable_id']);
         });
     }
 

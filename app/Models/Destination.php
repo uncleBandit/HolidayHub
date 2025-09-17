@@ -45,7 +45,7 @@ class Destination extends Model
         'highlights'   => 'array',
         'gallery'      => 'array',
         'meta_data'    => 'array',
-        'tags'         => 'array', 
+        'tags'         => 'array',
         'average_cost' => 'double',
     ];
 
@@ -70,6 +70,12 @@ class Destination extends Model
     {
     return $this->morphMany(Review::class, 'reviewable');
     }
+
+     public function packages(): HasMany
+    {
+        return $this->hasMany(Package::class);
+    }
+
 
     // A destination can belong to a region/parent destination (hierarchy)
     public function parent(): BelongsTo
@@ -109,6 +115,11 @@ class Destination extends Model
     public function bedAndBreakfasts()
     {
     return $this->accommodations()->where('bookable_type', BedAndBreakfast::class);
+    }
+
+     public function villas()
+    {
+        return $this->accommodations()->where('bookable_type', Villa::class);
     }
 
 }

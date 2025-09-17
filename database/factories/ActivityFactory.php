@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Activity;
 use App\Models\Destination;
 use App\Models\Hotel;
+use App\Models\Provider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -23,40 +24,53 @@ class ActivityFactory extends Factory
     public function definition(): array
     {
         $startDate = $this->faker->dateTimeBetween('now', '+3 months');
-        $endDate = (clone $startDate)->modify('+'.rand(1, 8).' hours');
+        $endDate = (clone $startDate)->modify('+' . rand(1, 8) . ' hours');
+        $name = $this->faker->sentence(3);
 
-        // Generate gallery images
         $gallery = [
-            "https://source.unsplash.com/800x600/?activity," . $this->faker->word(),
-            "https://source.unsplash.com/800x600/?tour," . $this->faker->word(),
+            $this->faker->imageUrl(800, 600, 'activity', true, 'activity'),
+            $this->faker->imageUrl(800, 600, 'tour', true, 'tour'),
+            $this->faker->imageUrl(800, 600, 'experience', true, 'experience'),
         ];
 
         $basePrice = $this->faker->randomFloat(2, 20, 500);
         $currency = $this->faker->randomElement(['USD', 'EUR', 'GBP', 'KES']);
 
         return [
+            // Relationships
+            'provider_id' => Provider::factory(),
             'destination_id' => Destination::factory(),
-            'hotel_id' => $this->faker->boolean(50) ? Hotel::factory() : null, // 50% chance linked to hotel
-            'name' => $this->faker->sentence(3),
-            'slug' => Str::slug($this->faker->unique()->sentence(3)),
+            'hotel_id' => $this->faker->boolean(50) ? Hotel::factory() : null,
+
+            // Core details
+            'name' => $name,
+            'slug' => Str::slug($name),
             'type' => $this->faker->randomElement(['Adventure', 'Cultural', 'Relaxation', 'Family', 'Wellness']),
             'description' => $this->faker->paragraph(4),
+
+            // Media & SEO
             'thumbnail' => $this->faker->imageUrl(400, 300, 'tourism', true, 'activity'),
-            'gallery' => json_encode($gallery),
+            'gallery' => $gallery,
             'video_url' => $this->faker->optional(0.3)->url(),
             'meta_title' => $this->faker->sentence(6),
             'meta_description' => $this->faker->paragraph(2),
-            'tags' => json_encode($this->faker->randomElements(['family-friendly', 'adventure', 'romantic', 'group', 'spa', 'eco'], rand(2, 4))),
+            'tags' => $this->faker->randomElements(['family-friendly', 'adventure', 'romantic', 'group', 'spa', 'eco'], rand(2, 4)),
+
+            // Activity Details
             'base_price' => $basePrice,
             'currency' => $currency,
             'duration_minutes' => rand(30, 480),
             'capacity' => rand(5, 50),
             'min_age' => rand(0, 12),
             'max_age' => rand(12, 99),
-            'is_featured' => $this->faker->boolean(25), // 25% chance featured
+
+            // Availability
+            'is_featured' => $this->faker->boolean(25),
             'is_active' => $this->faker->boolean(90),
             'available_from' => $startDate,
             'available_to' => $endDate,
+
+            // Ratings & Popularity
             'rating' => $this->faker->randomFloat(2, 3, 5),
             'reviews_count' => $this->faker->numberBetween(0, 200),
             'bookings_count' => $this->faker->numberBetween(0, 500),

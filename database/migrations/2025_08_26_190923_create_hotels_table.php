@@ -49,9 +49,9 @@ return new class extends Migration
             $table->foreignId('provider_id')
                   ->constrained()
                   ->cascadeOnDelete(); // Hotel belongs to a provider
-            $table->foreignId('destination_id')
-                  ->constrained()
-                  ->cascadeOnDelete(); // Hotel belongs to a destination
+            //$table->foreignId('destination_id')
+                //  ->constrained()
+                  //->cascadeOnDelete(); // Hotel belongs to a destination
         });
     }
 

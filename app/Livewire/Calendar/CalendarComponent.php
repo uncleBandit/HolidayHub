@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Calendar;
 
-use App\Contracts\Interface\Bookable;
+use App\Contracts\Bookable;
 use Carbon\CarbonPeriod;
 use Livewire\Component;
 use Carbon\Carbon;
@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 class CalendarComponent extends Component
 {
     /**
-     * @var \App\Contracts\Interface\Bookable|\Illuminate\Database\Eloquent\Model|null
+     * @var \App\Contracts\Bookable|\Illuminate\Database\Eloquent\Model|null
      */
     public ?Bookable $bookable = null;
 
@@ -148,14 +148,22 @@ class CalendarComponent extends Component
         }
 
         // All checks passed -> trigger booking flow
-        $this->dispatch('bookingInitiated', [
-            'bookable_type' => get_class($this->bookable),
-            'bookable_id' => $this->bookable->id,
-            'checkin' => $this->checkin,
-            'checkout' => $this->checkout,
-            'nights' => $nights,
-            'total' => $total,
-        ]);
+        $this->dispatch('openBookingModal', [
+                        'bookable_type' => get_class($this->bookable),
+                        'bookable_id'   => $this->bookable->id,
+                        'checkin'       => $this->checkin,
+                        'checkout'      => $this->checkout,
+                        'nights'        => $nights,
+                        'total'         => $total,
+                    ]);
+
+                    Log::info('CalendarComponent::book() fired', [
+                    'checkin' => $this->checkin,
+                    'checkout' => $this->checkout,
+                ]);
+
+
+
 
         session()->flash('success', "Booking request for {$nights} nights submitted! Total: \${$total}");
     }

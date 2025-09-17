@@ -62,10 +62,12 @@
                         <h2 class="text-3xl lg:text-4xl font-extrabold text-gray-900">{{ $hotel->name }}</h2>
                         <p class="text-xl text-gray-500">{{ $hotel->location }}</p>
                     </div>
-                    <div class="flex items-center space-x-2 mt-4 md:mt-0">
-                        <x-star-rating :rating="$hotel->stars" />
-                        <span class="text-xl font-bold text-gray-800">{{ number_format($hotel->average_rating, 1) }}</span>
-                        <p class="text-sm text-gray-400">({{ $reviews->count() }} reviews)</p>
+                    <div class="flex flex-col items-end mt-4 md:mt-0">
+                        <div class="flex items-center space-x-2">
+                            <x-star-rating :rating="$hotel->stars" />
+                            <span class="text-xl font-bold text-gray-800">{{ number_format($hotel->avg_rating, 1) }}</span>
+                        </div>
+                        <p class="text-sm text-gray-400 mt-1">({{ $reviews->count() }} reviews)</p>
                     </div>
                 </div>
 
@@ -100,11 +102,11 @@
                                 <img src="{{ $roomType->hero_image_url }}" alt="{{ $roomType->name }}" class="w-full h-48 object-cover rounded-lg mb-4" />
                                 <div class="flex justify-between items-center mb-2">
                                     <h4 class="text-xl font-semibold text-gray-900">{{ $roomType->name }}</h4>
-                                    <span class="text-lg font-bold text-blue-600">${{ number_format($roomType->price, 2) }}</span>
+                                    <span class="text-lg font-bold text-blue-600">${{ number_format($roomType->price_per_night, 2) }}</span>
                                 </div>
                                 <p class="text-gray-500 text-sm mb-4">{{ $roomType->guests }} guests · {{ $roomType->beds }} beds</p>
                                 <p class="text-sm text-gray-600 line-clamp-3">{{ $roomType->description }}</p>
-                            </div>
+                            </div> 
                         @endforeach
                     </div>
                 </div>
@@ -126,10 +128,10 @@
                         <!-- Livewire Component -->
                         <div wire:loading.remove wire:target="selectRoomType">
                             @livewire('calendar.calendar-component', ['bookable' => $selectedRoomType])
-                            <livewire:forms.booking-form />
+
                         </div>
 
-                        
+
                     @else
                         <div class="p-6 text-center">
                             <p class="text-gray-500 text-lg">Select a room type to see the availability calendar.</p>
@@ -161,5 +163,6 @@
 
     </div>
 </div>
+<livewire:forms.booking-form />
 
 </div>

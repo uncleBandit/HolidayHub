@@ -23,12 +23,7 @@ class RoomTypeFactory extends Factory
      */
     public function definition(): array
     {
-        $name = $this->faker->words(2, true);
-
-        // Append a unique ID to the slug to prevent collisions.
-        // `uniqid()` generates a unique prefix based on the current time in microseconds.
-        // An alternative, more robust method is `Str::uuid()`.
-        $unique_slug = Str::slug($name) . '-' . Str::uuid();
+        $name = $this->faker->unique()->words(2, true) . ' Room';
 
         return [
         'name' => $name,
@@ -37,7 +32,7 @@ class RoomTypeFactory extends Factory
         'capacity' => $this->faker->numberBetween(1, 5),
         'beds' => $this->faker->numberBetween(1, 3),
         'hero_image_url' => 'https://source.unsplash.com/800x600/?' . Str::slug($name) . ',room',
-        'slug' => $unique_slug,
+        'slug' => Str::slug($name) . '-' . Str::uuid(),
         ];
     }
 }

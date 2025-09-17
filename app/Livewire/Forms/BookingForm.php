@@ -9,11 +9,12 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
 use Livewire\Attributes\On;
+use Illuminate\Database\Eloquent\Model;
 
 class BookingForm extends Component
 {
-    /** @var string Supported bookable type (hotel, villa, tour, flight) */
-    public string $bookableType = 'hotel';
+    /** @var Model|null Supported bookable type (hotel, villa, tour, flight) */
+    public ?string $bookableType = null;
 
     public string $confirmationMessage = '';
 
@@ -32,6 +33,48 @@ class BookingForm extends Component
 
     /** @var float|null Live preview of price */
     public ?float $pricePreview = null;
+
+    public array $data = [];
+
+    public $showModal = false;
+    public $bookingData = [];
+    public ?Model $bookableModel = null; // The actual model instance (e.g., Hotel, Tour, etc.)
+
+
+
+    #[On('openBookingModal')]
+    public function openModal(array $bookingData)
+    {
+        Log::info('BookingForm received openBookingModal', $bookingData);
+
+        // This is the core fix: Map the event data directly to properties
+        $this->bookableType = $bookingData['bookable_type'];
+        $this->bookableId = $bookingData['bookable_id'];
+        $this->checkIn = $bookingData['checkin'];
+        $this->checkOut = $bookingData['checkout'];
+        $this->pricePreview = $bookingData['total'];
+
+        // ✨ The fix: Fetch the actual model instance ✨
+        if (class_exists($this->bookableType) && method_exists($this->bookableType, 'find')) {
+            $this->bookableModel = call_user_func([$this->bookableType, 'find'], $this->bookableId);
+        } else {
+            Log::error("Bookable model not found for class: {$this->bookableType}");
+            return;
+        }
+
+        // Set the guests property (if a default isn't needed)
+        // $this->guests = $bookingData['guests'] ?? 1;
+
+        $this->showModal = true;
+    }
+
+
+    public function closeModal()
+    {
+        $this->showModal = false;
+        $this->bookingData = [];
+        $this->dispatch('bookingClosed');
+    }
 
     /** @var string|null Success confirmation */
 
@@ -68,11 +111,11 @@ class BookingForm extends Component
         }
     }
 
-    #[On('staySelected')]
-    public function setStay($checkin, $checkout) {
-        $this->checkIn = $checkin;
-        $this->checkOut = $checkout;
-    }
+   // #[On('staySelected')]
+   // public function setStay($checkin, $checkout) {
+   //     $this->checkIn = $checkin;
+    //    $this->checkOut = $checkout;
+   // }
 
     /**
      * Submit booking request.
@@ -126,20 +169,33 @@ class BookingForm extends Component
 
     protected $listeners = ['bookingInitiated' => 'fillFromCalendar'];
 
-    public function fillFromCalendar(array $data): void
-    {
-    // Map calendar data into BookingForm fields
-    $this->bookableType = strtolower(class_basename($data['bookable_type']));
-    $this->bookableId   = $data['bookable_id'];
-    $this->checkIn      = $data['checkin'];
-    $this->checkOut     = $data['checkout'];
-    $this->pricePreview = $data['total'];
+    /**
+   * public function fillFromCalendar(array $data): void
+   * {
+       * // Map calendar data into BookingForm fields
+       * // Use the polymorphic relationship to find the correct model
+        *$modelClass = $data['bookable_type']; // This should be the full class name, e.g., 'App\Models\RoomType'
+        *$modelId    = $data['bookable_id'];
 
-    // Optionally auto-set guests
-    if (!$this->guests) {
-        $this->guests = 1;
-    }
-    }
+       * if (class_exists($modelClass)) {
+       *     // Find the model instance and assign it to the property
+       *     $this->bookableType = $modelClass::find($modelId);
+       * } else {
+       *     // Handle case where the class doesn't exist (optional, but good practice)
+       *     Log::error("Bookable model not found for class: {$modelClass}");
+       *     return;
+       * }
+      *  $this->bookableId   = $data['bookable_id'];
+      *  $this->checkIn      = $data['checkin'];
+      *  $this->checkOut     = $data['checkout'];
+       * $this->pricePreview = $data['total'];
+
+       * // Optionally auto-set guests
+       * if (!$this->guests) {
+       *     $this->guests = 1;
+       * }
+   * }
+     */
 
 
 

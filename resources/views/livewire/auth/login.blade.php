@@ -73,56 +73,74 @@ new #[Layout('components.layouts.auth')] class extends Component {
     }
 }; ?>
 
-<div class="flex flex-col gap-6 p-8 bg-white dark:bg-zinc-800 rounded-2xl shadow-lg border border-zinc-200 dark:border-zinc-700">
+<div class="glass-container w-full max-w-lg mx-auto rounded-3xl p-8 sm:p-12 transition-all duration-300 transform hover:scale-[1.02]">
+    <div class="flex flex-col gap-8">
+        {{-- The header component for a clear, welcoming message --}}
+        <x-auth-header title="{{ __('Welcome back') }}" description="{{ __('Log in to continue your journey.') }}" />
 
-    <x-auth-header :title="__('Log in to your account')" :description="__('Enter your email and password below to log in')" />
+        {{-- Optional session status message (e.g., password reset success) --}}
+        @if (session('status'))
+            <div class="p-3 text-sm text-center text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                {{ session('status') }}
+            </div>
+        @endif
 
-    <!-- Session Status -->
-    <x-auth-session-status class="text-center" :status="session('status')" />
+        {{-- The main login form --}}
+        <form wire:submit="login" class="flex flex-col gap-6">
 
-    <form method="POST" wire:submit="login" class="flex flex-col gap-6">
-        <!-- Email Address -->
-        <flux:input
-            wire:model="email"
-            :label="__('Email address')"
-            type="email"
-            required
-            autofocus
-            autocomplete="email"
-            placeholder="email@example.com"
-        />
+            {{-- Email Input with an icon and a unique ID to link with the label --}}
+            <x-text-input
+                wire:model.live="email"
+                id="email"
+                label="{{ __('Email address') }}"
+                type="email"
+                required
+                autocomplete="email"
+                placeholder="your-email@example.com"
+                icon="M16 12a4 4 0 10-8 0 4 4 0 008 0zM12 14a2 2 0 110-4 2 2 0 010 4zM21 12a9 9 0 11-18 0 9 9 0 0118 0zM10.552 16.58A6.47 6.47 0 0112 10.5a6.47 6.47 0 011.448 6.08A8.96 8.96 0 0112 21a8.96 8.96 0 01-1.448-4.42z"
+            />
 
-        <!-- Password -->
-        <div class="relative">
-            <flux:input
-                wire:model="password"
-                :label="__('Password')"
+            {{-- Password Input with an icon and a unique ID --}}
+            <x-text-input
+                wire:model.live="password"
+                id="password"
+                label="{{ __('Password') }}"
                 type="password"
                 required
                 autocomplete="current-password"
-                :placeholder="__('Password')"
-                viewable
+                placeholder="••••••••"
+                icon="M12 11c1.657 0 3-1.343 3-3S13.657 5 12 5 9 6.343 9 8s1.343 3 3 3z"
             />
 
-            @if (Route::has('password.request'))
-                <flux:link class="absolute end-0 top-0 text-sm" :href="route('password.request')" wire:navigate>
+            {{-- Remember me checkbox and "Forgot Password" link --}}
+            <div class="flex items-center justify-between">
+                <x-checkbox-input wire:model="remember" label="{{ __('Remember me') }}" />
+                <a href="{{ route('password.request') }}" class="text-sm text-tropical-blue hover:underline transition-colors duration-200">
                     {{ __('Forgot your password?') }}
-                </flux:link>
-            @endif
-        </div>
+                </a>
+            </div>
 
-        <!-- Remember Me -->
-        <flux:checkbox wire:model="remember" :label="__('Remember me')" />
+            {{-- The dynamic action button with a loading state --}}
+            <div class="mt-2">
+                <x-primary-button
+                    type="submit"
+                    class="w-full"
+                    wire:loading.attr="disabled"
+                    wire:loading.class="cursor-not-allowed"
+                    wire:target="login"
+                    spinner="Logging in..."
+                >
+                    {{ __('Log in') }}
+                </x-primary-button>
+            </div>
+        </form>
 
-        <div class="flex items-center justify-end">
-            <flux:button variant="primary" type="submit" class="w-full">{{ __('Log in') }}</flux:button>
+        {{-- The "Don't have an account?" link --}}
+        <div class="text-center text-sm text-zinc-600 dark:text-zinc-400">
+            {{ __("Don't have an account?") }}
+            <a href="{{ route('register') }}" class="text-tropical-blue hover:underline font-semibold transition-colors duration-200">
+                {{ __('Sign up') }}
+            </a>
         </div>
-    </form>
-
-    @if (Route::has('register'))
-        <div class="space-x-1 rtl:space-x-reverse text-center text-sm text-zinc-600 dark:text-zinc-400">
-            <span>{{ __('Don\'t have an account?') }}</span>
-            <flux:link :href="route('register')" wire:navigate>{{ __('Sign up') }}</flux:link>
-        </div>
-    @endif
+    </div>
 </div>

@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Contracts\Interface\Bookable;
+use App\Contracts\Bookable;
 use Carbon\Carbon;
 
 class PricingEngine

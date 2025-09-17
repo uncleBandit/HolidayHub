@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Accommodation;
 use App\Models\Agent;
+use App\Models\Amenity;
 use App\Models\Destination;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -11,6 +13,8 @@ use App\Models\Villa;
 use App\Models\BedAndBreakfast;
 use App\Models\Package;
 use App\Models\Provider;
+use App\Models\Room;
+use App\Models\RoomType;
 use App\Models\User;
 
 class DestinationSeeder extends Seeder
@@ -22,6 +26,8 @@ class DestinationSeeder extends Seeder
     {
         // Create 12 dynamic destinations using factory
         $destinations =Destination::factory()->count(12)->create();
+
+
 
         // Optional: fixed popular destinations
         $popularDestinations = [
@@ -111,29 +117,63 @@ class DestinationSeeder extends Seeder
             );
         }
 
+        $allDestinations = Destination::all();
+        $bookableClasses = [Hotel::class, Villa::class, BedAndBreakfast::class];
+
+        // Ensure Amenities exist before trying to attach them.
+        if (Amenity::count() === 0) {
+            $this->call(AmenitySeeder::class);
+        }
+
 
         // Attach Hotels, Villas, B&Bs, and Packages for each destination
-        foreach ($destinations as $destination) {
+        foreach ($allDestinations as $destination) {
+            $agent = Agent::inRandomOrder()->first();
+            $provider = Provider::inRandomOrder()->first();
 
-            $provider = Provider::inRandomOrder()->first() ;
-            $agent    = Agent::inRandomOrder()->first() ;
-            // Create hotels
-            Hotel::factory()->count(rand(2, 5))->create([
-                'destination_id' => $destination->id,
-                'provider_id' => $provider->id,
-            ]);
+            // STEP 1: Create a batch of accommodations for this destination
+            $accommodationsToCreate = rand(5, 10);
+            for ($i = 0; $i < $accommodationsToCreate; $i++) {
+                $randomClass = $bookableClasses[array_rand($bookableClasses)];
+                $bookable = $randomClass::factory()->create(['provider_id' => $provider->id]);
 
-            // Create villas
-            Villa::factory()->count(rand(1, 3))->create([
-                'destination_id' => $destination->id,
-                'provider_id' => $provider->id,
-            ]);
+                // Now, check the type and attach type-specific data
+                if ($bookable instanceof Hotel) {
+                    // Create rooms and room types for hotels
+                    $roomTypes = RoomType::factory()->count(rand(3, 5))
+                        ->for($bookable)
+                        ->create();
 
-            // Create B&Bs
-            BedAndBreakfast::factory()->count(rand(1, 3))->create([
-                'destination_id' => $destination->id,
-                'provider_id' => $provider->id,
-            ]);
+                    foreach ($roomTypes as $roomType) {
+                        Room::factory()->count(rand(5, 20))
+                            ->for($bookable)
+                            ->for($roomType)
+                            ->create();
+                    }
+
+                    // Attach amenities to hotels
+                    $hotelAmenities = Amenity::inRandomOrder()->take(rand(5, 15))->pluck('id');
+                    $bookable->amenities()->attach($hotelAmenities);
+
+                } elseif ($bookable instanceof Villa) {
+                    // Optional: Add specific data for villas (e.g., attach specific amenities, set capacity)
+                    $villaAmenities = Amenity::inRandomOrder()->take(rand(3, 8))->pluck('id');
+                    $bookable->amenities()->attach($villaAmenities);
+                    $bookable->update(['max_guests' => rand(6, 12)]);
+
+                } elseif ($bookable instanceof BedAndBreakfast) {
+                    // Optional: Add specific data for B&Bs
+                    $bnbAmenities = Amenity::inRandomOrder()->take(rand(2, 6))->pluck('id');
+                    $bookable->amenities()->attach($bnbAmenities);
+                    $bookable->update(['has_breakfast' => true]);
+                }
+
+                // Create the polymorphic accommodation entry
+                Accommodation::factory()
+                    ->for($destination)
+                    ->withBookable($bookable)
+                    ->create();
+            }
 
             // Create holiday packages
             Package::factory()->count(rand(2, 4))->create([
@@ -141,7 +181,6 @@ class DestinationSeeder extends Seeder
                 'agent_id' => $agent->id,
             ]);
         }
-
 
         $this->command->info('Destinations seeded successfully!');
     }

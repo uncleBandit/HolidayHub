@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Contracts\Interface\Bookable;
+use App\Contracts\Bookable;
 use App\Models\Booking;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;

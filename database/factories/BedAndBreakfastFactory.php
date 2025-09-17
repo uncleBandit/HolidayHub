@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Models\BedAndBreakfast;
-use App\Models\Destination;
 use App\Models\Provider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -25,8 +24,9 @@ class BedAndBreakfastFactory extends Factory
         $name = $this->faker->unique()->words(2, true) . ' BnB';
 
         return [
-            'provider_id' => Provider::factory(),
-            'destination_id' => Destination::factory(),
+            // The provider_id is no longer created here.
+            // It is passed from the seeder to the `AccommodationFactory`,
+            // which then passes it to this factory via the `has` method.
 
             'name' => $name,
             'slug' => Str::slug($name) . '-' . Str::random(8),
@@ -65,9 +65,10 @@ class BedAndBreakfastFactory extends Factory
             'price_per_night' => $this->faker->randomFloat(2, 30, 300),
             'avg_rating' => $this->faker->randomFloat(1, 3.0, 5.0),
             'reviews_count' => $this->faker->numberBetween(0, 50),
+            'provider_id' => Provider::factory(),
 
-            'created_at' => now(),
-            'updated_at' => now(),
+            // Remove timestamps and other fields that are automatically handled
+            // by Eloquent when using `create`.
         ];
     }
 }

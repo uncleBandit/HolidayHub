@@ -17,15 +17,16 @@ return new class extends Migration
             $table->foreignId('provider_id')
                   ->constrained()
                   ->cascadeOnDelete(); // BnB belongs to a provider/host
-            $table->foreignId('destination_id')
-                  ->constrained()
-                  ->cascadeOnDelete(); // BnB belongs to a destination/city
+           // $table->foreignId('destination_id')
+                //  ->constrained()
+                //  ->cascadeOnDelete(); // BnB belongs to a destination/city
 
             // Core info
             $table->string('name');
             $table->string('slug')->unique(); // SEO-friendly URL
             $table->text('description')->nullable();
             $table->integer('rooms')->default(0);
+            $table->boolean('has_breakfast')->default(false);
 
             // Location
             $table->string('address')->nullable();

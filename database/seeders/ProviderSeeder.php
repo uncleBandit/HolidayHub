@@ -5,8 +5,6 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Provider;
-use App\Models\Hotel;
-use App\Models\Amenity;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Str;
@@ -39,16 +37,8 @@ class ProviderSeeder extends Seeder
                 'company_name' => "Provider Company $i",
                 'phone' => '2547' . rand(10000000, 99999999),
                 'bio' => "We are Provider $i, delivering exceptional holiday experiences!",
-                'email'=>$user->email,
+                'email' => $user->email,
             ]);
-
-            $destinations = \App\Models\Destination::all();
-                if ($destinations->isEmpty()) {
-                $this->command->warn('⚠️ No destinations found. Hotels cannot be seeded.');
-                return;
-            }
-
-            
         }
     }
 }

@@ -8,8 +8,10 @@ use App\Models\Review;
 use App\Models\RoomType;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
-use App\Contracts\Interface\Bookable;
+use App\Contracts\Bookable;
 use App\Models\Room;
+use Livewire\Attributes\On;
+
 
 class HotelShow extends Component
 {
@@ -23,6 +25,30 @@ class HotelShow extends Component
     public $activeImageId;
     public $roomTypes;
 
+   // protected $listeners = ['showBookingForm'];
+
+   // public $showBookingForm = false;
+    public $bookingData = [];
+
+   // #[On('showBookingForm')]
+   /**  public function showBookingForm($data)
+    *{
+      *  logger()->info('Parent received booking', $data);
+
+      *  // Fetch the selected RoomType model using the ID from the event data
+      *  $this->selectedRoomType = RoomType::find($data['bookable_id']);
+
+       * if (!$this->selectedRoomType) {
+       *     // Optional: Handle case where the model is not found
+      *      // You might want to dispatch an error message here
+      *      return;
+      *  }
+
+       * $this->showBookingForm = true;
+       * $this->bookingData = $data;
+   * }
+        **/
+
     public function showGallery($imageId)
     {
         $this->isGalleryOpen = true;
@@ -34,6 +60,14 @@ class HotelShow extends Component
         $this->isGalleryOpen = false;
         $this->activeImageId = null;
     }
+
+    #[On('bookingClosed')]
+    public function resetBooking()
+    {
+       // $this->showBookingForm = false;
+        $this->bookingData = [];
+    }
+
 
     public function mount($slug)
     {
@@ -76,13 +110,18 @@ class HotelShow extends Component
         $this->isWishlisted = !$this->isWishlisted;
     }
 
-    public function bookNow($roomId)
-    {
-        $this->dispatch('openBookingModal', [
-            'hotelId' => $this->hotel->id,
-            'roomId' => $roomId,
-        ]);
-    }
+   // public function bookNow($roomId)
+    //{
+       // if ($this->showBookingForm) {
+      //      return; // prevent re-trigger if already open
+      //  }
+
+      //  $this->dispatch('openBookingModal', [
+      //      'hotelId' => $this->hotel->id,
+       //     'roomId' => $roomId,
+       // ]);
+   // }
+
 
     public function selectRoomType($roomTypeId)
     {
@@ -115,28 +154,28 @@ class HotelShow extends Component
 
     public function loadReviews()
     {
-    $perPage = 5;
+        $perPage = 5;
 
-    $query = Review::with(['guest'])
-        ->where('reviewable_type', Hotel::class)
-        ->where('reviewable_id', $this->hotel->id)
-        ->latest()
-        ->skip(($this->reviewPage - 1) * $perPage)
-        ->take($perPage + 1) // fetch one extra to check if more exist
-        ->get();
+        $query = Review::with(['guest'])
+            ->where('reviewable_type', Hotel::class)
+            ->where('reviewable_id', $this->hotel->id)
+            ->latest()
+            ->skip($this->reviewPage * $perPage) // Corrected skip logic
+            ->take($perPage + 1) // Fetch one extra to check if more exist
+            ->get();
 
-    if ($query->count() > $perPage) {
-        $this->hasMoreReviews = true;
-        $query = $query->take($perPage);
-    } else {
-        $this->hasMoreReviews = false;
-    }
+        if ($query->count() > $perPage) {
+            $this->hasMoreReviews = true;
+            $query = $query->take($perPage);
+        } else {
+            $this->hasMoreReviews = false;
+        }
 
-    // Merge new reviews without overwriting existing ones
-    $this->reviews = $this->reviews->merge($query);
+        // Append the newly loaded reviews to the existing collection
+        $this->reviews = $this->reviews->merge($query)->load('guest');
 
-    // Increment page for next call
-    $this->reviewPage++;
+        // Increment page for the next call
+        $this->reviewPage++;
     }
 
 
