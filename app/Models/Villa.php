@@ -46,15 +46,6 @@ class Villa extends Model implements Bookable
 
 
 
-    /**
-     * A Villa can have many bookings.
-     *
-     * @return HasMany
-     */
-    public function bookings(): HasMany
-    {
-        return $this->hasMany(Booking::class);
-    }
 
     /**
      * A Villa can have many reviews.
@@ -262,4 +253,15 @@ class Villa extends Model implements Bookable
             'destination_id'    // Local key on accommodations table
         )->where('bookable_type', self::class);
     }
+
+    public function bookings(): MorphMany
+    {
+        return $this->morphMany(Booking::class, 'bookable');
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
 }

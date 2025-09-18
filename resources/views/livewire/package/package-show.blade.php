@@ -119,43 +119,32 @@
         </div>
 
         {{-- Right Column: Booking Widget --}}
-        <aside class="lg:col-span-1 p-8 bg-white rounded-3xl shadow-2xl space-y-8 sticky top-10 self-start">
-            <h2 class="text-3xl font-extrabold text-gray-900">Book Now</h2>
+        <aside class="lg:col-span-1">
+            <div class="sticky top-10 bg-white p-8 rounded-3xl shadow-2xl space-y-8">
+                <h2 class="text-3xl font-extrabold text-gray-900">Book This Trip</h2>
 
-            <form wire:submit.prevent="bookPackage" class="space-y-6">
-                <div>
-                    <label for="checkIn" class="block text-sm font-bold text-gray-700 mb-2">Check-in Date</label>
-                    <input type="date" id="checkIn" wire:model.live="checkIn" class="w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
+                {{-- Use the Calendar + Booking Form like in hotels --}}
+                @if($package)
+                    <div wire:loading.flex wire:target="selectPackage" class="flex items-center justify-center p-8">
+                        <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4zm2 5.29A7.96 7.96 0 014 12H0c0 3.04 1.13 5.82 3 7.94l3-2.65z"></path>
+                        </svg>
+                        <span class="text-lg text-gray-500">Loading calendar...</span>
+                    </div>
 
-                <div>
-                    <label for="checkOut" class="block text-sm font-bold text-gray-700 mb-2">Check-out Date</label>
-                    <input type="date" id="checkOut" wire:model.live="checkOut" class="w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
+                    <div wire:loading.remove wire:target="selectPackage">
+                        {{-- Calendar (availability) --}}
+                        @livewire('calendar.calendar-component', ['bookable' => $package])
 
-                <div>
-                    <label for="guests" class="block text-sm font-bold text-gray-700 mb-2">Number of Guests</label>
-                    <input type="number" min="1" max="{{ $package->max_guests }}" id="guests" wire:model.live="guests" class="w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                </div>
-
-                @if($availabilityMessage)
-                    <div class="mt-4 p-4 rounded-xl font-medium {{ $calculatedPrice ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">
-                        <p>{{ $availabilityMessage }}</p>
+                        {{-- Shared Booking Form --}}
+                        <livewire:forms.booking-form :bookable="$package"/>
                     </div>
                 @endif
-
-                @if($calculatedPrice)
-                    <div class="flex items-center justify-between font-extrabold text-3xl text-gray-900 border-t pt-6 mt-6">
-                        <span>Total:</span>
-                        <span class="text-emerald-600">${{ number_format($calculatedPrice, 2) }}</span>
-                    </div>
-                @endif
-
-                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl shadow-lg transition transform hover:-translate-y-1">
-                    Book This Package
-                </button>
-            </form>
+            </div>
         </aside>
+
     </section>
 
     {{-- Full-Screen Gallery Modal --}}

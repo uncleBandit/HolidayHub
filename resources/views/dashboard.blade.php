@@ -19,7 +19,6 @@
 
         {{-- Featured Destinations --}}
         <section class="px-6 md:px-12 lg:px-24">
-            <h2 class="text-3xl md:text-4xl font-bold mb-8 text-neutral-800 dark:text-white">Featured Destinations 🌍</h2>
             <livewire:featured.featured-destinations />
         </section>
 

@@ -123,50 +123,20 @@
 
         <div class="lg:col-span-1" id="booking-form">
             <div class="lg:sticky lg:top-16 bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 space-y-6">
-                <h3 class="text-2xl font-bold text-gray-800">
+                <h3 class="text-2xl font-bold text-gray-800 text-center">
                     <span class="text-4xl font-extrabold">${{ number_format($villa->base_price, 0) }}</span> / night
                 </h3>
 
-                <form wire:submit.prevent="bookVilla" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="check-in" class="block text-sm font-medium text-gray-700 mb-1">Check-In</label>
-                            <input type="date" wire:model.live="checkIn" id="check-in"
-                                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-                        <div>
-                            <label for="check-out" class="block text-sm font-medium text-gray-700 mb-1">Check-Out</label>
-                            <input type="date" wire:model.live="checkOut" id="check-out"
-                                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-                    </div>
+                {{-- Calendar availability (shared across bookables) --}}
+                <livewire:calendar.calendar-component :bookable="$villa" />
 
-                    <div>
-                        <label for="guests" class="block text-sm font-medium text-gray-700 mb-1">Guests</label>
-                        <input type="number" min="1" wire:model.live="guests" id="guests"
-                               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    </div>
+                <hr class="border-gray-200">
 
-                    @if($availabilityMessage)
-                        <div class="p-4 rounded-xl text-sm font-medium {{ $calculatedPrice ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
-                            {{ $availabilityMessage }}
-                        </div>
-                    @endif
-
-                    @if($calculatedPrice)
-                        <div class="flex items-center justify-between font-bold text-gray-800 text-lg border-t border-gray-100 pt-4">
-                            <span>Total Price:</span>
-                            <span>${{ number_format($calculatedPrice, 2) }}</span>
-                        </div>
-                    @endif
-
-                    <button type="submit"
-                            class="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition duration-300 shadow-lg">
-                        Reserve
-                    </button>
-                </form>
+                {{-- Booking form (shared Livewire form) --}}
+                <livewire:forms.booking-form :villa="$villa" />
             </div>
         </div>
+
     </div>
 </div>
 

@@ -25,6 +25,8 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug')->unique(); // SEO-friendly URL
             $table->text('description')->nullable();
+            $table->boolean('is_active')->default(true);   // ✅ added
+            $table->boolean('is_verified')->default(false);
 
             // Location
             $table->string('address')->nullable();
@@ -39,7 +41,6 @@ return new class extends Migration
             $table->unsignedTinyInteger('max_guests')->default(2);
             $table->boolean('has_private_pool')->default(false);
             $table->boolean('is_featured')->default(false); // highlight in homepage
-            $table->json('amenities')->nullable(); // wifi, kitchen, BBQ, etc.
             $table->json('policies')->nullable(); // check-in/out, cancellation rules
 
             // Media

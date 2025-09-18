@@ -122,4 +122,14 @@ class Destination extends Model
         return $this->accommodations()->where('bookable_type', Villa::class);
     }
 
+        public function bookings()
+    {
+        return $this->hasMany(\App\Models\Booking::class);
+    }
+        public function experiences()
+    {
+        return $this->hasMany(\App\Models\Experience::class);
+
+    }
+
 }

@@ -31,6 +31,8 @@ return new class extends Migration
             $table->boolean('is_featured')->default(false); // highlight in homepage
             //$table->json('amenities')->nullable(); // e.g. wifi, spa, pool
             $table->json('policies')->nullable(); // check-in, check-out, cancellation rules
+            $table->boolean('is_active')->default(true);   // ✅ added
+            $table->boolean('is_verified')->default(false);
 
             // Media
             $table->string('cover_image')->nullable();

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Engines;
 
 use App\Contracts\Bookable;
 use App\Models\Booking;
@@ -78,7 +78,7 @@ class AvailabilityEngine
                 ];
             } else {
                 // Fallback → dynamic pricing or base price
-                $price = $this->pricingEngine->calculate($bookable, $date);
+                $price = $this->pricingEngine->calculateDaily($bookable, $date);
 
                 $availability[$dateStr] = [
                     'available'  => true,
@@ -93,4 +93,10 @@ class AvailabilityEngine
 
         return $availability;
     }
+
+    public function calculateDaily(Bookable $bookable, Carbon $date, int $guests = 1): float
+    {
+        return $this->pricingEngine->calculateDaily($bookable, $date, $guests);
+    }
+
 }

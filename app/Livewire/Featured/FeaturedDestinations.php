@@ -17,9 +17,12 @@ class FeaturedDestinations extends Component
     // Public properties that will be bound to the URL query string
     public string $search = '';
     public int $perPage = 6;
-    public string $sortBy = 'name'; // Options: 'name' or 'created_at'
+    public string $sortBy = 'name'; // Options: 'name', 'rating', 'created_at'
     public string $direction = 'asc'; // 'asc' or 'desc'
     public $page = 1;
+
+    // New property to control the visibility of the search dropdown
+    public bool $showResults = false;
 
     // Specifies which properties to include in the URL
     protected $queryString = [
@@ -35,6 +38,10 @@ class FeaturedDestinations extends Component
     public function updatingSearch()
     {
         $this->resetPage();
+        // Show the results dropdown when the user starts typing
+        if (!empty($this->search)) {
+            $this->showResults = true;
+        }
     }
 
     /**
@@ -49,23 +56,31 @@ class FeaturedDestinations extends Component
 
         // Fetch destinations from the cache or the database
         $destinations = Cache::remember($cacheKey, now()->addMinutes(10), function () {
-            return Destination::query()
-                ->when(empty($this->search), function ($query) {
-                    // No search → only featured destinations
-                    $query->where('is_featured', true);
-                })
-                ->when($this->search, function ($query) {
-                    // Search applied → search across all destinations
-                    $query->where(function ($q) {
-                        $q->where('name', 'like', "%{$this->search}%")
-                          ->orWhere('description', 'like', "%{$this->search}%")
-                          ->orWhere('location', 'like', "%{$this->search}%");
-                    });
-                })
-                ->orderByDesc('is_featured')
-                ->orderBy($this->sortBy, $this->direction)
-                ->paginate($this->perPage);
+            $query = Destination::query();
+
+            if (empty($this->search)) {
+                // No search term: only show featured destinations
+                $query->where('is_featured', true);
+            } else {
+                // Search term exists: search across all destinations
+                $query->where(function ($q) {
+                    $q->where('name', 'like', "%{$this->search}%")
+                        ->orWhere('description', 'like', "%{$this->search}%")
+                        ->orWhere('location', 'like', "%{$this->search}%");
+                });
+            }
+
+            // Always prioritize featured destinations in the sort order
+            $query->orderByDesc('is_featured')
+                  ->orderBy($this->sortBy, $this->direction);
+
+            return $query->paginate($this->perPage);
         });
+
+        // Set showResults to false if the search is empty to hide the dropdown
+        if (empty($this->search)) {
+            $this->showResults = false;
+        }
 
         return view('livewire.featured.featured-destinations', [
             'destinations' => $destinations,

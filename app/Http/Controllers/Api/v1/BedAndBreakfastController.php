@@ -73,11 +73,26 @@ class BedAndBreakfastController extends Controller
      */
     public function show(BedAndBreakfast $bedAndBreakfast): JsonResponse
     {
+        if (!$bedAndBreakfast->is_active || !$bedAndBreakfast->is_verified) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This B&B is not available for booking.'
+            ], 404);
+        }
+
         return response()->json([
             'success' => true,
-            'data' => $bedAndBreakfast,
+            'data' => $bedAndBreakfast->load([
+                'amenities',
+                'features',
+                'offers',
+                'reviews.guest',
+                'availabilities',
+                'seasonalRates',
+            ]),
         ]);
     }
+
 
     /**
      * Update an existing Bed & Breakfast.

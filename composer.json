@@ -19,6 +19,7 @@
         "livewire/livewire": "^3.6",
         "livewire/volt": "^1.7",
         "spatie/laravel-permission": "^6.21",
+        "stripe/stripe-php": "^17.6",
         "tightenco/ziggy": "^2.0"
     },
     "require-dev": {

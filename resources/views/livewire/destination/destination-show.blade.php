@@ -45,7 +45,7 @@
             {{-- Quick Facts --}}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <x-destination.quick-fact-card icon="fas fa-sun" title="Best Season" :value="$destination->best_season ?? 'Year-round'" />
-                <x-destination.quick-fact-card icon="fas fa-star" title="Average Rating" :value="number_format($destination->average_rating, 1) ?? 'N/A'" />
+                <x-destination.quick-fact-card icon="fas fa-star" title="Average Rating" :value="number_format($destination->popularity_score, 1) ?? 'N/A'" />
                 <x-destination.quick-fact-card icon="fas fa-compass" title="Highlights" :value="implode(', ', array_slice($destination->highlights ?? [], 0, 2)) . '...'" />
                 <x-destination.quick-fact-card icon="fas fa-suitcase-rolling" title="Packages" :value="$destination->packages_count ?? '0' . ' available'" />
             </div>

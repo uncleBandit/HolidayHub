@@ -5,10 +5,8 @@ namespace App\Livewire\BedAndBreakfast;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\BedAndBreakfast;
-use App\Models\Review;
 use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
-use App\Contracts\Bookable;
+use Livewire\Attributes\On;
 
 class BedAndBreakfastShow extends Component
 {
@@ -18,15 +16,8 @@ class BedAndBreakfastShow extends Component
 
     // UI state
     public string $activeTab = 'overview';
-    public int $perPage = 5;
     public bool $isWishlisted = false;
-
-    // Booking form state
-    public string $checkIn = '';
-    public string $checkOut = '';
     public int $guests = 1;
-    public ?float $calculatedPrice = null;
-    public ?string $availabilityMessage = null;
 
     // Reviews
     public $reviews;
@@ -37,6 +28,10 @@ class BedAndBreakfastShow extends Component
 
     public function mount(BedAndBreakfast $bnb): void
     {
+        if (!$bnb->is_active || !$bnb->is_verified) {
+            abort(404, 'This Bed & Breakfast is not available.');
+        }
+
         $this->bnb = $bnb->load([
             'amenities',
             'features',
@@ -46,22 +41,19 @@ class BedAndBreakfastShow extends Component
             'seasonalRates',
         ]);
 
-        $this->reviews = Review::with('guest')
-            ->where('reviewable_type', BedAndBreakfast::class)
-            ->where('reviewable_id', $this->bnb->id)
+        // preload reviews
+        $this->reviews = $this->bnb->reviews()
+            ->with('guest')
             ->latest()
             ->take(5)
             ->get();
 
         // wishlist check
         if (Auth::check()) {
-            $this->isWishlisted = Auth::user()
-                ?->role
-                ?->wishlistBnBs()
-                ?->where('bed_and_breakfast_id', $this->bnb->id)
-                ->exists() ?? false;
+            $this->isWishlisted = $this->bnb->isWishlistedBy(Auth::user());
         }
     }
+
 
     public function switchTab(string $tab): void
     {
@@ -80,64 +72,14 @@ class BedAndBreakfastShow extends Component
     }
 
     /**
-     * Check availability and calculate pricing
-     */
-    public function checkAvailability(): void
-    {
-        $this->validate([
-            'checkIn' => 'required|date|after_or_equal:today',
-            'checkOut' => 'required|date|after:checkIn',
-            'guests' => 'required|integer|min:1|max:' . $this->bnb->max_guests,
-        ]);
-
-        $available = $this->bnb->isAvailable($this->checkIn, $this->checkOut);
-
-        if (!$available) {
-            $this->availabilityMessage = "Sorry, not available for those dates.";
-            $this->calculatedPrice = null;
-            return;
-        }
-
-        $nights = Carbon::parse($this->checkIn)->diffInDays(Carbon::parse($this->checkOut));
-
-        // Apply seasonal rates, offers, or just base price
-        $this->calculatedPrice = $this->bnb->getPriceForDate($this->checkIn) * $nights;
-
-        $this->availabilityMessage = "Good news! Available for {$nights} nights.";
-    }
-
-    /**
-     * Proceed to booking (trigger modal or create draft booking)
-     */
-    public function bookNow(): void
-    {
-        if (!$this->calculatedPrice) {
-            $this->dispatch('toast', [
-                'type' => 'error',
-                'message' => 'Check availability before booking.'
-            ]);
-            return;
-        }
-
-        $this->dispatch('openBookingModal', [
-            'bnbId'    => $this->bnb->id,
-            'checkIn'  => $this->checkIn,
-            'checkOut' => $this->checkOut,
-            'guests'   => $this->guests,
-            'price'    => $this->calculatedPrice,
-        ]);
-    }
-
-    /**
-     * Infinite scroll reviews loader
+     * Infinite scroll / load more reviews
      */
     public function loadReviews(): void
     {
         $perPage = 5;
 
-        $query = Review::with('user')
-            ->where('reviewable_type', BedAndBreakfast::class)
-            ->where('reviewable_id', $this->bnb->id)
+        $query = $this->bnb->reviews()
+            ->with('guest')
             ->latest()
             ->skip(($this->reviewPage - 1) * $perPage)
             ->take($perPage + 1)

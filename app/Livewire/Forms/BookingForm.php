@@ -3,13 +3,15 @@
 namespace App\Livewire\Forms;
 
 use Livewire\Component;
-use App\Services\BookingManager;
+use App\Services\Bookings\BookingManager;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
 use Livewire\Attributes\On;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
+
 
 class BookingForm extends Component
 {
@@ -47,26 +49,39 @@ class BookingForm extends Component
     {
         Log::info('BookingForm received openBookingModal', $bookingData);
 
-        // This is the core fix: Map the event data directly to properties
-        $this->bookableType = $bookingData['bookable_type'];
-        $this->bookableId = $bookingData['bookable_id'];
-        $this->checkIn = $bookingData['checkin'];
-        $this->checkOut = $bookingData['checkout'];
-        $this->pricePreview = $bookingData['total'];
+        // Resolve alias → FQCN (e.g. "room_type" → App\Models\RoomType)
+        $modelClass = Relation::getMorphedModel($bookingData['bookable_type']);
 
-        // ✨ The fix: Fetch the actual model instance ✨
-        if (class_exists($this->bookableType) && method_exists($this->bookableType, 'find')) {
-            $this->bookableModel = call_user_func([$this->bookableType, 'find'], $this->bookableId);
-        } else {
-            Log::error("Bookable model not found for class: {$this->bookableType}");
+        if (!$modelClass) {
+            Log::error("Unknown bookable type: {$bookingData['bookable_type']}");
             return;
         }
 
-        // Set the guests property (if a default isn't needed)
-        // $this->guests = $bookingData['guests'] ?? 1;
+        try {
+            $this->bookableModel = $modelClass::findOrFail($bookingData['bookable_id']);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::error("Bookable model not found", [
+                'class' => $modelClass,
+                'id'    => $bookingData['bookable_id'],
+            ]);
+            $this->dispatch('bookingError', message: __("This item is no longer available."));
+            return;
+        }
+        Log::info('BookingForm openBookingModal called', $this->bookingData);
+
+        // Map into BookingForm fields
+        $this->bookableType = $bookingData['bookable_type']; // already an alias from your morph map
+        $this->bookableId   = $bookingData['bookable_id'];
+        $this->checkIn      = $bookingData['checkin'];
+        $this->checkOut     = $bookingData['checkout'];
+        $this->pricePreview = $bookingData['total'];
 
         $this->showModal = true;
+
+        Log::info('BookingForm openBookingModal called', $this->bookingData);
     }
+
+
 
 
     public function closeModal()

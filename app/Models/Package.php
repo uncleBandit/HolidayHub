@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 
 class Package extends Model implements Bookable
 {
-    use HasFactory;
+    use HasFactory, Traits\HasImages;
 
     /**
      * The attributes that are mass assignable.

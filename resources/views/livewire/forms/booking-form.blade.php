@@ -1,6 +1,7 @@
 <div>
+
 <div
-    x-data="{ show: @entangle('showModal').defer }"
+    x-data="{ show: @entangle('showModal') }"
     x-init="$watch('show', (value) => { if (value) document.body.classList.add('overflow-hidden'); else document.body.classList.remove('overflow-hidden'); })"
     x-show="show"
     x-transition:enter="transition ease-out duration-300 transform"
@@ -59,7 +60,7 @@
                     </div>
                     <div>
                         <label for="guests" class="block text-sm font-semibold text-gray-700 mb-1">Guests</label>
-                        <input type="number" id="guests" wire:model.live="guests" min="1" max="{{ $bookableType->guests }}" class="w-full rounded-xl border-gray-300 shadow-sm p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300">
+                        <input type="number" id="guests" wire:model.live="guests" min="1" max="{{ $bookableModel->guests }}" class="w-full rounded-xl border-gray-300 shadow-sm p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300">
                         @error('guests') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
                     <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-4">
@@ -77,7 +78,7 @@
                         </div>
                     </div>
                 </div>
-                @endif 
+                @endif
                 <div class="order-1 lg:order-2 space-y-6">
                     <h2 class="text-2xl font-bold text-gray-900">Guest Information</h2>
                     <form wire:submit.prevent="submit" class="space-y-6">

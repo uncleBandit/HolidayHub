@@ -184,4 +184,9 @@ class Activity extends Model implements Bookable
     {
         return $this->capacity ?? 1;
     }
+
+    public function seasonalRates(): MorphMany
+    {
+        return $this->morphMany(SeasonalRate::class, 'seasonal_rateable');
+    }
 }

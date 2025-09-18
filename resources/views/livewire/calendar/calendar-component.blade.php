@@ -8,7 +8,10 @@
         <button wire:click="previousMonth" class="p-2 -ml-2 text-gray-400 rounded-full hover:bg-gray-100 hover:text-gray-600 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
         </button>
-        <h2 class="text-xl font-bold text-gray-900">{{ $this->currentMonth->format('F Y') }}</h2>
+        <h2 class="text-xl font-bold text-gray-900">
+            {{ $this->currentMonth ? $this->currentMonth->format('F Y') : now()->format('F Y') }}
+        </h2>
+
         <button wire:click="nextMonth" class="p-2 -mr-2 text-gray-400 rounded-full hover:bg-gray-100 hover:text-gray-600 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
         </button>

@@ -12,8 +12,6 @@
                     Search and book hotels, resorts, and unique getaways worldwide.
                 </p>
 
-                {{-- Livewire Search Component --}}
-            <livewire:search.holiday-search />
             </div>
         </section>
 

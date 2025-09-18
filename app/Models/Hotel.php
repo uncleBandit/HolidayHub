@@ -17,7 +17,7 @@ use Illuminate\Support\Collection;
 
 class Hotel extends Model implements Bookable
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, Traits\HasImages;
 
     protected $fillable = [
         'name',
@@ -55,9 +55,9 @@ class Hotel extends Model implements Bookable
         return $this->hasMany(RoomType::class);
     }
 
-    public function bookings(): HasMany
+    public function bookings(): MorphMany
     {
-        return $this->hasMany(Booking::class);
+        return $this->morphMany(Booking::class, 'bookable');
     }
 
     public function images(): MorphMany
@@ -224,5 +224,11 @@ class Hotel extends Model implements Bookable
     {
         return $this->morphOne(Accommodation::class, 'bookable');
     }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
 
 }

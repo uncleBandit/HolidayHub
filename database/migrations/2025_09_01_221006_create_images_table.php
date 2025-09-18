@@ -13,19 +13,31 @@ return new class extends Migration
     {
         Schema::create('images', function (Blueprint $table) {
             $table->id();
-            // Polymorphic relationship (imageable)
-            $table->morphs('imageable'); // creates imageable_id & imageable_type
+            // Polymorphic relationship (imageable_id & imageable_type)
+            $table->morphs('imageable');
 
-            // Core image details
-            $table->string('path');        // storage path or cloud URL
-            $table->string('alt_text')->nullable(); // accessibility & SEO
-            $table->string('caption')->nullable();  // optional caption/description
+            // Core file info
+            $table->string('path');                   // original file (local, S3, or CDN URL)
+            $table->string('disk')->default('public'); // which storage disk it lives on
+            $table->string('format', 10)->nullable();  // jpg, png, webp, avif, etc.
+
+            // Metadata for accessibility & SEO
+            $table->string('alt_text')->nullable();   // for screen readers & SEO
+            $table->string('title')->nullable();      // hover/title attribute
+            $table->string('caption')->nullable();    // human-readable description
+
+            // Variants / optimization
+            $table->json('variants')->nullable();     // e.g. { "thumb": "...", "medium": "...", "webp": "..." }
 
             // Gallery helpers
-            $table->integer('order')->default(0);   // sort order for galleries
-            $table->boolean('is_primary')->default(false); // flag for main image
+            $table->unsignedInteger('order')->default(0); // sort order
+            $table->boolean('is_primary')->default(false); // main/cover image
 
             $table->timestamps();
+
+            // Indexes for performance
+            $table->index(['imageable_type', 'imageable_id']);
+            $table->index(['is_primary', 'order']);
         });
     }
 

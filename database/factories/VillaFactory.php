@@ -75,7 +75,6 @@ class VillaFactory extends Factory
             'max_guests' => $this->faker->numberBetween(2, 12),
             'has_private_pool' => $this->faker->boolean(40),
             'is_featured' => $this->faker->boolean(20),
-            'amenities' => json_encode($amenities),
             'policies' => json_encode([
                 'check_in' => '14:00',
                 'check_out' => '11:00',

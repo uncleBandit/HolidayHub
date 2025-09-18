@@ -64,7 +64,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:agent')->group(function () {
             Route::apiResource('/agent/dashboard', AgentController::class);
             Route::apiResource('/agent/bookings', BookingController::class);
-            Route::apiResource('/agent/analytics', AnalyticsController::class);
+            //Route::apiResource('/agent/analytics', AnalyticsController::class);
         });
 
         /**

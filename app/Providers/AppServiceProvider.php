@@ -2,11 +2,17 @@
 
 namespace App\Providers;
 
+use App\Services\Engines\PolicyEngine;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Middleware\RoleMiddleware;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use App\Services\Payments\PaymentGateway;
+use App\Services\Payments\Gateways\StripeGateway;
+
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -15,8 +21,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register PolicyEngine as a singleton
+        $this->app->singleton(PolicyEngine::class, function ($app) {
+            return new PolicyEngine();
+        });
+
+        // Bind PaymentGateway interface to StripeGateway implementation
+        $this->app->bind(PaymentGateway::class, StripeGateway::class);
     }
+
 
     /**
      * Bootstrap any application services.
@@ -28,5 +41,21 @@ class AppServiceProvider extends ServiceProvider
 
         // Register Spatie role middleware
         Route::aliasMiddleware('role', RoleMiddleware::class);
+
+        Relation::enforceMorphMap([
+        'hotel'     => \App\Models\Hotel::class,
+        'room_type' => \App\Models\RoomType::class,
+        'room'      => \App\Models\Room::class,
+        'package'   => \App\Models\Package::class,
+        'bed_and_breakfast' => \App\Models\BedAndBreakfast::class,
+        'villa'     => \App\Models\Villa::class,
+        'review'    => \App\Models\Review::class,
+        'user'      => \App\Models\User::class,
+        'activity'  => \App\Models\Activity::class,
+        'seasonal_rate' => \App\Models\SeasonalRate::class,
+        'booking'   => \App\Models\Booking::class,
+        'destination' => \App\Models\Destination::class,
+        // add more bookables here...
+    ]);
     }
 }

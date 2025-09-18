@@ -59,10 +59,13 @@
                 </flux:navbar.item>
                 {{-- Conditional links for authenticated users --}}
                 @auth
-                    <flux:navbar.item icon="paper-airplane" href="#" class="text-grey font-medium transition duration-300 hover:text-white/80 transform hover:scale-105">
-                        {{ __('My Trips') }}
-                    </flux:navbar.item>
-                    <flux:navbar.item icon="calendar" href="#" class="text-white font-medium transition duration-300 hover:text-white/80 transform hover:scale-105">
+                    <flux:navbar.item
+                        icon="calendar"
+                        :href="route('bookings')"
+                        :current="request()->routeIs('bookings')"
+                        wire:navigate
+                        class="text-white font-medium transition duration-300 hover:text-white/80 transform hover:scale-105"
+                    >
                         {{ __('Bookings') }}
                     </flux:navbar.item>
                 @endauth

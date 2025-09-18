@@ -106,7 +106,7 @@
                                 </div>
                                 <p class="text-gray-500 text-sm mb-4">{{ $roomType->guests }} guests · {{ $roomType->beds }} beds</p>
                                 <p class="text-sm text-gray-600 line-clamp-3">{{ $roomType->description }}</p>
-                            </div> 
+                            </div>
                         @endforeach
                     </div>
                 </div>

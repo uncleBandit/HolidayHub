@@ -1,42 +1,28 @@
 <div>
-<div class="relative min-h-screen bg-gray-50 dark:bg-gray-950 font-sans antialiased text-gray-800 dark:text-gray-200 overflow-x-hidden">
+<div class="relative font-sans antialiased text-gray-800 dark:text-gray-200">
 
-    {{-- Hero Section with search and filters --}}
-    <header class="relative w-full min-h-[500px] flex items-center justify-center">
-        {{-- Background Image with subtle gradient overlay --}}
-        <img class="absolute inset-0 w-full h-full object-cover z-0" src="https://images.unsplash.com/photo-1542382103308-f41e5768e7ea?q=80&w=2940&auto=format&fit=crop" alt="Tropical holiday destination">
-        <div class="absolute inset-0 bg-gradient-to-t from-gray-50 dark:from-gray-950 to-transparent z-10"></div>
-        <div class="absolute inset-0 bg-black/30 z-10"></div>
+    <div class="space-y-12 py-10 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-950 min-h-screen">
+        <!-- Sticky Search & Sort Header -->
+        <header class="sticky top-6 z-30">
+            <div class="mx-auto max-w-7xl">
+                <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-full shadow-lg border border-gray-100/50 dark:border-gray-800/50 p-3 flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-6">
 
-        <div class="relative z-20 w-full max-w-7xl px-4 sm:px-6 lg:px-8 text-center animate-fade-in-down">
-            <h1 class="text-4xl sm:text-6xl font-extrabold text-white drop-shadow-lg tracking-tight">
-                Your Next Adventure Awaits
-            </h1>
-            <p class="text-lg md:text-xl mt-4 text-gray-100 drop-shadow-md max-w-2xl mx-auto">
-                Discover curated holiday packages and unlock unforgettable experiences.
-            </p>
-
-            {{-- Unified Search and Filter Card --}}
-            <div class="mt-12 w-full max-w-4xl mx-auto bg-white/70 dark:bg-gray-900/80 backdrop-blur-xl rounded-4xl p-6 shadow-2xl shadow-indigo-500/10 dark:shadow-indigo-500/20 transform transition-all duration-500 hover:scale-[1.01] hover:shadow-indigo-500/20 dark:hover:shadow-indigo-500/30">
-                <div class="flex flex-col md:flex-row items-center gap-4">
-                    {{-- Search Input --}}
-                    <div class="relative w-full md:flex-1">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <i class="fas fa-search text-xl text-gray-500 dark:text-gray-400"></i>
+                    <div class="relative w-full md:w-1/2">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                            <svg class="h-6 w-6 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10 4a6 6 0 0 1 6 6c0 1.25-.33 2.4-.92 3.39l4.5 4.5a.75.75 0 0 1-1.06 1.06l-4.5-4.5A5.96 5.96 0 0 1 10 16a6 6 0 0 1 0-12zm0 1.5A4.5 4.5 0 0 0 5.5 10a4.5 4.5 0 0 0 9 0A4.5 4.5 0 0 0 10 5.5z" />
+                            </svg>
                         </div>
-                        <input wire:model.debounce.300ms="search" type="text" placeholder="Search by destination or package..."
-                               class="w-full pl-12 pr-4 py-4 rounded-full border-2 border-transparent bg-gray-100 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-400 dark:focus:ring-indigo-600 focus:border-transparent focus:outline-none transition-all duration-300 text-base placeholder-gray-500 dark:placeholder-gray-400">
+                        <input
+                            type="text"
+                            wire:model.live.debounce.300ms="search"
+                            placeholder="Search packages..."
+                            class="w-full pl-12 pr-6 py-4 rounded-full border-none bg-gray-100 dark:bg-gray-800 text-lg text-gray-700 dark:text-gray-300 transition-colors duration-200 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-tropical-blue focus:outline-none placeholder-gray-500 dark:placeholder-gray-400"
+                        >
                     </div>
 
-                    {{-- Price & Sort Filters --}}
-                    <div class="w-full md:w-auto flex flex-col sm:flex-row items-center gap-4">
-                        <input wire:model.debounce.300ms="minPrice" type="number" placeholder="Min Price"
-                               class="w-full sm:w-28 rounded-full border-2 border-transparent py-4 px-4 bg-gray-100 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-600 text-sm placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none transition-colors duration-200">
-                        <span class="text-gray-500 dark:text-gray-400 hidden sm:block">-</span>
-                        <input wire:model.debounce.300ms="maxPrice" type="number" placeholder="Max Price"
-                               class="w-full sm:w-28 rounded-full border-2 border-transparent py-4 px-4 bg-gray-100 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-600 text-sm placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none transition-colors duration-200">
-                        <select wire:model="sortBy"
-                                class="w-full sm:min-w-[150px] rounded-full border-2 border-transparent py-4 px-4 bg-gray-100 dark:bg-gray-800 focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-600 text-sm cursor-pointer focus:outline-none transition-colors duration-200">
+                    <div class="flex space-x-4 w-full md:w-auto justify-center">
+                        <select wire:model.live="sortBy" class="rounded-full border-none bg-gray-100 dark:bg-gray-800 px-6 py-4 text-lg text-gray-700 dark:text-gray-300 transition-colors duration-200 focus:bg-white dark:focus:bg-gray-900 focus:ring-2 focus:ring-tropical-blue focus:outline-none">
                             <option value="latest">Latest</option>
                             <option value="price_asc">Price: Low to High</option>
                             <option value="price_desc">Price: High to Low</option>
@@ -44,65 +30,70 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </header>
+        </header>
 
-    ---
-
-    <main class="w-full max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8 relative z-10">
-        {{-- Loading Indicator --}}
+        <!-- Loading Indicator -->
         <div wire:loading class="text-center mb-12 text-indigo-600 dark:text-indigo-400 font-semibold text-lg animate-pulse">
             Loading results...
         </div>
 
-        {{-- Packages Grid with entrance animation --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12 animate-fade-in">
+        <!-- Packages Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 max-w-7xl mx-auto">
             @forelse ($packages ?? [] as $package)
-                <a href="{{ route('packages.show', $package->id) }}" class="group relative bg-white dark:bg-gray-900 rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-gray-800/50 overflow-hidden cursor-pointer transform transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl hover:shadow-indigo-200/50 dark:hover:shadow-indigo-500/20">
+                <a href="{{ route('packages-show', $package->id) }}" class="relative bg-white dark:bg-gray-900 rounded-3xl shadow-xl overflow-hidden cursor-pointer group transform transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl">
+                    <!-- Image and Overlay -->
+                    <div class="relative w-full h-72">
+                        <img src="{{ $package->image_url ?? 'https://placehold.co/600x400/E5E7EB/6B7280?text=Coming+Soon' }}"
+                            onerror="this.onerror=null;this.src='https://placehold.co/600x400/E5E7EB/6B7280?text=Coming+Soon';"
+                            class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            alt="{{ $package->name }}">
+                        <div class="absolute inset-0 bg-gradient-to-t from-gray-900/70 to-transparent"></div>
+                    </div>
 
-                    {{-- Image and Overlay --}}
-                    <div class="relative h-72 overflow-hidden">
-                        <img class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-115" src="{{ $package->image_url ?? 'https://placehold.co/600x400/E5E7EB/6B7280?text=Coming+Soon' }}" alt="{{ $package->title }}">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-6 transition-opacity duration-300 group-hover:opacity-100 opacity-0">
-                            <h3 class="text-2xl font-bold text-white mb-2">{{ $package->title }}</h3>
-                            <div class="flex items-center justify-between">
-                                <span class="text-3xl font-extrabold text-white">${{ number_format($package->price) }}</span>
-                                <div class="w-12 h-12 flex items-center justify-center rounded-full bg-indigo-500/80 backdrop-blur-sm text-white transition-transform duration-300 transform group-hover:rotate-45">
-                                    <i class="fas fa-paper-plane"></i>
-                                </div>
+                    <!-- Details on overlay with animation -->
+                    <div class="absolute bottom-0 p-6 w-full text-white transform translate-y-0 group-hover:-translate-y-2 transition-transform duration-500">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-3xl font-extrabold line-clamp-1">{{ $package->name }}</h3>
+                            <span class="text-lg font-bold bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5 border border-white/30 text-white">
+                                ${{ number_format($package->base_price) }}
+                            </span>
+                        </div>
+                        <p class="text-gray-200 font-light text-sm line-clamp-2 mt-2">{{ $package->short_description }}</p>
+
+                        <div class="mt-4 flex items-center justify-between">
+                            <div class="flex items-center text-yellow-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 fill-current" viewBox="0 0 24 24">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 18.27l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z"/>
+                                </svg>
+                                <span class="ml-1 text-lg font-semibold">{{ number_format($package->rating, 1) ?? 'N/A' }}</span>
+                            </div>
+                            <div class="w-10 h-10 flex items-center justify-center rounded-full bg-tropical-blue text-white transition-transform duration-300 transform group-hover:rotate-45">
+                                <i class="fas fa-paper-plane"></i>
                             </div>
                         </div>
                     </div>
-
-                    {{-- Details outside of overlay for better SEO and accessibility --}}
-                    <div class="p-6">
-                        <p class="text-sm font-light text-gray-500 dark:text-gray-400 mb-2">
-                            <i class="fas fa-map-marker-alt mr-1 text-indigo-500"></i>
-                            {{ $package->destination->name ?? 'Unknown Destination' }}
-                        </p>
-                        <p class="text-gray-600 dark:text-gray-300 text-base line-clamp-2">
-                            {{ $package->description }}
-                        </p>
-                    </div>
                 </a>
             @empty
-                <div class="col-span-full text-center py-20 bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700">
+                <div class="col-span-full text-center py-16 bg-white dark:bg-gray-900 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-800">
                     <i class="fas fa-compass text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-                    <p class="font-bold text-xl text-gray-500 dark:text-gray-400">No featured packages found.</p>
+                    <p class="font-bold text-xl text-gray-500 dark:text-gray-400">No packages found.</p>
                     <p class="text-gray-400 dark:text-gray-500 mt-2">Try adjusting your search criteria.</p>
                 </div>
             @endforelse
         </div>
 
-        {{-- Pagination Links with subtle style --}}
-        <div class="mt-16 flex justify-center">
-            {{ $packages->links('pagination::tailwind') }}
+        <!-- Pagination Links -->
+        <div class="mt-12 max-w-7xl mx-auto flex justify-center">
+            @if ($packages instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                {{ $packages->links('pagination::tailwind') }}
+            @endif
         </div>
-    </main>
+    </div>
 </div>
 
 <style>
-    .rounded-4xl { border-radius: 2rem; }
+    .rounded-full { border-radius: 9999px; }
+    .rounded-3xl { border-radius: 1.5rem; }
 
     @keyframes fade-in-down {
         from { opacity: 0; transform: translateY(-20px); }
@@ -122,5 +113,16 @@
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
     }
+
+    .line-clamp-1 {
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+    }
+
+    .bg-tropical-blue { background-color: #4a5c96; }
 </style>
+
+
 </div>

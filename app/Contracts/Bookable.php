@@ -69,4 +69,8 @@ interface Bookable
      * Get the default maximum number of guests allowed for this bookable item.
      */
     public function getDefaultMaxGuests(): int;
+
+    public function seasonalRates(): Relation;
+    public function offers(): Relation;
+    //public function holidaySurcharges(): ?HasMany;
 }

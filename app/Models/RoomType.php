@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\DB;
 
 class RoomType extends Model implements Bookable
 {
-    use HasFactory;
+    use HasFactory, Traits\HasImages;
 
     /**
      * The attributes that are mass assignable.
@@ -271,6 +271,11 @@ class RoomType extends Model implements Bookable
     public function offers(): MorphMany
     {
         return $this->morphMany(Offer::class, 'offerable');
+    }
+
+    public function bookings(): MorphMany
+    {
+        return $this->morphMany(Booking::class, 'bookable');
     }
 }
 

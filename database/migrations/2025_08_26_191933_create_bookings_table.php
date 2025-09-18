@@ -30,6 +30,8 @@ return new class extends Migration
             $table->unsignedInteger('guests_adults')->default(1);
             $table->unsignedInteger('guests_children')->default(0);
 
+            $table->foreignId('destination_id')->nullable()->constrained()->cascadeOnDelete();
+
             // Pricing details
             $table->decimal('price_per_night', 10, 2)->nullable(); // snapshot at booking time
             $table->decimal('total_amount', 10, 2)->nullable();   // final charged price

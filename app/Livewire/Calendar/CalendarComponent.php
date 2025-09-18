@@ -20,7 +20,7 @@ class CalendarComponent extends Component
     public array $availability = [];
 
     public string $bookableType;
-    public int $bookableId;
+    public ?int $bookableId;
     public ?Carbon $checkinDate = null;
     public ?Carbon $checkoutDate = null;
     public ?Carbon $currentMonth = null;
@@ -29,8 +29,16 @@ class CalendarComponent extends Component
     public int $minStay = 2;
     public int $maxStay = 14;
 
+
+
     public function mount(Bookable $bookable): void
     {
+        if (! $bookable->exists) {
+        Log::error('CalendarComponent mounted without persisted bookable', [
+            'class' => get_class($bookable),
+        ]);
+        return;
+        }
         $this->bookableType = $bookable::class;
         $this->bookableId = $bookable->id;
         $this->bookable = $bookable;
@@ -39,7 +47,7 @@ class CalendarComponent extends Component
         $this->loadAvailability();
 
         // Set the calendar to the current month and load its data.
-        $this->currentMonth = now()->startOfMonth();
+        $this->currentMonth = $this->currentMonth ?? Carbon::now()->startOfMonth();
         $this->loadCalendarData();
     }
 
@@ -67,15 +75,13 @@ class CalendarComponent extends Component
             ->where('end_date', '>=', $startDate)
             ->get();
 
-        // Fetch all bookings for all rooms for the entire period in a single query.
-        $bookings = $this->bookable->rooms()
-            ->with(['bookings' => function ($query) use ($startDate, $endDate) {
-                $query->where('check_in', '<', $endDate)
-                    ->where('check_out', '>', $startDate);
-            }])
+        // Fetch bookings in the range
+        $bookings = $this->bookable->bookings()
+            ->where('check_in', '<', $endDate)
+            ->where('check_out', '>', $startDate)
             ->get();
 
-        // Loop through the dates and build the calendar data using the eagerly loaded data.
+        // Loop through the dates
         $period = CarbonPeriod::create($startDate, $endDate);
 
         $this->availability = [];
@@ -84,31 +90,23 @@ class CalendarComponent extends Component
             $price = $this->bookable->getBasePrice();
             $available = true;
 
-            // Check for seasonal rates and offers using the pre-loaded collections.
             if ($rate = $seasonalRates->firstWhere('date_key', $dateString)) {
                 $price = $rate->rate;
             } elseif ($offer = $offers->firstWhere('date_key', $dateString)) {
                 $price = $price - ($price * ($offer->discount_percentage / 100));
             }
 
-            // Check availability by iterating through the pre-loaded bookings.
-            $isRoomAvailable = false;
-            foreach ($bookings as $room) {
-                // Check if this specific room is available on this date.
-                $isRoomAvailable = $room->bookings->where('check_in', '<', $dateString)->where('check_out', '>', $dateString)->count() === 0;
+            // Check if date falls into any booking
+            $isBooked = $bookings->contains(function ($booking) use ($dateString) {
+                return $booking->check_in < $dateString && $booking->check_out > $dateString;
+            });
 
-                if ($isRoomAvailable) {
-                    $available = true;
-                    break;
-                }
-            }
-
-            // Store the final data for the view.
             $this->availability[$dateString] = [
-                'available' => $available,
+                'available' => ! $isBooked,
                 'price' => (float) $price,
             ];
         }
+
     }
 
     public function book(): void
@@ -149,7 +147,7 @@ class CalendarComponent extends Component
 
         // All checks passed -> trigger booking flow
         $this->dispatch('openBookingModal', [
-                        'bookable_type' => get_class($this->bookable),
+                        'bookable_type' => $this->bookable->getMorphClass(),
                         'bookable_id'   => $this->bookable->id,
                         'checkin'       => $this->checkin,
                         'checkout'      => $this->checkout,
@@ -245,15 +243,20 @@ class CalendarComponent extends Component
 
     public function previousMonth(): void
     {
-        $this->currentMonth = $this->currentMonth->copy()->subMonth();
+        $this->currentMonth = $this->currentMonth
+            ? $this->currentMonth->copy()->subMonth()->startOfMonth()
+            : Carbon::now()->startOfMonth();
         $this->loadCalendarData();
     }
 
     public function nextMonth(): void
     {
-        $this->currentMonth = $this->currentMonth->copy()->addMonth();
+        $this->currentMonth = $this->currentMonth
+            ? $this->currentMonth->copy()->addMonth()->startOfMonth()
+            : Carbon::now()->startOfMonth();
         $this->loadCalendarData();
     }
+
 
     public function render()
     {

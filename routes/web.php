@@ -18,6 +18,10 @@ use App\Livewire\Auth\ConfirmPassword;
 use App\Livewire\Auth\EmailVerification;
 use App\Livewire\Auth\UpdatePassword;
 use App\Livewire\BedAndBreakfast\BedAndBreakfastShow;
+use App\Livewire\Booking\BookingShow;
+use App\Livewire\Destination\DestinationIndex;
+use App\Livewire\Discover;
+use App\Livewire\Hotel\HotelIndex;
 use App\Livewire\Package\PackageShow;
 use App\Livewire\Villa\VillaShow;
 
@@ -34,12 +38,11 @@ use App\Livewire\Villa\VillaShow;
 
 // Public pages
 Route::get('/', fn () => view('welcome'))->name('welcome');
-Route::get('/destination/{destination}', DestinationShow::class)->name('destination.show');
-Route::get('/hotel/{slug}', HotelShow::class)->name('hotel.show');
-Route::get('/activity/{slug}', ActivityShow::class)->name('activity.show');
-Route::get('/bed-and-breakfast/{slug}', BedAndBreakfastShow::class)->name('bedandbreakfast.show');
-Route::get('/villa/{slug}', VillaShow::class)->name('villa.show');
-Route::get('package/{slug}', PackageShow::class)->name('packages-show');
+Route::get('destinations', DestinationIndex::class)->name('destination.index');
+Route::get('hotels', HotelIndex::class)->name('hotel.index');
+Route::get('bed-and-breakfasts', \App\Livewire\BedAndBreakfast\BedAndBreakfastIndex::class)->name('bedandbreakfast-index');
+
+
 
 // Authenticated user pages
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -61,7 +64,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Provider routes
     Route::middleware(['auth', 'verified'])->prefix('provider')->name('provider.')->group(function () {
     Route::get('/dashboard', ProviderDashboard::class)->name('dashboard');
-});
+
+     });
+
+    //Guest routes
+    Route::get('/discover', Discover::class)->name('discover');
+    Route::get('/bookings', BookingShow::class)->name('bookings');
+    Route::get('/destination/{destination}', DestinationShow::class)->name('destination.show');
+    Route::get('/hotel/{slug}', HotelShow::class)->name('hotel-show');
+    Route::get('/activity/{activity:slug}', ActivityShow::class)->name('activity.show');
+    Route::get('/bed-and-breakfast/{bnb:slug}', BedAndBreakfastShow::class)->name('bedandbreakfast.show');
+    Route::get('/villa/{villa:slug}', VillaShow::class)->name('villa.show');
+    Route::get('package/{package:slug}', PackageShow::class)->name('packages-show');
+
+    // Admin routes
+   Route::get('admin/dashboard', \App\Livewire\Admin\AdminDashboard::class)->middleware('can:admin.access')->name('admin.dashboard');
+
+
 });
 
 require __DIR__.'/auth.php';

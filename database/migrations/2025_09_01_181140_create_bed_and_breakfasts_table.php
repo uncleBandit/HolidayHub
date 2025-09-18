@@ -37,8 +37,9 @@ return new class extends Migration
 
             // Features
             $table->boolean('is_featured')->default(false); // highlight in homepage
-            $table->json('amenities')->nullable(); // e.g. free breakfast, wifi, parking
             $table->json('policies')->nullable(); // check-in/out, cancellation rules
+            $table->boolean('is_active')->default(true);   // ✅ added
+            $table->boolean('is_verified')->default(false);
 
             // Media
             $table->string('cover_image')->nullable();
@@ -65,6 +66,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('bead_and_breakfasts');
+        Schema::dropIfExists('bed_and_breakfasts');
     }
 };

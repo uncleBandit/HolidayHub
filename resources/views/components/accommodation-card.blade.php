@@ -6,7 +6,7 @@
 
     // Determine the correct route based on the model instance
     if ($bookable instanceof \App\Models\Hotel) {
-        $route = route('hotel.show', $bookable->slug);
+        $route = route('hotel-show', $bookable->slug);
     } elseif ($bookable instanceof \App\Models\BedAndBreakfast) {
         $route = route('bedandbreakfast.show', $bookable->slug);
     } elseif ($bookable instanceof \App\Models\Villa) {
