@@ -1,7 +1,6 @@
 <div>
 <div class="bg-gray-50 font-inter text-gray-800 antialiased">
     <!-- Tailwind CSS CDN for styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
 
     <div class="container mx-auto px-4 lg:px-8 py-12 space-y-12">
 

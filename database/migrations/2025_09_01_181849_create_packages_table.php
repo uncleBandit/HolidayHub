@@ -23,7 +23,7 @@ return new class extends Migration
             $table->foreignId('destination_id')->nullable()
                 ->constrained()
                 ->onDelete('set null');
-            $table->foreignId('agent_id')->nullable()
+            $table->foreignId('agent_id')
                 ->constrained()
                 ->onDelete('set null'); // Travel agency/tour operator
 

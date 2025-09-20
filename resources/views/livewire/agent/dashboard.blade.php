@@ -45,7 +45,7 @@
             Package Management
         </a>
     </div>
-    
+
     <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Recent Bookings</h2>
 
     <!-- Bookings Cards Grid -->
@@ -54,7 +54,8 @@
             <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300 border border-gray-100 dark:border-gray-600">
                 <div class="flex justify-between items-start mb-4">
                     <div class="flex-grow">
-                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white truncate">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white truncate max-w-full md:max-w-[200px]">
+
                             {{ $booking->bookable->name ?? $booking->bookable->title ?? 'Unknown Booking' }}
                         </h3>
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">

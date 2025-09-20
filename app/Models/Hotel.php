@@ -20,28 +20,38 @@ class Hotel extends Model implements Bookable
     use HasFactory, SoftDeletes, Traits\HasImages;
 
     protected $fillable = [
+        'provider_id',
         'name',
+        'slug',
         'description',
         'address',
         'city',
         'country',
         'latitude',
         'longitude',
-        'rating',
         'stars',
-        'email',
-        'phone',
+        'is_featured',
+        'is_active',
+        'is_verified',
         'policies',
         'cover_image',
-        'status',
-        'is_featured' => 'boolean',
+        'gallery',
+        'avg_price_per_night',
+        'avg_rating',
+        'reviews_count',
     ];
 
     protected $casts = [
         'policies' => 'array',
-        'rating' => 'float',
+        'gallery' => 'array',
+        'avg_rating' => 'float',
+        'avg_price_per_night' => 'float',
+        'reviews_count' => 'integer',
         'latitude' => 'float',
         'longitude' => 'float',
+        'is_featured' => 'boolean',
+        'is_active' => 'boolean',
+        'is_verified' => 'boolean',
     ];
 
     /** Relationships */

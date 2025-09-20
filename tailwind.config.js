@@ -1,8 +1,8 @@
-import defaultTheme from 'tailwindcss/defaultTheme';
-import forms from '@tailwindcss/forms';
+const defaultTheme = require('tailwindcss/defaultTheme');
+const forms = require('@tailwindcss/forms');
 
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
     content: [
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
@@ -15,14 +15,17 @@ export default {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
-        },
-
-        colors: {
+            colors: {
                 'deep-ocean': '#01497C',     // dark ocean blue
                 'sea-foam': '#A7E9AF',      // soft aqua green
                 'tropical-blue': '#0096C7', // bright tropical blue
-                'sunset-orange': '#FF5733', // warm sunset orange// example green
+                'sunset-orange': '#FF5733', // warm sunset orange
+                'coral-pink': '#FF6B6B',
+                'sandy-beige': '#FFE5B4',
+                'sunshine-yellow': '#FFD93D',
+
             },
+        },
     },
 
     plugins: [forms],

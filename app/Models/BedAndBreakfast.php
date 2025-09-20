@@ -19,20 +19,37 @@ class BedAndBreakfast extends Model implements Bookable
     protected $table = 'bed_and_breakfasts';
 
     protected $fillable = [
+        'provider_id',
         'name',
+        'slug',
         'description',
-        'price_per_night',
-        'max_guests',
+        'rooms',
+        'has_breakfast',
         'address',
         'city',
         'country',
         'latitude',
         'longitude',
-        'destination_id',
+        'is_featured',
+        'policies',
+        'is_active',
+        'is_verified',
+        'cover_image',
+        'gallery',
+        'price_per_night',
+        'max_guests',
+        'seasonal_pricing',
     ];
 
     protected $casts = [
-        'price_per_night' => 'decimal:2',
+        'price_per_night'   => 'decimal:2',
+        'is_featured'       => 'boolean',
+        'is_active'         => 'boolean',
+        'is_verified'       => 'boolean',
+        'has_breakfast'     => 'boolean',
+        'policies'          => 'array',
+        'gallery'           => 'array',
+        'seasonal_pricing'  => 'array',
     ];
 
     /** Relationships */

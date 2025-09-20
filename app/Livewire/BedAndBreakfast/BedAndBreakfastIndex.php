@@ -31,7 +31,6 @@ class BedAndBreakfastIndex extends Component
         'city' => ['except' => null],
         'minPrice' => ['except' => null],
         'maxPrice' => ['except' => null],
-        'selectedAmenities' => ['except' => []],
         'onlyFeatured' => ['except' => false],
         'sortField' => ['except' => 'name'],
         'sortDirection' => ['except' => 'asc'],
@@ -57,6 +56,16 @@ class BedAndBreakfastIndex extends Component
         }
     }
 
+    public function resetFilters()
+    {
+        $this->reset([
+            'search', 'city', 'minPrice', 'maxPrice',
+            'selectedAmenities', 'onlyFeatured',
+            'sortField', 'sortDirection'
+        ]);
+    }
+
+
     public function render()
     {
         $query = BedAndBreakfast::query()
@@ -77,7 +86,8 @@ class BedAndBreakfastIndex extends Component
 
         // 🏙️ City
         if ($this->city) {
-            $query->where('city', $this->city);
+            $query->where('city', 'like', "%{$this->city}%");
+
         }
 
         // 💵 Price range
@@ -95,11 +105,16 @@ class BedAndBreakfastIndex extends Component
         }
 
         // 🛎️ Amenities
-        if ($this->selectedAmenities) {
+        if (!empty($this->selectedAmenities)) {
             $query->whereHas('amenities', function ($q) {
                 $q->whereIn('amenities.id', $this->selectedAmenities);
-            });
+            }, '=', count($this->selectedAmenities));
         }
+
+        logger($this->selectedAmenities);
+
+
+
 
         // 📊 Sorting options
         switch ($this->sortField) {
@@ -107,8 +122,10 @@ class BedAndBreakfastIndex extends Component
                 $query->orderBy('price_per_night', $this->sortDirection);
                 break;
             case 'rating':
-                $query->orderBy('reviews_avg_rating', $this->sortDirection);
-                break;
+                    $query->orderByRaw('reviews_avg_rating IS NULL') // push unrated to bottom
+                        ->orderBy('reviews_avg_rating', $this->sortDirection);
+                    break;
+
             case 'newest':
                 $query->orderBy('created_at', $this->sortDirection);
                 break;

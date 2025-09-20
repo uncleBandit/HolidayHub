@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
     <title>{{ config('app.name', 'HolidayHub') }}</title>
 
     <!-- Google Font: Inter -->
@@ -10,8 +13,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Tailwind CSS via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Custom CSS for advanced effects -->
     <style>
@@ -51,10 +52,14 @@
         }
     </style>
     @livewireStyles
+    <link rel="stylesheet" href="{{ asset('build/assets/app.css') }}">
+
 
 </head>
 <body class="text-white antialiased flex flex-col justify-center items-center min-h-screen p-4 sm:p-6 lg:p-8 space-y-8">
     <!-- Brand/Logo Section: Animated and elegant -->
+    <title>TEST AUTH LAYOUT</title>
+
     <div class="text-center w-full max-w-lg">
         <h1 class="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-sky-400 to-purple-500 logo-text">
             HolidayHub
@@ -63,9 +68,13 @@
             Your Next-Gen Holiday Booking System
         </p>
     </div>
+    <title>TEST AUTH LAYOUT</title>
+
 
     {{-- The content from the Livewire component will be inserted here, centered by the body --}}
-    {{ $slot }}
+     <div class="w-full max-w-2xl">
+        {{ $slot }}
+    </div>
 
     @livewireScripts
 

@@ -9,7 +9,7 @@
         {{-- Search --}}
         <div>
             <label class="text-sm font-medium text-gray-600">Search</label>
-            <input type="text" wire:model.debounce.500ms="search"
+            <input type="text" wire:model.live="search"
                    class="mt-1 w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                    placeholder="Name, city, or country...">
         </div>
@@ -17,7 +17,7 @@
         {{-- City --}}
         <div>
             <label class="text-sm font-medium text-gray-600">City</label>
-            <input type="text" wire:model.debounce.500ms="city"
+            <input type="text" wire:model.live="city"
                    class="mt-1 w-full rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                    placeholder="Enter city">
         </div>
@@ -46,10 +46,11 @@
                     @foreach($amenities as $amenity)
                         <label class="flex items-center gap-1 text-sm">
                             <input type="checkbox"
-                                wire:model="selectedAmenities"
+                                wire:model.live="selectedAmenities"
                                 value="{{ $amenity->id }}"
                                 class="rounded text-indigo-600 focus:ring-indigo-500">
                             {{ $amenity->name }}
+
                         </label>
                     @endforeach
                 </div>
@@ -115,7 +116,7 @@
                         <div class="flex items-center justify-between">
                             <span class="text-indigo-600 font-bold">${{ $bnb->price_per_night }}/night</span>
                             <span class="flex items-center text-sm text-yellow-500">
-                                ⭐ {{ number_format($bnb->reviews_avg_rating, 1) ?? 'N/A' }}
+                                ⭐ {{ number_format($bnb->avg_rating, 1) ?? 'N/A' }}
                                 <span class="ml-1 text-gray-500">({{ $bnb->reviews_count }})</span>
                             </span>
                         </div>

@@ -9,10 +9,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Package extends Model implements Bookable
 {
-    use HasFactory, Traits\HasImages;
+    use HasFactory, Traits\HasImages,SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -22,17 +23,28 @@ class Package extends Model implements Bookable
     protected $fillable = [
         'name',
         'slug',
-        'description',
-        'destination',
-        'price',
+        'short_description',
+        'full_description',
+        'destination_id',
+        'agent_id',
+        'base_price',
+        'discount_price',
         'currency',
         'duration_days',
-        'start_date',
-        'end_date',
-        'max_guests',
-        'agent_id',
-        'image_url',
-        'status',
+        'duration_nights',
+        'inclusions',
+        'exclusions',
+        'itinerary',
+        'cover_image',
+        'gallery',
+        'avg_rating',
+        'reviews_count',
+        'is_featured',
+        'views',
+        'active',
+        'available_from',
+        'available_to',
+        'meta_data',
     ];
 
     /**
@@ -41,9 +53,17 @@ class Package extends Model implements Bookable
      * @var array<string, string>
      */
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
-        'price' => 'decimal:2',
+        'base_price' => 'decimal:2',
+        'discount_price' => 'decimal:2',
+        'available_from' => 'date',
+        'available_to' => 'date',
+        'inclusions' => 'array',
+        'exclusions' => 'array',
+        'itinerary' => 'array',
+        'gallery' => 'array',
+        'meta_data' => 'array',
+        'is_featured' => 'boolean',
+        'active' => 'boolean',
     ];
 
     /** Relationships */

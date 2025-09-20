@@ -21,8 +21,10 @@ use App\Livewire\BedAndBreakfast\BedAndBreakfastShow;
 use App\Livewire\Booking\BookingShow;
 use App\Livewire\Destination\DestinationIndex;
 use App\Livewire\Discover;
+use App\Livewire\Hotel\HotelCreate;
 use App\Livewire\Hotel\HotelIndex;
 use App\Livewire\Package\PackageShow;
+use App\Livewire\Search\SearchBar;
 use App\Livewire\Villa\VillaShow;
 
 /*
@@ -48,6 +50,8 @@ Route::get('bed-and-breakfasts', \App\Livewire\BedAndBreakfast\BedAndBreakfastIn
 Route::middleware(['auth', 'verified'])->group(function () {
     // Generic dashboard (for all users)
     Route::get('/dashboard', DashboardPage::class)->name('dashboard');
+    Route::get('/search', SearchBar::class)->name('search.results');
+
 
     // Profile routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -64,8 +68,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Provider routes
     Route::middleware(['auth', 'verified'])->prefix('provider')->name('provider.')->group(function () {
     Route::get('/dashboard', ProviderDashboard::class)->name('dashboard');
+    Route::get('/hotel/create', HotelCreate::class)->name('hotel-create');
+    Route::get('/villa/create', \App\Livewire\Villa\VillaCreate::class)->name('villa-create');
+    Route::get('/bed-and-breakfast/create', \App\Livewire\BedAndBreakfast\BedAndBreakfastCreate::class)->name('bedandbreakfast-create');
 
-     });
+    });
 
     //Guest routes
     Route::get('/discover', Discover::class)->name('discover');

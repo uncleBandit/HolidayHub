@@ -3,9 +3,7 @@
 @section('title', 'HolidayHub - Your Next Holiday Awaits')
 
 @section('content')
-    <!-- Hero Section with Tropical Background -->
     <section class="relative h-[600px] md:h-[700px] overflow-hidden">
-        <!-- Background Image with Overlay -->
         <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1549929255-a50d287c1265?q=80&w=2940&auto=format&fit=crop');">
             <div class="absolute inset-0 bg-deep-ocean opacity-50"></div>
         </div>
@@ -18,33 +16,26 @@
         </div>
     </section>
 
-    <!-- Livewire Search/Booking Component (positioned to overlap the hero) -->
-    <div class="container mx-auto px-6 relative z-20 -mt-24">
-        @livewire('welcome-page')
-    </div>
 
-    <!-- Featured Destinations -->
-    <section class="py-16 bg-sea-foam">
-    <div class="container mx-auto px-6">
-        <h2 class="text-4xl font-bold text-center mb-12 text-tropical-blue">
-            Top-Rated Destinations
-        </h2>
-
-        {{-- Replace foreach with Livewire component --}}
-        <livewire:featured.featured-destinations />
-    </div>
-    </section>
-
-    <!-- Testimonials -->
-    <section class="py-16 bg-white">
+    <section class="relative -mt-24 z-10">
         <div class="container mx-auto px-6">
-        <livewire:testimonials />
-    </div>
+            <div class="bg-white rounded-3xl shadow-2xl p-8 md:p-12">
+                <h2 class="text-4xl font-bold text-center mb-12 text-tropical-blue">
+                    Top-Rated Destinations
+                </h2>
+
+                {{-- Replace foreach with Livewire component --}}
+                <livewire:featured.featured-destinations />
+            </div>
+        </div>
     </section>
 
+    <section class="py-16 bg-sea-foam">
+        <div class="container mx-auto px-6">
+            <livewire:testimonials />
+        </div>
+    </section>
 
-
-    <!-- Call to Action -->
     <section class="py-20 bg-sunset-orange text-white text-center rounded-t-3xl mt-12">
         <div class="container mx-auto px-6">
             <h2 class="text-4xl font-bold mb-4">Ready to Book Your Next Adventure?</h2>

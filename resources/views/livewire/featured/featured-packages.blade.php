@@ -40,7 +40,7 @@
         <!-- Packages Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 max-w-7xl mx-auto">
             @forelse ($packages ?? [] as $package)
-                <a href="{{ route('packages-show', $package->id) }}" class="relative bg-white dark:bg-gray-900 rounded-3xl shadow-xl overflow-hidden cursor-pointer group transform transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl">
+                <a href="{{ route('packages-show', $package) }}" class="relative bg-white dark:bg-gray-900 rounded-3xl shadow-xl overflow-hidden cursor-pointer group transform transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl">
                     <!-- Image and Overlay -->
                     <div class="relative w-full h-72">
                         <img src="{{ $package->image_url ?? 'https://placehold.co/600x400/E5E7EB/6B7280?text=Coming+Soon' }}"

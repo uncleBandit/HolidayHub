@@ -96,4 +96,8 @@ class Provider extends Model
     return $this->hasMany(Service::class);
      }
 
+     public function accommodations(){
+        return $this->hasMany(Accommodation::class);
+     }
+
 }

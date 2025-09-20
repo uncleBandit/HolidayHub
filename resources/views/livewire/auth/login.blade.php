@@ -11,7 +11,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Volt\Component;
 
-new #[Layout('components.layouts.auth')] class extends Component {
+new #[Layout('layouts.auth')] class extends Component {
     #[Validate('required|string|email')]
     public string $email = '';
 
@@ -71,9 +71,12 @@ new #[Layout('components.layouts.auth')] class extends Component {
     {
         return Str::transliterate(Str::lower($this->email).'|'.request()->ip());
     }
+
+
 }; ?>
 
-<div class="glass-container w-full max-w-lg mx-auto rounded-3xl p-8 sm:p-12 transition-all duration-300 transform hover:scale-[1.02]">
+<div class="flex flex-col gap-6 p-8 bg-white dark:bg-zinc-800 rounded-2xl shadow-lg border border-zinc-200 dark:border-zinc-700">
+
     <div class="flex flex-col gap-8">
         {{-- The header component for a clear, welcoming message --}}
         <x-auth-header title="{{ __('Welcome back') }}" description="{{ __('Log in to continue your journey.') }}" />

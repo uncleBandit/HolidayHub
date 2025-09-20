@@ -24,22 +24,23 @@ class Villa extends Model implements Bookable
      * @var array<string>
      */
     protected $fillable = [
-        'name', 'description', 'base_price', 'max_guests', 'bedrooms', 'bathrooms',
-        'address', 'city', 'country', 'latitude', 'longitude', 'gallery',
-        'amenities', 'destination_id', 'status',
+        'name', 'slug', 'description', 'avg_price_per_night', 'max_guests', 'bedrooms', 'bathrooms',
+        'address', 'city', 'country', 'latitude', 'longitude', 'gallery', 'policies',
+        'amenities', 'destination_id', 'provider_id', 'is_active', 'is_verified', 'is_featured', 'has_private_pool',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'gallery' => 'array',
         'amenities' => 'array',
-        'base_price' => 'float',
+        'policies' => 'array',
+        'avg_price_per_night' => 'float',
         'latitude' => 'float',
         'longitude' => 'float',
+        'is_active' => 'boolean',
+        'is_verified' => 'boolean',
+        'is_featured' => 'boolean',
+        'has_private_pool' => 'boolean',
+        'meta_data' => 'array',
     ];
 
     /** Relationships */

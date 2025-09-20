@@ -18,6 +18,7 @@ class Amenity extends Model
         'name',
         'description',
         'icon',
+        'slug',
         'type',
         'active',
     ];

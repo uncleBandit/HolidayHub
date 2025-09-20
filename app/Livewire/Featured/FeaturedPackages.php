@@ -11,37 +11,79 @@ class FeaturedPackages extends Component
 {
     use WithPagination;
 
-    // Sets the theme for pagination links to use Tailwind CSS
     protected string $paginationTheme = 'tailwind';
 
-    public $perPage = 6;
-    public $search = '';
-    public $destination = null;
-    public $minPrice = null;
-    public $maxPrice = null;
-    public $sortBy = 'latest';
-    public $page = 1;
+    public int $perPage = 6;
+    public string $search = '';
+    public ?int $destination = null;
+    public ?float $minPrice = null;
+    public ?float $maxPrice = null;
+    public string $sortBy = 'latest'; // latest | price_asc | price_desc
+    public int $page = 1;
+    public bool $showResults = false;
 
     protected $queryString = [
-        'search', 'destination', 'minPrice', 'maxPrice', 'sortBy', 'page'
+        'search' => ['except' => ''],
+        'destination' => ['except' => null],
+        'minPrice' => ['except' => null],
+        'maxPrice' => ['except' => null],
+        'sortBy' => ['except' => 'latest'],
+        'page' => ['except' => 1],
     ];
 
     /**
-     * Resets the page to 1 whenever a filter property is updated.
+     * Reset page on filter/search change
      */
-    public function updating($property)
+    public function updating($property): void
     {
         if (in_array($property, ['search', 'destination', 'minPrice', 'maxPrice', 'sortBy', 'perPage'])) {
             $this->resetPage();
         }
     }
 
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+        $this->showResults = !empty($this->search);
+    }
+
     /**
-     * Renders the component, fetching and caching the packages.
+     * Build the packages query
+     */
+    protected function buildQuery()
+    {
+        return Package::query()
+            ->with(['destination']) // eager load to avoid N+1
+            ->when(
+                empty($this->search) && !$this->destination && !$this->minPrice && !$this->maxPrice,
+                fn($q) => $q->where('is_featured', true)
+            )
+            ->when($this->search, function ($q) {
+                $q->where(function ($q2) {
+                    $q2->where('title', 'like', "%{$this->search}%")
+                        ->orWhere('short_description', 'like', "%{$this->search}%")
+                        ->orWhere('long_description', 'like', "%{$this->search}%")
+                        ->orWhere('slug', 'like', "%{$this->search}%");
+                });
+            })
+            ->when($this->destination, fn($q) => $q->where('destination_id', $this->destination))
+            ->when($this->minPrice, fn($q) => $q->where('price', '>=', $this->minPrice))
+            ->when($this->maxPrice, fn($q) => $q->where('price', '<=', $this->maxPrice))
+            ->orderByDesc('is_featured') // always prioritize featured
+            ->tap(function ($q) {
+                match ($this->sortBy) {
+                    'price_asc' => $q->orderBy('price', 'asc'),
+                    'price_desc' => $q->orderBy('price', 'desc'),
+                    default => $q->orderBy('updated_at', 'desc'),
+                };
+            });
+    }
+
+    /**
+     * Render the component
      */
     public function render()
     {
-        // Generate a unique cache key based on the current state of the component
         $cacheKey = "featured_packages_" . md5(json_encode([
             'search' => $this->search,
             'destination' => $this->destination,
@@ -52,20 +94,16 @@ class FeaturedPackages extends Component
             'page' => $this->page,
         ]));
 
-        // Fetch packages from the cache or the database. Cache for 10 minutes.
-        $packages = Cache::remember($cacheKey, now()->addMinutes(10), function () {
-            return Package::query()
-                ->with('destination')
-                ->where('is_featured', true)
-                ->when($this->search, fn($query) => $query->where('title', 'like', "%{$this->search}%"))
-                ->when($this->destination, fn($query) => $query->where('destination_id', $this->destination))
-                ->when($this->minPrice, fn($query) => $query->where('price', '>=', $this->minPrice))
-                ->when($this->maxPrice, fn($query) => $query->where('price', '<=', $this->maxPrice))
-                ->when($this->sortBy === 'latest', fn($query) => $query->orderBy('updated_at', 'desc'))
-                ->when($this->sortBy === 'price_asc', fn($query) => $query->orderBy('price', 'asc'))
-                ->when($this->sortBy === 'price_desc', fn($query) => $query->orderBy('price', 'desc'))
-                ->paginate($this->perPage);
-        });
+        $packages = Cache::remember(
+        $cacheKey,
+        now()->addMinutes(10),
+        fn() => $this->buildQuery()->paginate($this->perPage)
+        );
+
+
+        if (empty($this->search)) {
+            $this->showResults = false;
+        }
 
         return view('livewire.featured.featured-packages', [
             'packages' => $packages,

@@ -41,51 +41,124 @@ wire:poll.10s>
 
 <div class="max-w-7xl mx-auto">
     {{-- Rooms & Services Management --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-2xl">Rooms</h3>
-                <button @click="showRoomModal = true" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-full font-semibold transition-colors duration-200 shadow-md">
-                    <i class="fas fa-plus mr-1"></i> Add Room
-                </button>
-            </div>
-            <ul class="divide-y divide-gray-200 dark:divide-gray-700">
-                @forelse($rooms as $room)
-                    <li class="py-4 flex justify-between items-center">
-                        <div>
-                            <h4 class="font-semibold">{{ $room->name }}</h4>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ $room->capacity }} pax - ${{ number_format($room->price) }}</p>
-                        </div>
-                        <span class="text-xs text-gray-400 dark:text-gray-500">{{ $room->facilities }}</span>
-                    </li>
-                @empty
-                    <li class="py-4 text-center text-gray-500">No rooms found.</li>
-                @endforelse
-            </ul>
-        </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
 
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-2xl">Services</h3>
-                <button @click="showServiceModal = true" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-full font-semibold transition-colors duration-200 shadow-md">
-                    <i class="fas fa-plus mr-1"></i> Add Service
-                </button>
-            </div>
-            <ul class="divide-y divide-gray-200 dark:divide-gray-700">
-                @forelse($services as $service)
-                    <li class="py-4 flex justify-between items-center">
-                        <div>
-                            <h4 class="font-semibold">{{ $service->name }}</h4>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">${{ number_format($service->price) }}</p>
-                        </div>
-                        <span class="text-xs text-gray-400 dark:text-gray-500">{{ Str::limit($service->description, 30) }}</span>
-                    </li>
-                @empty
-                    <li class="py-4 text-center text-gray-500">No services found.</li>
-                @endforelse
-            </ul>
+    {{-- Hotels Section --}}
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-2xl">Hotels</h3>
+            <a href="{{ route('provider.hotel-create') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-full font-semibold transition-colors duration-200 shadow-md">
+                <i class="fas fa-plus mr-1"></i> Add Hotel
+            </a>
         </div>
+        <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+            @forelse($provider->accommodations()->hotels()->with('bookable')->get() as $accommodation)
+                <li class="py-4 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-semibold">{{ $accommodation->bookable->name }}</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            {{ $accommodation->reviews_count }} reviews
+                            @if($accommodation->avg_rating)
+                                · {{ $accommodation->avg_rating }} stars
+                            @endif
+                        </p>
+                    </div>
+                    <p class="text-sm font-bold text-gray-700 dark:text-gray-300">
+                        ${{ number_format($accommodation->avg_price_per_night, 2) }}
+                        <span class="text-xs text-gray-400 dark:text-gray-500">/ night</span>
+                    </p>
+                </li>
+            @empty
+                <li class="py-4 text-center text-gray-500">No hotels found.</li>
+            @endforelse
+        </ul>
     </div>
+
+     {{-- Villas Section --}}
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-2xl">Villas</h3>
+            <a href="{{ route('provider.villa-create') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-full font-semibold transition-colors duration-200 shadow-md">
+                <i class="fas fa-plus mr-1"></i> Add Villa
+            </a>
+        </div>
+        <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+            @forelse($provider->accommodations()->villas()->with('bookable')->get() as $accommodation)
+                <li class="py-4 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-semibold">{{ $accommodation->bookable->name }}</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            {{ $accommodation->reviews_count }} reviews
+                            @if($accommodation->avg_rating)
+                                · {{ $accommodation->avg_rating }} stars
+                            @endif
+                        </p>
+                    </div>
+                    <p class="text-sm font-bold text-gray-700 dark:text-gray-300">
+                        ${{ number_format($accommodation->avg_price_per_night, 2) }}
+                        <span class="text-xs text-gray-400 dark:text-gray-500">/ night</span>
+                    </p>
+                </li>
+            @empty
+                <li class="py-4 text-center text-gray-500">No villas found.</li>
+            @endforelse
+        </ul>
+    </div>
+
+    {{-- Bed & Breakfast Section --}}
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-2xl">Bed & Breakfasts</h3>
+            <a href="{{ route('provider.bedandbreakfast-create') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-full font-semibold transition-colors duration-200 shadow-md">
+                <i class="fas fa-plus mr-1"></i> Add B&B
+            </a>
+        </div>
+        <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+            @forelse($provider->accommodations()->bedAndBreakfasts()->with('bookable')->get() as $accommodation)
+                <li class="py-4 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-semibold">{{ $accommodation->bookable->name }}</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                             {{ $accommodation->reviews_count }} reviews
+                            @if($accommodation->avg_rating)
+                                · {{ $accommodation->avg_rating }} stars
+                            @endif
+                        </p>
+                    </div>
+                    <p class="text-sm font-bold text-gray-700 dark:text-gray-300">
+                        ${{ number_format($accommodation->avg_price_per_night, 2) }}
+                        <span class="text-xs text-gray-400 dark:text-gray-500">/ night</span>
+                    </p>
+                </li>
+            @empty
+                <li class="py-4 text-center text-gray-500">No Bed & Breakfasts found.</li>
+            @endforelse
+        </ul>
+    </div>
+
+    {{-- Services Section (retained from original) --}}
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-2xl">Services</h3>
+            <button @click="showServiceModal = true" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-full font-semibold transition-colors duration-200 shadow-md">
+                <i class="fas fa-plus mr-1"></i> Add Service
+            </button>
+        </div>
+        <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+            @forelse($services as $service)
+                <li class="py-4 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-semibold">{{ $service->name }}</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">${{ number_format($service->price) }}</p>
+                    </div>
+                    <span class="text-xs text-gray-400 dark:text-gray-500">{{ Str::limit($service->description, 30) }}</span>
+                </li>
+            @empty
+                <li class="py-4 text-center text-gray-500">No services found.</li>
+            @endforelse
+        </ul>
+    </div>
+</div>
 
     {{-- Bookings Panel with Filters and Table --}}
     <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl">

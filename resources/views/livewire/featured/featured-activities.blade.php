@@ -13,7 +13,7 @@
                     </div>
                     <input
                         type="text"
-                        wire:model.debounce.300ms="search"
+                        wire:model.live="search"
                         placeholder="Search activities..."
                         class="w-full pl-12 pr-6 py-4 rounded-full border-none bg-gray-100 text-lg text-gray-700 transition-colors duration-200 focus:bg-white focus:ring-2 focus:ring-tropical-blue focus:outline-none placeholder-gray-500"
                     >

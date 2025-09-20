@@ -14,7 +14,7 @@
             </p>
             <div class="flex items-center mt-4 text-sm md:text-base font-semibold">
                 <i class="fas fa-star text-yellow-400 mr-2"></i>
-                <span>{{ number_format($villa->average_rating, 1) }} ({{ $villa->reviews->count() }} reviews)</span>
+                <span>{{ number_format($villa->avg_rating, 1) }} ({{ $villa->reviews_count }} reviews)</span>
             </div>
         </div>
 

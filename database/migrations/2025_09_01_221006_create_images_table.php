@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -36,8 +37,11 @@ return new class extends Migration
             $table->timestamps();
 
             // Indexes for performance
-            $table->index(['imageable_type', 'imageable_id']);
-            $table->index(['is_primary', 'order']);
+            // Only add extra indexes if NOT using SQLite
+            if (DB::getDriverName() !== 'sqlite') {
+                $table->index(['imageable_type', 'imageable_id']);
+                $table->index(['is_primary', 'order']);
+            }
         });
     }
 

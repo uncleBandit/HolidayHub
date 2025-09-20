@@ -11,12 +11,21 @@ class Accommodation extends Model
     use HasFactory,SoftDeletes;
 
     protected $fillable = [
-        'name',
-        'description',
         'destination_id',
         'provider_id',
         'bookable_type',
         'bookable_id',
+        'is_featured',
+        'avg_price_per_night',
+        'avg_rating',
+        'reviews_count',
+    ];
+
+    protected $casts = [
+        'is_featured' => 'boolean',
+        'avg_price_per_night' => 'decimal:2',
+        'avg_rating' => 'decimal:2',
+        'reviews_count' => 'integer',
     ];
 
     /**
@@ -72,5 +81,10 @@ class Accommodation extends Model
         return $query->where('bookable_type', BedAndBreakfast::class);
     }
 
-    
+    public function scopeVillas($query)
+    {
+        return $query->where('bookable_type', Villa::class);
+    }
+
+
 }
