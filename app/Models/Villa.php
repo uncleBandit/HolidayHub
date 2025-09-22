@@ -31,7 +31,6 @@ class Villa extends Model implements Bookable
 
     protected $casts = [
         'gallery' => 'array',
-        'amenities' => 'array',
         'policies' => 'array',
         'avg_price_per_night' => 'float',
         'latitude' => 'float',

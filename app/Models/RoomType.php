@@ -90,8 +90,9 @@ class RoomType extends Model implements Bookable
      */
     public function getHeroImageUrlAttribute(): string
     {
-        return $this->attributes['hero_image_url'] ?? 'https://via.placeholder.com/1200x800?text=' . Str::slug($this->name);
+        return $this->attributes['hero_image_url'] ?? asset('storage/roomtypes/default-hero.jpg');
     }
+
 
     /**
      * Automatically generate a slug from the name when creating the model.
@@ -154,12 +155,21 @@ class RoomType extends Model implements Bookable
      */
     public function getImages(): array
     {
-        $images = [$this->hero_image_url];
-        if (!empty($this->gallery_images)) {
-            $images = array_merge($images, $this->gallery_images);
-        }
-        return $images;
+        $gallery = is_array($this->gallery_images)
+            ? $this->gallery_images
+            : json_decode($this->gallery_images ?? '[]', true);
+
+        $all = array_merge([$this->hero_image_url], $gallery);
+
+        return collect($all)
+            ->filter()
+            ->map(fn($img) => $img
+                ? asset('storage/' . ltrim($img, '/')) // prepend only once
+                : null
+            )
+            ->toArray();
     }
+
 
     /**
      * Get the base price of the bookable item.
@@ -195,38 +205,34 @@ class RoomType extends Model implements Bookable
      */
     public function isAvailable(string $checkIn, string $checkOut): bool
     {
-    // Get all room IDs for this room type
-    $roomIds = $this->rooms()->pluck('id');
+        $rooms = $this->rooms()->with('bookings')->get(); // eager load bookings
+        if ($rooms->isEmpty()) return false;
 
-    if ($roomIds->isEmpty()) {
-        return false;
-    }
+        $period = CarbonPeriod::create($checkIn, Carbon::parse($checkOut)->subDay());
 
-    $period = CarbonPeriod::create($checkIn, Carbon::parse($checkOut)->subDay());
+        foreach ($rooms as $room) {
+            $isRoomAvailable = true;
 
-    foreach ($this->rooms()->get() as $room) { // ✅ query directly
-        $isRoomAvailable = true;
+            foreach ($period as $date) {
+                $booked = $room->bookings()
+                    ->where('check_in_date', '<=', $date->toDateString())
+                    ->where('check_out_date', '>', $date->toDateString())
+                    ->exists();
 
-        foreach ($period as $date) {
-            $bookedCount = Booking::where('bookable_id', $this->id)
-                ->where('bookable_type', self::class)
-                ->where('check_in_date', '<=', $date->toDateString())
-                ->where('check_out_date', '>', $date->toDateString())
-                ->count();
+                if ($booked) {
+                    $isRoomAvailable = false;
+                    break;
+                }
+            }
 
-            if ($bookedCount > 0) {
-                $isRoomAvailable = false;
-                break;
+            if ($isRoomAvailable) {
+                return true; // ✅ at least one room is free
             }
         }
 
-        if ($isRoomAvailable) {
-            return true;
-        }
+        return false; // all rooms booked
     }
 
-    return false;
-    }
 
 
     /**
@@ -241,8 +247,9 @@ class RoomType extends Model implements Bookable
 
     public function getIncludedGuests(): int
     {
-        return $this->max_guests;
+        return $this->capacity ?? 2; // fallback
     }
+
 
     /**
      * Get the currency for the bookable item.
@@ -251,8 +258,9 @@ class RoomType extends Model implements Bookable
      */
     public function getCurrency(): string
     {
-        return 'USD';
+        return $this->currency ?? 'USD';
     }
+
 
     /**
      * Get the default number of guests for this bookable item.

@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api\v1;
 
+use App\Http\Controllers\Controller;
 use App\Models\Destination;
 use App\Models\Hotel;
 use App\Models\Review;

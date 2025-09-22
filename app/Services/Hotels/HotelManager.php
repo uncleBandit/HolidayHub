@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Hotels;
 
 use App\Models\Hotel;
 use Illuminate\Support\Facades\Storage;

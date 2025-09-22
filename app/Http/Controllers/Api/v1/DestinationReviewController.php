@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api\v1;
 
 use App\Models\DestinationReview;
 use App\Http\Requests\StoreDestinationReviewRequest;

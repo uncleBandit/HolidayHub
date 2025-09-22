@@ -49,32 +49,36 @@ class HotelShow extends Component
     }
 
 
-    public function mount($slug)
+    public function mount(Hotel $hotel) // 👈 accept Hotel directly
     {
-        $this->hotel = Hotel::with(['images', 'amenities', 'roomTypes.rooms','reviews.guest'])->where('slug', $slug)->firstOrFail();
-        $this->reviews = Review::with('guest') // 👈 eager load guest here too
-        ->where('reviewable_type', Hotel::class)
-        ->where('reviewable_id', $this->hotel->id)
-        ->latest()
-        ->take(5)
-        ->get();
+        // Eager load relationships immediately
+        $this->hotel = $hotel->load([
+            'images',
+            'amenities',
+            'roomTypes.rooms',
+            'reviews.guest'
+        ]);
 
-        $this->isWishlisted = false;
+        $this->reviews = Review::with('guest')
+            ->where('reviewable_type', Hotel::class)
+            ->where('reviewable_id', $this->hotel->id)
+            ->latest()
+            ->take(5)
+            ->get();
 
         if (Auth::check()) {
-        $this->isWishlisted = Auth::user()
-            ?->role
-            ?->wishlistHotels()
-            ?->where('hotel_id', $this->hotel->id)
-            ->exists() ?? false; // The `?? false` ensures a boolean value is always assigned.
+            $this->isWishlisted = Auth::user()
+                ?->role
+                ?->wishlistHotels()
+                ->where('hotel_id', $this->hotel->id)
+                ->exists() ?? false;
         }
 
-        // Group rooms by their room_type to get a collection of unique types
+        // Group rooms by their room_type
         $this->roomTypes = RoomType::whereIn(
-                'id',
-                $this->hotel->rooms->pluck('room_type_id')->unique()
-            )->get();
-
+            'id',
+            $this->hotel->rooms->pluck('room_type_id')->unique()
+        )->get();
 
         $this->availability = $this->getMonthlyAvailability($this->hotel);
     }

@@ -43,8 +43,8 @@
                 <a href="{{ route('packages-show', $package) }}" class="relative bg-white dark:bg-gray-900 rounded-3xl shadow-xl overflow-hidden cursor-pointer group transform transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl">
                     <!-- Image and Overlay -->
                     <div class="relative w-full h-72">
-                        <img src="{{ $package->image_url ?? 'https://placehold.co/600x400/E5E7EB/6B7280?text=Coming+Soon' }}"
-                            onerror="this.onerror=null;this.src='https://placehold.co/600x400/E5E7EB/6B7280?text=Coming+Soon';"
+                        <img src="{{ $package->main_image ?? 'https://images.pexels.com/photos/1792613/pexels-photo-1792613.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' }}"
+                            onerror="this.onerror=null;this.src='https://images.pexels.com/photos/1792613/pexels-photo-1792613.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2';"
                             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                             alt="{{ $package->name }}">
                         <div class="absolute inset-0 bg-gradient-to-t from-gray-900/70 to-transparent"></div>

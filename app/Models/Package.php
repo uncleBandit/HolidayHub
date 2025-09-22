@@ -284,4 +284,60 @@ class Package extends Model implements Bookable
 
         return $total;
     }
+
+    public function getMainImageAttribute(): ?string
+    {
+        logger()->info("Raw cover_image: " . $this->cover_image);
+        if (!$this->cover_image) {
+            return null;
+        }
+
+        // If already a full URL, return as-is
+        if (str_starts_with($this->cover_image, 'http')) {
+            logger()->info("Returning raw full URL");
+            return $this->cover_image;
+        }
+
+        // Otherwise, build the URL
+        $url = asset('storage/' . ltrim($this->cover_image, '/'));
+        logger()->info("Returning built URL: " . $url);
+
+        return $url;
+    }
+
+    public function getGalleryImagesAttribute(): array
+    {
+        $gallery = is_array($this->gallery)
+            ? $this->gallery
+            : json_decode($this->gallery ?? '[]', true);
+
+        return collect($gallery)
+            ->filter()
+            ->map(fn($img) =>
+                str_starts_with($img, 'http')
+                    ? $img
+                    : asset('storage/' . ltrim($img, '/'))
+            )
+            ->toArray();
+    }
+
+    public function getAllImagesAttribute(): array
+    {
+        $gallery = is_array($this->gallery)
+            ? $this->gallery
+            : json_decode($this->gallery ?? '[]', true);
+
+        $all = array_merge([$this->cover_image], $gallery);
+
+        return collect($all)
+            ->filter()
+            ->map(fn($img) =>
+                str_starts_with($img, 'http')
+                    ? $img
+                    : asset('storage/' . ltrim($img, '/'))
+            )
+            ->toArray();
+    }
+
+
 }

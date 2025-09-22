@@ -150,7 +150,7 @@ class BedAndBreakfastCreate extends Component
         }
 
         session()->flash('success', '🎉 Bed & Breakfast created successfully!');
-        return redirect()->route('bedandbreakfast.show', $bnb->slug);
+        return redirect()->route('bedandbreakfast.show', $bnb);
     }
 
     public function render()

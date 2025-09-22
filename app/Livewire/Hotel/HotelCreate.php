@@ -9,6 +9,9 @@ use App\Models\Amenity;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use App\Services\Hotels\HotelCreator;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class HotelCreate extends Component
 {
@@ -70,10 +73,13 @@ class HotelCreate extends Component
         'amenities' => [],
     ];
 
+
+
+
     // ==========================
     // Step Validation Rules
     // ==========================
-    protected function stepRules(int $step): array
+    protected function rules(int $step): array
     {
         return match ($step) {
             1 => [
@@ -119,11 +125,11 @@ class HotelCreate extends Component
     {
         $rules = [];
         foreach ($this->roomTypes as $index => $room) {
-            $rules["roomTypes.$index.name"] = 'required|string|max:255';
-            $rules["roomTypes.$index.slug"] = 'required|string|unique:room_types,slug';
-            $rules["roomTypes.$index.price_per_night"] = 'required|numeric|min:0';
-            $rules["roomTypes.$index.capacity"] = 'required|integer|min:1';
-            $rules["roomTypes.$index.beds"] = 'required|integer|min:1';
+            $rules["roomTypes.$index.name"] = 'nullable|string|max:255';
+            $rules["roomTypes.$index.slug"] = 'nullable|string|unique:room_types,slug';
+            $rules["roomTypes.$index.price_per_night"] = 'nullable|numeric|min:0';
+            $rules["roomTypes.$index.capacity"] = 'nullable|integer|min:1';
+            $rules["roomTypes.$index.beds"] = 'nullable|integer|min:1';
             $rules["roomTypes.$index.gallery_images.*"] = 'nullable|image|max:4096';
         }
         return $rules;
@@ -159,10 +165,16 @@ class HotelCreate extends Component
     // ==========================
     public function nextStep()
     {
-        $this->validate($this->stepRules($this->step));
+        $rules = $this->rules($this->step);
+
+        if (!empty($rules)) {
+            $this->validate($rules);
+        }
+
         $this->saveDraft();
         $this->step++;
     }
+
 
     public function previousStep()
     {
@@ -174,15 +186,63 @@ class HotelCreate extends Component
     // ==========================
     protected function saveDraft()
     {
-        $this->draftHotel = app(HotelCreator::class)->saveDraft(
-            $this->only([
-                'provider_id','name','slug','description',
-                'address','city','country','latitude','longitude',
-                'stars','is_featured','is_active','is_verified',
-                'avg_price_per_night','policies',
-            ]),
-            $this->draftHotel
-        );
+        try {
+            $providerId = Auth::user()?->provider?->id;
+
+            $data = $this->only([
+                'name',
+                'slug',
+                'description',
+                'address',
+                'city',
+                'country',
+                'latitude',
+                'longitude',
+                'stars',
+                'is_featured',
+                'is_active',
+                'is_verified',
+                'avg_price_per_night',
+                'policies',
+                'cover_image',   // ✅ include from migration
+                'gallery',       // ✅ include from migration
+            ]);
+
+            // Ensure provider_id is always set
+            $data['provider_id'] = $providerId ?? auth()->id();
+
+            // Add safe defaults if missing
+            $data['stars'] = $data['stars'] ?? 3;
+            $data['is_featured'] = $data['is_featured'] ?? false;
+            $data['is_active'] = $data['is_active'] ?? true;
+            $data['is_verified'] = $data['is_verified'] ?? false;
+            $data['avg_price_per_night'] = $data['avg_price_per_night'] ?? 0.00;
+
+            Log::info('Saving hotel draft', [
+                'providerId' => $data['provider_id'],
+                'draftHotelId' => $this->draftHotel?->id,
+                'slug' => $data['slug'] ?? null,
+            ]);
+
+            $this->draftHotel = app(HotelCreator::class)->saveDraft($data, $this->draftHotel);
+
+            Log::info('Hotel draft saved successfully', [
+                'hotelId' => $this->draftHotel->id,
+                'slug' => $this->draftHotel->slug,
+                'is_active' => $this->draftHotel->is_active,
+                'is_verified' => $this->draftHotel->is_verified,
+            ]);
+        } catch (Throwable $e) {
+            Log::error('Hotel draft save failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'draftHotelId' => $this->draftHotel?->id,
+                'providerId' => Auth::user()?->provider?->id,
+            ]);
+
+            session()->flash('error', 'Failed to save draft. Please try again later.');
+            throw $e; // rethrow if you want Livewire to catch
+        }
     }
 
     // ==========================
@@ -204,18 +264,53 @@ class HotelCreate extends Component
     // ==========================
     public function save()
     {
-        $this->validate($this->stepRules($this->step));
+        try {
+            Log::info('Hotel save initiated', [
+                'step' => $this->step,
+                'draftHotelId' => $this->draftHotel?->id,
+                'providerId' => auth()->id(),
+            ]);
 
-        $hotel = app(HotelCreator::class)->createHotelWithRoomTypes(
-            $this->draftHotel,
-            $this->cover_image,
-            $this->gallery,
-            $this->selectedAmenities,
-            $this->roomTypes
-        );
+            // ✅ Always use rules(), never the default rules()
+            $rules = $this->rules($this->step);
+            $this->validate($rules);
 
-        session()->flash('success', 'Hotel created successfully!');
-        return redirect()->route('hotels.show', $hotel->slug);
+            Log::info('Validation passed', [
+                'step' => $this->step,
+                'rules_used' => array_keys($rules),
+            ]);
+
+            // Try creating hotel with room types
+            $hotel = app(HotelCreator::class)->createHotelWithRoomTypes(
+                $this->draftHotel,
+                $this->cover_image,
+                $this->gallery,
+                $this->selectedAmenities,
+                $this->roomTypes
+            );
+
+            Log::info('Hotel created successfully', [
+                'hotelId' => $hotel->id,
+                'slug'    => $hotel->slug,
+                'providerId' => $hotel->provider_id,
+                'roomTypesCount' => $hotel->roomTypes()->count(),
+            ]);
+
+            session()->flash('success', 'Hotel created successfully!');
+            return redirect()->route('hotel-show', $hotel->slug);
+
+        } catch (Throwable $e) {
+            Log::error('Hotel save failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'draftHotelId' => $this->draftHotel?->id,
+                'providerId' => auth()->id(),
+                'step' => $this->step,
+            ]);
+
+            session()->flash('error', 'Failed to save hotel. Please try again or contact support.');
+            return back()->withInput();
+        }
     }
 
     // ==========================

@@ -40,15 +40,15 @@
         <!-- Hotels Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 max-w-7xl mx-auto">
             @forelse ($hotels as $hotel)
-                <a href="{{ route('hotel-show', ['slug' => $hotel->slug]) }}" class="relative bg-white dark:bg-gray-900 rounded-3xl shadow-xl overflow-hidden cursor-pointer group transform transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl">
+                <a href="{{ route('hotel-show', ['hotel' => $hotel->slug]) }}" class="relative bg-white dark:bg-gray-900 rounded-3xl shadow-xl overflow-hidden cursor-pointer group transform transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl">
                     <!-- Image and Overlay -->
                     <div class="relative w-full h-72">
-                        <img src="{{ $hotel->cover_image }}"
-                            onerror="this.onerror=null;this.src='https://placehold.co/600x400/E5E7EB/6B7280?text=Hotel+Image';"
-                            class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                            alt="{{ $hotel->name }}">
-                        <div class="absolute inset-0 bg-gradient-to-t from-gray-900/70 to-transparent"></div>
-                    </div>
+                        <img src="{{ asset('storage/' . $hotel->cover_image) }}"
+                                onerror="this.onerror=null;this.src='https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940';"
+                                class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                alt="{{ $hotel->name }}">
+                                                    <div class="absolute inset-0 bg-gradient-to-t from-gray-900/70 to-transparent"></div>
+                                                </div>
 
                     <!-- Details on overlay with animation -->
                     <div class="absolute bottom-0 p-6 w-full text-white transform translate-y-0 group-hover:-translate-y-2 transition-transform duration-500">

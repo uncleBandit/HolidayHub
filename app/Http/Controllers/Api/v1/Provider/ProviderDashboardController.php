@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Provider\Dashboard;
+namespace App\Http\Controllers\Api\V1\Provider;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AccommodationResource;

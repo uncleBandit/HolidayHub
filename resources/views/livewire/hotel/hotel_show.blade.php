@@ -5,11 +5,13 @@
     <div class="container mx-auto px-4 lg:px-8 py-12 space-y-12">
 
         <!-- Hero Image & Gallery -->
-        <div x-data="{ open: false, activeImage: 0, images: @js($hotel->images->pluck('url')) }">
+        <div x-data="{ open: false, activeImage: 0, images: @js($hotel->all_images) }">
+<pre>{{ json_encode($hotel->all_images ?? []) }}</pre>
+
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 rounded-3xl overflow-hidden shadow-2xl transform transition-transform duration-500 hover:scale-[1.005]">
                 <!-- Main Hero Image -->
                 <div @click="open = true; activeImage = 0" class="col-span-1 md:col-span-2 lg:col-span-3 cursor-pointer relative h-96 lg:h-[550px]">
-                    <img src="{{ $hotel->hero_image_url }}" alt="{{ $hotel->name }} Hero Image" class="w-full h-full object-cover transition-opacity duration-300 ease-in-out hover:opacity-90"/>
+                    <img src="{{ $hotel->all_images[0] ?? 'fallback.jpg' }}" alt="{{ $hotel->name }} Hero Image" class="w-full h-full object-cover transition-opacity duration-300 ease-in-out hover:opacity-90"/>
                     <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
                     <div class="absolute bottom-6 left-6 text-white z-10">
                         <h1 class="text-4xl lg:text-5xl font-extrabold">{{ $hotel->name }}</h1>
@@ -19,12 +21,17 @@
 
                 <!-- Small Image Gallery -->
                 <div class="hidden lg:grid grid-cols-1 gap-4 p-2 bg-white">
-                    @foreach($hotel->images->take(2) as $key => $image)
-                        <img src="{{ $image->url }}" class="w-full h-full object-cover rounded-xl cursor-pointer transition-transform duration-300 hover:scale-105" @click="open = true; activeImage = {{ $key }}" />
-                    @endforeach
-                    <button @click="open = true" class="w-full h-full bg-gray-100 rounded-xl flex items-center justify-center text-gray-500 font-semibold transition-colors duration-300 hover:bg-gray-200">
-                        <span class="text-center">+{{ $hotel->images->count() - 2 }}<br>Photos</span>
-                    </button>
+                    {{-- Display the second image from the array --}}
+                    @if(isset($hotel->all_images[1]))
+                        <img src="{{ $hotel->all_images[1] }}" class="w-full h-full object-cover rounded-xl cursor-pointer transition-transform duration-300 hover:scale-105" @click="open = true; activeImage = 1" />
+                    @endif
+
+                    {{-- Show a button for more photos if there are more than two total images --}}
+                    @if(count($hotel->all_images) > 2)
+                        <button @click="open = true" class="w-full h-full bg-gray-100 rounded-xl flex items-center justify-center text-gray-500 font-semibold transition-colors duration-300 hover:bg-gray-200">
+                            <span class="text-center">+{{ count($hotel->all_images) - 2 }}<br>Photos</span>
+                        </button>
+                    @endif
                 </div>
             </div>
 
@@ -98,7 +105,7 @@
                     <div class="grid md:grid-cols-2 gap-6">
                         @foreach($hotel->roomTypes as $roomType)
                             <div wire:click="selectRoomType({{ $roomType->id }})" class="p-4 border-2 rounded-xl transition-all duration-300 transform hover:scale-[1.02] cursor-pointer shadow-sm {{ $selectedRoomType && $selectedRoomType->id === $roomType->id ? 'border-blue-500 ring-4 ring-blue-500/30' : 'border-gray-200' }}">
-                                <img src="{{ $roomType->hero_image_url }}" alt="{{ $roomType->name }}" class="w-full h-48 object-cover rounded-lg mb-4" />
+                                <img src="{{ $roomType->hero_image_url ?? 'https://source.unsplash.com/random/600x400/?hotel,room' }}" alt="{{ $roomType->name }}" class="w-full h-48 object-cover rounded-lg mb-4" />
                                 <div class="flex justify-between items-center mb-2">
                                     <h4 class="text-xl font-semibold text-gray-900">{{ $roomType->name }}</h4>
                                     <span class="text-lg font-bold text-blue-600">${{ number_format($roomType->price_per_night, 2) }}</span>

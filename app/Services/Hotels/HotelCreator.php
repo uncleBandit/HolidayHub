@@ -3,56 +3,46 @@
 namespace App\Services\Hotels;
 
 use App\Models\Hotel;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+
 
 
 class HotelCreator
 {
+    /**
+     * Save a draft hotel (incomplete hotel record).
+     */
     public function saveDraft(array $data, ?Hotel $draftHotel = null): Hotel
     {
-        if ($draftHotel) {
-            $draftHotel->update($data);
-            return $draftHotel;
-        }
-        return Hotel::create(array_merge($data, [
-            'provider_id' => $data['provider_id'] ?? auth()->id(),
-        ]));
-    }
-
-    public function createHotel(Hotel $draftHotel, $coverImage, $gallery, array $amenities): Hotel
-    {
-        // Handle cover
-        if ($coverImage) {
-            $path = $coverImage->store('hotels/covers', 'public');
-            $draftHotel->images()->create([
-                'path' => $path,
-                'type' => 'cover',
-            ]);
-        }
-
-        // Handle gallery
-        if (!empty($gallery)) {
-            foreach ($gallery as $img) {
-                $path = $img->store('hotels/gallery', 'public');
-                $draftHotel->images()->create([
-                    'path' => $path,
-                    'type' => 'gallery',
-                ]);
+        try {
+            if ($draftHotel) {
+                $draftHotel->update($data);
+                Log::info("Draft hotel [{$draftHotel->id}] updated successfully.");
+                return $draftHotel;
             }
-        }
 
-        // Sync amenities
-        if (!empty($amenities)) {
-            $draftHotel->amenities()->sync($amenities);
-        }
+            $hotel = Hotel::create(array_merge($data, [
+                'provider_id' => $data['provider_id'] ?? Auth::id(),
+            ]));
 
-        return $draftHotel;
+            Log::info("Draft hotel [{$hotel->id}] created successfully.");
+            return $hotel;
+
+        } catch (\Throwable $e) {
+            Log::error("Hotel draft save failed: ".$e->getMessage(), [
+                'data' => $data,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
     }
-
 
     /**
-     * Create hotel and its room types, including media and amenities.
+     * Publish a hotel (with cover, gallery, amenities, and room types).
      */
     public function createHotelWithRoomTypes(
         Hotel $draftHotel,
@@ -61,41 +51,93 @@ class HotelCreator
         array $amenities,
         array $roomTypes
     ): Hotel {
-        // Save cover image
-        if ($coverImage) {
-            $draftHotel->cover_image = $coverImage->store('hotels/covers', 'public');
-        }
-
-        // Save gallery images
-        if (!empty($gallery)) {
-            $draftHotel->gallery = collect($gallery)
-                ->map(fn($img) => $img->store('hotels/gallery', 'public'))
-                ->toArray();
-        }
-
-        $draftHotel->save();
-
-        // Sync amenities
-        if (!empty($amenities)) {
-            $draftHotel->amenities()->sync($amenities);
-        }
-
-        // Save room types
-        foreach ($roomTypes as $data) {
-            $rt = $draftHotel->roomTypes()->updateOrCreate(
-                ['slug' => $data['slug']],
-                $data
-            );
-
-            // Save room type gallery images if uploaded
-            if (!empty($data['gallery_images'])) {
-                $rt->gallery_images = collect($data['gallery_images'])
-                    ->map(fn($img) => $img instanceof UploadedFile ? $img->store('roomtypes/gallery', 'public') : $img)
-                    ->toArray();
-                $rt->save();
+        try {
+            // --- Cover Image ---
+            if ($coverImage instanceof UploadedFile) {
+                $path = $coverImage->store('hotels/covers', 'public');
+                $draftHotel->cover_image = $path; // ✅ Clean public URL
+                Log::info("Cover image stored for hotel [{$draftHotel->id}].");
             }
-        }
 
-        return $draftHotel;
+            // --- Gallery Images ---
+            if (!empty($gallery)) {
+                $storedGallery = collect($gallery)->map(function ($img) {
+                    if ($img instanceof UploadedFile) {
+                        return $img->store('hotels/gallery', 'public'); // ✅ store relative path
+                    }
+                    return $img;
+                })->toArray();
+
+                $draftHotel->gallery = $storedGallery;
+                Log::info("Gallery images stored for hotel [{$draftHotel->id}].", [
+                    'count' => count($storedGallery),
+                ]);
+            }
+
+            $draftHotel->save();
+
+            // --- Amenities ---
+            if (!empty($amenities)) {
+                $draftHotel->amenities()->sync($amenities);
+                Log::info("Amenities synced for hotel [{$draftHotel->id}].", [
+                    'amenities' => $amenities,
+                ]);
+            }
+
+            // --- Room Types ---
+            foreach ($roomTypes as $index => $data) {
+                // Always start from provided slug or name
+                $baseSlug = !empty($data['slug'])
+                    ? Str::slug($data['slug'])
+                    : Str::slug($data['name'] ?? 'room');
+
+                $slug = $baseSlug;
+                $i = 1;
+
+                // Ensure global uniqueness (not just per hotel)
+                while (\App\Models\RoomType::where('slug', $slug)->exists()) {
+                    $slug = "{$baseSlug}-{$i}";
+                    $i++;
+                }
+
+                $data['slug'] = $slug;
+
+                // Create or update the room type
+                $rt = $draftHotel->roomTypes()->updateOrCreate(
+                    ['slug' => $data['slug']], // ✅ always unique now
+                    [
+                        'name'            => $data['name'] ?? 'Unnamed Room',
+                        'price_per_night' => $data['price_per_night'] ?? 0,
+                        'capacity'        => $data['capacity'] ?? 1,
+                        'beds'            => $data['beds'] ?? 1,
+                    ]
+                );
+
+                // Handle gallery images for this room type
+                if (!empty($data['gallery_images'])) {
+                    $rt->gallery_images = collect($data['gallery_images'])->map(function ($img) {
+                        return $img instanceof UploadedFile
+                            ? $img->store('roomtypes/gallery', 'public') // ✅ store relative path
+                            : $img;
+                    })->toArray();
+
+                    $rt->save();
+                }
+
+                Log::info("Room type [{$rt->id}] saved for hotel [{$draftHotel->id}].");
+            }
+
+
+
+            Log::info("Hotel [{$draftHotel->id}] published successfully.");
+
+            return $draftHotel->fresh(['amenities', 'roomTypes']);
+        } catch (\Throwable $e) {
+            Log::error("Hotel publish failed: ".$e->getMessage(), [
+                'hotel_id' => $draftHotel->id ?? null,
+                'trace'   => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
     }
 }

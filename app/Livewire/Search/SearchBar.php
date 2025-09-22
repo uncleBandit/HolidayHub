@@ -61,9 +61,9 @@ class SearchBar extends Component
     public function selectResult(string $type, int $id)
     {
         return match ($type) {
-            'destination' => redirect()->route('destination.show', $id),
-            'hotel' => redirect()->route('hotel-show', $id),
-            'package' => redirect()->route('packages-show', $id),
+            'destination' => redirect()->route('destination.show', Destination::findOrFail($id)),
+            'hotel' => redirect()->route('hotel-show',  Hotel::findOrFail($id)),
+            'package' => redirect()->route('packages-show', Package::findOrFail($id)),
             default => null,
         };
     }

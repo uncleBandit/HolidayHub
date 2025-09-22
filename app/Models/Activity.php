@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
 
@@ -163,11 +164,12 @@ class Activity extends Model implements Bookable
         return $this->hasMany(Booking::class);
     }
 
-    public function availabilities(): Relation
+    public function availabilities(): HasMany
     {
-        // Assuming you have an 'Availabilities' model for tracking.
-        return $this->hasMany(Availability::class);
+        return $this->hasMany(Availability::class, 'bookable_id')
+                    ->where('bookable_type', Activity::class);
     }
+
 
     public function offers(): MorphMany
     {
@@ -188,5 +190,26 @@ class Activity extends Model implements Bookable
     public function seasonalRates(): MorphMany
     {
         return $this->morphMany(SeasonalRate::class, 'seasonal_rateable');
+    }
+
+     /**
+     * Polymorphic images relationship.
+     */
+    public function images(): MorphMany
+    {
+        return $this->morphMany(Image::class, 'imageable')->ordered();
+    }
+
+    /**
+     * Optional: helper for primary image
+     */
+    public function primaryImage(): MorphMany
+    {
+        return $this->images()->primary();
+    }
+
+      public function amenities(): MorphToMany
+    {
+        return $this->morphToMany(Amenity::class, 'amenable');
     }
 }

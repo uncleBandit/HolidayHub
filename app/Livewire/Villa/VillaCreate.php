@@ -169,7 +169,7 @@ class VillaCreate extends Component
         );
 
         session()->flash('success', 'Villa created successfully!');
-        return redirect()->route('villas.show', $villa->slug);
+        return redirect()->route('villa.show', $villa->slug);
     }
 
     // ==========================

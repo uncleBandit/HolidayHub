@@ -96,6 +96,24 @@ class ProviderDashboard extends Component
     {
         $provider = Auth::user()->provider;
 
+        $accommodations = $provider->accommodations()
+            ->with('bookable')
+            ->withCount('reviews')
+            ->withAvg('reviews', 'rating')
+            ->get();
+
+        // later in blade or processing:
+        foreach ($accommodations as $acc) {
+            $avgRoomPrice = null;
+
+            if (method_exists($acc->bookable, 'rooms')) {
+                $avgRoomPrice = $acc->bookable->rooms()->avg('price_per_night');
+            }
+
+            $acc->avg_room_price = $avgRoomPrice;
+        }
+
+
         // Offers with optional search
         $offers = $provider->offers()
             ->with('destination')

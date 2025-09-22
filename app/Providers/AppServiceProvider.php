@@ -11,6 +11,8 @@ use Spatie\Permission\Middleware\RoleMiddleware;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use App\Services\Payments\PaymentGateway;
 use App\Services\Payments\Gateways\StripeGateway;
+use Livewire\Volt\Volt;
+
 
 
 
@@ -55,7 +57,12 @@ class AppServiceProvider extends ServiceProvider
         'seasonal_rate' => \App\Models\SeasonalRate::class,
         'booking'   => \App\Models\Booking::class,
         'destination' => \App\Models\Destination::class,
+        'accommodation' => \App\Models\Accommodation::class,
         // add more bookables here...
     ]);
+
+
+
+
     }
 }

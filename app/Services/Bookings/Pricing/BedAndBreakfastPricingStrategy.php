@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Pricing;
+namespace App\Services\Bookings\Pricing;
 
 use App\Contracts\Bookable;
 use App\Services\Engines\PricingEngine;

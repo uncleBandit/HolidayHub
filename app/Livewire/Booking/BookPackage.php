@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Livewire;
+namespace App\Livewire\Booking;
 
 use App\Models\Booking;
 use App\Models\Package;

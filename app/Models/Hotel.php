@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class Hotel extends Model implements Bookable
 {
@@ -239,6 +240,25 @@ class Hotel extends Model implements Bookable
     {
         return 'slug';
     }
+    
+    public function getAllImagesAttribute(): array
+    {
+        $gallery = is_array($this->gallery)
+            ? $this->gallery
+            : json_decode($this->gallery ?? '[]', true);
+
+        $all = array_merge([$this->cover_image], $gallery);
+
+        return collect($all)
+            ->filter()
+            ->map(fn($img) => $img
+                ? asset('storage/' . ltrim($img, '/')) // ✅ prepend only once
+                : null
+            )
+            ->toArray();
+    }
+
+
 
 
 }

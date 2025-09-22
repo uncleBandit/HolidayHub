@@ -84,10 +84,11 @@
                     <ul class="grid grid-cols-2 md:grid-cols-3 gap-6 text-gray-700">
                         @foreach($villa->amenities as $amenity)
                             <li class="flex items-center gap-3">
-                                <i class="fas fa-check-circle text-green-500 text-xl"></i>
-                                <span class="font-medium">{{ $amenity }}</span>
+                                <i class="{{ $amenity->icon ?? 'fas fa-check-circle' }} text-green-500 text-xl"></i>
+                                <span class="font-medium">{{ $amenity->name }}</span>
                             </li>
                         @endforeach
+
                     </ul>
                 @elseif($activeTab === 'reviews')
                     <h2 class="text-2xl font-bold mb-6 text-gray-800">Guest Reviews</h2>

@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\v1\ProfileController;
+use App\Livewire\AccommodationList;
 use App\Livewire\Provider\ProviderDashboard;
 use App\Livewire\Package\PackageCreate;
 use App\Livewire\Dashboard\DashboardPage;
@@ -25,6 +26,7 @@ use App\Livewire\Hotel\HotelCreate;
 use App\Livewire\Hotel\HotelIndex;
 use App\Livewire\Package\PackageShow;
 use App\Livewire\Search\SearchBar;
+use App\Livewire\UserProfile;
 use App\Livewire\Villa\VillaShow;
 
 /*
@@ -57,6 +59,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/userprofile', UserProfile::class)->name('userprofile');
 
     // Agent routes
     Route::prefix('agent')->name('agent.')->group(function () {
@@ -78,11 +81,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/discover', Discover::class)->name('discover');
     Route::get('/bookings', BookingShow::class)->name('bookings');
     Route::get('/destination/{destination}', DestinationShow::class)->name('destination.show');
-    Route::get('/hotel/{slug}', HotelShow::class)->name('hotel-show');
+    Route::get('/hotel/{hotel}', HotelShow::class)->name('hotel-show');
     Route::get('/activity/{activity:slug}', ActivityShow::class)->name('activity.show');
     Route::get('/bed-and-breakfast/{bnb:slug}', BedAndBreakfastShow::class)->name('bedandbreakfast.show');
     Route::get('/villa/{villa:slug}', VillaShow::class)->name('villa.show');
     Route::get('package/{package:slug}', PackageShow::class)->name('packages-show');
+    Route::get('/accommodationlist', AccommodationList::class)->name('accommodation.list');
+  
+
 
     // Admin routes
    Route::get('admin/dashboard', \App\Livewire\Admin\AdminDashboard::class)->middleware('can:admin.access')->name('admin.dashboard');

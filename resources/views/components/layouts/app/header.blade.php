@@ -61,6 +61,16 @@
                 >
                     {{ __('Discover') }}
                 </flux:navbar.item>
+
+                <flux:navbar.item
+                    icon="home" {{-- choose an appropriate Flux icon, maybe "building-office" or "bed" --}}
+                    :href="route('accommodation.list')"
+                    :current="request()->routeIs('accommodation.list')"
+                    wire:navigate
+                    class="text-white font-medium transition duration-300 hover:text-white/80 transform hover:scale-105"
+                >
+                    {{ __('Stays') }}
+                </flux:navbar.item>
                 @auth
                     <flux:navbar.item
                         icon="calendar"
@@ -109,7 +119,7 @@
                                 <div class="text-xs text-gray-500">{{ auth()->user()->email }}</div>
                             </div>
                             <flux:menu.separator />
-                            <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
+                            <flux:menu.item :href="route('userprofile')" icon="cog" wire:navigate>
                                 {{ __('Account Settings') }}
                             </flux:menu.item>
 
