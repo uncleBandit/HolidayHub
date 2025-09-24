@@ -39,30 +39,55 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
 
         // Profile
-        Route::apiResource('/profile', ProfileController::class);
+        Route::apiResource('/profile', ProfileController::class)->names([
+            'index' => 'api.profile.index',
+            'store' => 'api.profile.store',
+            'show' => 'api.profile.show',
+            'update' => 'api.profile.update',
+            'destroy' => 'api.profile.destroy',
+        ]);
+
 
         // Dashboard
-        Route::apiResource('/dashboard', DashboardController::class)->only(['index']);
+        Route::apiResource('/dashboard', DashboardController::class)->only(['index'])->names(['index' => 'api.dashboard.index']);
 
         /**
          * Admin-only routes
          */
         Route::middleware('role:admin')->group(function () {
-            Route::apiResource('/admin/dashboard', AdminController::class);
+            Route::apiResource('/admin/dashboard', AdminController::class)->names([
+                'index' => 'api.admin.dashboard.index',
+                'store' => 'api.admin.dashboard.store',
+                'show' => 'api.admin.dashboard.show',
+                'update' => 'api.admin.dashboard.update',
+                'destroy' => 'api.admin.dashboard.destroy',
+            ]);
         });
 
         /**
          * Provider-only routes
          */
         Route::middleware('role:provider')->group(function () {
-            Route::apiResource('/provider/dashboard', ProviderController::class);
+           Route::apiResource('/provider/dashboard', ProviderController::class)->names([
+                'index' => 'api.provider.dashboard.index',
+                'store' => 'api.provider.dashboard.store',
+                'show' => 'api.provider.dashboard.show',
+                'update' => 'api.provider.dashboard.update',
+                'destroy' => 'api.provider.dashboard.destroy',
+            ]);
         });
 
         /**
          * Agent-only routes
          */
         Route::middleware('role:agent')->group(function () {
-            Route::apiResource('/agent/dashboard', AgentController::class);
+            Route::apiResource('/agent/dashboard', AgentController::class)->names([
+                'index' => 'api.agent.dashboard.index',
+                'store' => 'api.agent.dashboard.store',
+                'show' => 'api.agent.dashboard.show',
+                'update' => 'api.agent.dashboard.update',
+                'destroy' => 'api.agent.dashboard.destroy',
+            ]);
             Route::apiResource('/agent/bookings', BookingController::class);
             //Route::apiResource('/agent/analytics', AnalyticsController::class);
         });
@@ -72,7 +97,6 @@ Route::prefix('v1')->group(function () {
          */
         Route::apiResources([
             'hotels' => HotelController::class,
-            'bookings' => BookingController::class,
             'offers' => OfferController::class,
             'reviews' => ReviewController::class,
             'rooms' => RoomController::class,
@@ -80,5 +104,25 @@ Route::prefix('v1')->group(function () {
             'destinations' => DestinationController::class,
             'packages' => PackageController::class,
         ]);
+
+        Route::apiResource('/agent/bookings', BookingController::class)->names([
+            'index' => 'agent.bookings.index',
+            'store' => 'agent.bookings.store',
+            'show' => 'agent.bookings.show',
+            'update' => 'agent.bookings.update',
+            'destroy' => 'agent.bookings.destroy',
+        ]);
+
+        Route::apiResource('/bookings', BookingController::class)->names([
+            'index' => 'bookings.index',
+            'store' => 'bookings.store',
+            'show' => 'bookings.show',
+            'update' => 'bookings.update',
+            'destroy' => 'bookings.destroy',
+        ]);
+
+
+
+
     });
 });
