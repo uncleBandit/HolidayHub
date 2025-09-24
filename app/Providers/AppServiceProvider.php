@@ -30,9 +30,7 @@ class AppServiceProvider extends ServiceProvider
             return new PolicyEngine();
         });
 
-        if ($this->app->environment('local')) {
-        $this->app->register(\App\Providers\TelescopeServiceProvider::class);
-        }
+        
 
         // Bind PaymentGateway interface to StripeGateway implementation
          $this->app->bind(PaymentGateway::class, function ($app) {
