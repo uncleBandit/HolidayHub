@@ -51,6 +51,7 @@ class VillaShow extends Component
                 ->where('wishlistable_type', Villa::class)
                 ->where('wishlistable_id', $this->villa->id)
                 ->exists();
+
         }
     }
 
