@@ -86,5 +86,21 @@ class Accommodation extends Model
         return $query->where('bookable_type', Villa::class);
     }
 
+    public function scopeByDestination($query, $destinationId)
+    {
+        return $query->when($destinationId, fn($q) => $q->where('destination_id', $destinationId));
+    }
+
+    public function scopeByPriceRange($query, $min, $max)
+    {
+        return $query->when($min !== null, fn($q) => $q->where('avg_price_per_night', '>=', $min))
+                     ->when($max !== null, fn($q) => $q->where('avg_price_per_night', '<=', $max));
+    }
+
+    public function scopeByRating($query, $minRating)
+    {
+        return $query->when($minRating !== null, fn($q) => $q->where('avg_rating', '>=', $minRating));
+    }
+
 
 }

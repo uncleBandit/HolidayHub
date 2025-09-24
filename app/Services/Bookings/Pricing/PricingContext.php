@@ -3,7 +3,6 @@
 namespace App\Services\Bookings\Pricing;
 
 use App\Models\BedAndBreakfast;
-use App\Services\Pricing\BedAndBreakfastPricingStrategy;
 use InvalidArgumentException;
 
 

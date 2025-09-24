@@ -6,7 +6,6 @@
 
         <!-- Hero Image & Gallery -->
         <div x-data="{ open: false, activeImage: 0, images: @js($hotel->all_images) }">
-<pre>{{ json_encode($hotel->all_images ?? []) }}</pre>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 rounded-3xl overflow-hidden shadow-2xl transform transition-transform duration-500 hover:scale-[1.005]">
                 <!-- Main Hero Image -->

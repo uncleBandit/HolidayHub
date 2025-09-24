@@ -46,11 +46,11 @@ class VillaShow extends Component
         ]);
 
         if (Auth::check()) {
-            $this->isWishlisted = Auth::user()
-                ?->role
-                ?->wishlistVillas()
-                ?->where('villa_id', $this->villa->id)
-                ->exists() ?? false;
+            $this->isWishlisted = Auth::check() && Auth::user()
+                ->wishlists()
+                ->where('wishlistable_type', Villa::class)
+                ->where('wishlistable_id', $this->villa->id)
+                ->exists();
         }
     }
 
@@ -78,9 +78,26 @@ class VillaShow extends Component
             return;
         }
 
-        Auth::user()->wishlistVillas()->toggle($this->villa->id);
-        $this->isWishlisted = !$this->isWishlisted;
+        $user = Auth::user();
+
+        $existing = $user->wishlists()
+            ->where('wishlistable_type', Villa::class)
+            ->where('wishlistable_id', $this->villa->id)
+            ->first();
+
+        if ($existing) {
+            $existing->delete();
+            $this->isWishlisted = false;
+        } else {
+            $user->wishlists()->create([
+                'wishlistable_id'   => $this->villa->id,
+                'wishlistable_type' => Villa::class,
+                'priority'          => 'medium', // default if you want
+            ]);
+            $this->isWishlisted = true;
+        }
     }
+
 
     public function updated($property): void
     {

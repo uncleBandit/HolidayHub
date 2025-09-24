@@ -8,6 +8,8 @@ use App\Models\BedAndBreakfast;
 use App\Models\Amenity;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log; // add this at the top
+
 
 class BedAndBreakfastCreate extends Component
 {
@@ -110,6 +112,28 @@ class BedAndBreakfastCreate extends Component
     {
         $this->validate($this->rulesForStep($this->step));
 
+        // Log all values before saving
+            Log::info('Creating BnB with values:', [
+            'provider_id' => $this->provider_id ?? Auth::id(),
+            'name' => $this->name,
+            'slug' => Str::slug($this->name) . '-' . Str::random(8),
+            'description' => $this->description,
+            'rooms' => $this->rooms,
+            'has_breakfast' => $this->has_breakfast,
+            'address' => $this->address,
+            'city' => $this->city,
+            'country' => $this->country,
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
+            'is_featured' => $this->is_featured,
+            'policies' => $this->policies,
+            'is_active' => $this->is_active,
+            'is_verified' => $this->is_verified,
+            'price_per_night' => $this->price_per_night,
+            'max_guests' => $this->max_guests,
+            'seasonal_pricing' => $this->seasonal_pricing,
+        ]);
+
         $bnb = BedAndBreakfast::create([
             'provider_id' => $this->provider_id ?? Auth::id(),
             'name' => $this->name,
@@ -150,7 +174,8 @@ class BedAndBreakfastCreate extends Component
         }
 
         session()->flash('success', '🎉 Bed & Breakfast created successfully!');
-        return redirect()->route('bedandbreakfast.show', $bnb);
+        return redirect()->route('bedandbreakfast.show',  $bnb);
+
     }
 
     public function render()

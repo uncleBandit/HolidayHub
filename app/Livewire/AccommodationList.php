@@ -5,6 +5,8 @@ namespace App\Livewire;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Accommodation;
+use App\Models\Destination;
+use Illuminate\Support\Facades\Log;
 
 class AccommodationList extends Component
 {
@@ -16,62 +18,109 @@ class AccommodationList extends Component
     public string $sortBy = 'latest'; // latest, price_low, price_high, rating
     public int $perPage = 12;
 
-    public array $groupedAccommodations = [];
+    // Advanced filters
+    public ?float $minPrice = null;
+    public ?float $maxPrice = null;
+    public ?float $minRating = null;
+    public string $groupBy = 'type'; // type | destination | none
 
     protected $queryString = [
         'search' => ['except' => ''],
         'destinationId' => ['except' => null],
         'sortBy' => ['except' => 'latest'],
+        'minPrice' => ['except' => null],
+        'maxPrice' => ['except' => null],
+        'minRating' => ['except' => null],
+        'groupBy' => ['except' => 'type'],
     ];
 
     public function updating($field)
     {
-        if (in_array($field, ['search', 'destinationId', 'sortBy'])) {
+        if (in_array($field, ['search', 'destinationId', 'sortBy', 'minPrice', 'maxPrice', 'minRating'])) {
             $this->resetPage();
         }
     }
 
-    public function loadAccommodations()
+    public function updatedDestinationId($value)
     {
-        $query = Accommodation::query()
-            ->with(['bookable', 'destination'])
-            ->withCount('reviews')
-            ->when($this->search, fn($q) =>
-                $q->whereHas('bookable', fn($sub) =>
-                    $sub->where('name', 'like', "%{$this->search}%")
+        $this->destinationId = $value === "" ? null : (int) $value;
+    }
+
+    private function queryAccommodations()
+    {
+        try {
+            $query = Accommodation::query()
+                ->with(['bookable', 'destination'])
+                ->withCount('reviews')
+                ->when($this->search, fn($q) =>
+                    $q->whereHas('bookable', fn($sub) =>
+                        $sub->where('name', 'like', "%{$this->search}%")
+                    )
                 )
-            )
-            ->when($this->destinationId, fn($q) =>
-                $q->where('destination_id', $this->destinationId)
-            );
+                ->byDestination($this->destinationId)
+                ->byPriceRange($this->minPrice, $this->maxPrice)
+                ->byRating($this->minRating)
+                ->when($this->sortBy === 'price_low', fn($q) => $q->orderBy('avg_price_per_night', 'asc'))
+                ->when($this->sortBy === 'price_high', fn($q) => $q->orderBy('avg_price_per_night', 'desc'))
+                ->when($this->sortBy === 'rating', fn($q) => $q->orderBy('avg_rating', 'desc'))
+                ->when($this->sortBy === 'latest', fn($q) => $q->latest());
 
-        // Sorting logic
-        $query->when($this->sortBy === 'price_low', fn($q) => $q->orderBy('avg_price_per_night', 'asc'))
-              ->when($this->sortBy === 'price_high', fn($q) => $q->orderBy('avg_price_per_night', 'desc'))
-              ->when($this->sortBy === 'rating', fn($q) => $q->orderBy('avg_rating', 'desc'))
-              ->when($this->sortBy === 'latest', fn($q) => $q->latest());
+            Log::info("Accommodation query built successfully", [
+                'search' => $this->search,
+                'destinationId' => $this->destinationId,
+                'sortBy' => $this->sortBy,
+                'minPrice' => $this->minPrice,
+                'maxPrice' => $this->maxPrice,
+                'minRating' => $this->minRating,
+            ]);
 
-        $accommodations = $query->paginate($this->perPage);
+            return $query;
+        } catch (\Throwable $e) {
+            Log::error("Accommodation query failed: " . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return Accommodation::query()->whereRaw('0 = 1'); // return empty if failed
+        }
+    }
 
-        // Group by bookable type
-        $this->groupedAccommodations = $accommodations
-            ->groupBy('bookable_type')
-            ->map(fn($items, $type) => [
-                'type' => class_basename($type),
-                'items' => $items,
-            ])
-            ->values()
-            ->toArray();
+    private function groupResults($accommodations)
+    {
+        $collection = $accommodations->getCollection();
 
-        return $accommodations;
+        return match ($this->groupBy) {
+            'destination' => $collection->groupBy('destination.name')
+                ->map(fn($items, $destination) => [
+                    'group' => $destination,
+                    'items' => $items,
+                ])
+                ->values()
+                ->toArray(),
+
+            'type' => $collection->groupBy('bookable_type')
+                ->map(fn($items, $type) => [
+                    'group' => class_basename($type),
+                    'items' => $items,
+                ])
+                ->values()
+                ->toArray(),
+
+            default => $collection->map(fn($item) => [
+                'group' => 'All',
+                'items' => [$item],
+            ])->toArray(),
+        };
     }
 
     public function render()
     {
-        $accommodations = $this->loadAccommodations();
+        $accommodations = $this->queryAccommodations()->paginate($this->perPage);
+
+        $groupedAccommodations = $this->groupResults($accommodations);
 
         return view('livewire.accommodation-list', [
             'accommodations' => $accommodations,
+            'groupedAccommodations' => $groupedAccommodations,
+            'destinations' => Destination::all(),
         ]);
     }
 }

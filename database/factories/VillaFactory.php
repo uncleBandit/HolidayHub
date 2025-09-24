@@ -81,11 +81,11 @@ class VillaFactory extends Factory
                 'cancellation' => 'Free cancellation within 48 hours',
             ]),
             'gallery' => json_encode([
-                $this->faker->imageUrl(1200, 800, 'villa', true, 'Villa'),
-                $this->faker->imageUrl(1200, 800, 'pool', true, 'Pool'),
-                $this->faker->imageUrl(1200, 800, 'interior', true, 'Interior'),
+                'https://picsum.photos/1200/800/?random=' . $this->faker->unique()->numberBetween(1001, 2000),
+                'https://picsum.photos/1200/800/?random=' . $this->faker->unique()->numberBetween(2001, 3000),
+                'https://picsum.photos/1200/800/?random=' . $this->faker->unique()->numberBetween(3001, 4000),
             ]),
-            'cover_image' => $this->faker->imageUrl(1200, 800, 'villa', true, 'Cover'),
+            'cover_image' => 'https://picsum.photos/1200/800/?random=' . $this->faker->unique()->numberBetween(1, 1000),
 
             'avg_price_per_night' => $this->faker->randomFloat(2, 80, 1500),
 

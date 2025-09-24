@@ -47,7 +47,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 @foreach ($destinations as $destination)
                     <a href="{{ route('destinations.show', $destination) }}" class="relative group block w-full h-80 rounded-2xl overflow-hidden shadow-lg transition-transform duration-300 transform hover:scale-105">
-                        <img src="{{ $destination->image_url ?? 'https://images.unsplash.com/photo-1542455079-63a2a3e0f9b6' }}"
+                        <img src="{{ $destination->image_url ?? asset('images/paradise2.jpg') }}"
                              alt="{{ $destination->name }}"
                              class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                         <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>

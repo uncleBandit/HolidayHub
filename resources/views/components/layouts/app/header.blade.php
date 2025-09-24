@@ -47,7 +47,7 @@
         <div class="relative flex h-24 items-center px-4 md:px-6 lg:px-10">
             <flux:sidebar.toggle class="lg:hidden text-white" icon="bars-3" inset="left" />
 
-            <a href="{{ route('dashboard') }}" class="flex items-center space-x-2 drop-shadow-lg">
+            <a href="{{ route('welcome') }}" class="flex items-center space-x-2 drop-shadow-lg">
                 <span class="text-white text-4xl font-extrabold tracking-tight">HolidayHub</span>
             </a>
 

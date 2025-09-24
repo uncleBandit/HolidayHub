@@ -3,62 +3,44 @@
 namespace App\Livewire\Booking;
 
 use Livewire\Component;
-use Livewire\WithPagination;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Booking;
 
 class BookingShow extends Component
 {
-    use WithPagination;
+    public Booking $booking;
 
-    public string $status = 'all'; // all | upcoming | past | cancelled
-    public string $search = '';
 
-    protected $queryString = ['status', 'search', 'page'];
-
-    public function updating($field)
+    // In App\Livewire\Booking\BookingShow
+    public function mount(Booking $booking): void
     {
-        if (in_array($field, ['status', 'search'])) {
-            $this->resetPage();
-        }
+        // Eager load the guest relationship to access its user_id
+        $booking->load('guest');
+
+        // Check if the booking's guest's user_id matches the authenticated user's id
+        if ($booking->guest->user->id !== Auth::id()) {
+                abort(403);
+            }
+
+        // Now that ownership is verified, eager load other relations.
+        $this->booking = $booking->load(['bookable', 'offer', 'destination']);
     }
 
-    public function getBookingsProperty()
+    public function rebook(): \Illuminate\Http\RedirectResponse
     {
-        return Booking::with(['bookable', 'review'])
-            ->where('user_id', Auth::id())
-            ->when($this->status !== 'all', function ($query) {
-                match ($this->status) {
-                    'upcoming' => $query->where('check_in', '>=', now()),
-                    'past'     => $query->where('check_out', '<', now()),
-                    'cancelled'=> $query->where('status', 'cancelled'),
-                };
-            })
-            ->when($this->search, fn ($query) =>
-                $query->whereHas('bookable', fn ($q) =>
-                    $q->where('name', 'like', "%{$this->search}%")
-                )
-            )
-            ->latest('check_in')
-            ->paginate(10);
-    }
-
-    public function rebook(int $bookingId)
-    {
-        $booking = Booking::where('user_id', Auth::id())->findOrFail($bookingId);
-
         return redirect()->route('bookables.show', [
-            'id'       => $booking->bookable_id,
-            'checkIn'  => $booking->check_in->format('Y-m-d'),
-            'checkOut' => $booking->check_out->format('Y-m-d'),
-            'guests'   => $booking->guests,
+            'id'       => $this->booking->bookable_id,
+            'checkIn'  => $this->booking->check_in_date->format('Y-m-d'),
+            'checkOut' => $this->booking->check_out_date->format('Y-m-d'),
+            'adults'   => $this->booking->guests_adults,
+            'children' => $this->booking->guests_children,
         ]);
     }
 
     public function render()
     {
         return view('livewire.booking.booking-show', [
-            'bookings' => $this->bookings,
+            'booking' => $this->booking,
         ]);
     }
 }

@@ -11,6 +11,10 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use App\Models\Traits\HasImages;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+
+
 
 class BedAndBreakfast extends Model implements Bookable
 {
@@ -211,6 +215,55 @@ class BedAndBreakfast extends Model implements Bookable
     public function getImages(): array
     {
         return $this->galleryUrls; // This comes from the HasImages trait
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($bnb) {
+            if (empty($bnb->slug)) {
+                $slug = Str::slug($bnb->name);
+                $originalSlug = $slug;
+                $counter = 1;
+
+                // ensure uniqueness
+                while (static::where('slug', $slug)->exists()) {
+                    $slug = "{$originalSlug}-{$counter}";
+                    $counter++;
+                }
+
+                $bnb->slug = $slug;
+            }
+        });
+    }
+
+    public function getCoverImageUrlAttribute()
+    {
+        // Check if the cover_image is a full URL
+        if (Str::startsWith($this->cover_image, ['http://', 'https://'])) {
+            return $this->cover_image;
+        }
+
+        // Otherwise, assume it's a local storage path
+        return $this->cover_image
+            ? Storage::url($this->cover_image)
+            : 'https://via.placeholder.com/1600x900';
+    }
+
+    public function getGalleryUrlsAttribute()
+    {
+        if (!$this->gallery || !is_array($this->gallery)) {
+            return [];
+        }
+
+        return array_map(function ($path) {
+            // Check if the path is a full URL
+            if (Str::startsWith($path, ['http://', 'https://'])) {
+                return $path;
+            }
+
+            // Otherwise, assume it's a local storage path
+            return Storage::url($path);
+        }, $this->gallery);
     }
 
 }

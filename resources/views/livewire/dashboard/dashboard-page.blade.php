@@ -2,7 +2,8 @@
     <div class="flex flex-col gap-16">
 
         {{-- Hero Section --}}
-        <section class="relative h-screen flex items-center justify-center text-center bg-cover bg-center" style="background-image: url('https://placehold.co/1600x900/228B22/FFFFFF?text=Paradise');">
+        <section class="relative h-screen flex items-center justify-center text-center bg-cover bg-center"
+                style="background-image: url('{{ asset('images/sunsetatthebeach.jpg') }}');">
             <div class="absolute inset-0 bg-black/50"></div>
             <div class="relative z-10 px-6 md:px-12 lg:px-24">
                 <h1 class="text-5xl md:text-7xl font-extrabold text-white drop-shadow-xl mb-4 animate-fade-in-down">
@@ -11,7 +12,6 @@
                 <p class="text-lg md:text-2xl text-white/90 mb-8 animate-fade-in">
                     Search and book hotels, resorts, and unique getaways worldwide.
                 </p>
-
             </div>
         </section>
 

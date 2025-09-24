@@ -2,10 +2,13 @@
 
 namespace App\Livewire\Search;
 
+use App\Models\Activity;
+use App\Models\BedAndBreakfast;
 use Livewire\Component;
 use App\Models\Hotel;
 use App\Models\Package;
 use App\Models\Destination;
+use App\Models\Villa;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -38,6 +41,15 @@ class SearchBar extends Component
 
             $this->results['packages'] = Package::where('title', 'like', "%{$this->query}%")
                 ->limit(5)->get()->toArray();
+
+            $this->results['villas'] = Villa::where('name', 'like', "%{$this->query}%")
+            ->limit(5)->get()->toArray();
+
+            $this->results['bnbs'] = BedAndBreakfast::where('name', 'like', "%{$this->query}%")
+                ->limit(5)->get()->toArray();
+
+            $this->results['activities'] = Activity::where('name', 'like', "%{$this->query}%")
+                ->limit(5)->get()->toArray();
         }
 
         $this->dispatch('search-results-updated');
@@ -49,6 +61,9 @@ class SearchBar extends Component
             'destinations' => [],
             'hotels' => [],
             'packages' => [],
+            'villas' => [],
+            'bnbs' => [],
+            'activities' => [],
         ];
     }
 
@@ -64,6 +79,9 @@ class SearchBar extends Component
             'destination' => redirect()->route('destination.show', Destination::findOrFail($id)),
             'hotel' => redirect()->route('hotel-show',  Hotel::findOrFail($id)),
             'package' => redirect()->route('packages-show', Package::findOrFail($id)),
+            'villa' => redirect()->route('villa.show', Villa::findOrFail($id)),
+            'bnb' => redirect()->route('bedandbreakfast.show', BedAndBreakfast::findOrFail($id)),
+            'activity' => redirect()->route('activity.show', Activity::findOrFail($id)),
             default => null,
         };
     }

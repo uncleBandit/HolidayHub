@@ -12,6 +12,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('favicon-96x96.png') }}" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}" />
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}" />
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}" />
+    <link rel="manifest" href="{{ asset('site.webmanifest') }}" />
+
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -36,13 +44,11 @@
     <header class="bg-white/80 backdrop-blur-sm shadow-xl rounded-b-[4rem] border-b border-white/20">
     <div class="container mx-auto px-6 py-4 flex justify-between items-center">
         <!-- Logo with Icon -->
-        <a href="{{ url('/') }}" class="flex items-center gap-2 text-3xl font-extrabold text-tropical-blue hover:text-deep-ocean transition-colors duration-200">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-sunset-orange" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
-                <path d="M12 6a6 6 0 0 0-6 6c0 1.63.48 3.14 1.3 4.41l2.4-2.4a1.5 1.5 0 0 1 2.12 0l2.4 2.4c.82-1.27 1.3-2.78 1.3-4.41a6 6 0 0 0-6-6z" />
-                <path d="M12 10.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" />
-            </svg>
-            <span>HolidayHub</span>
+        <a href="{{ url('/') }}" class="flex items-center gap-2">
+            <img src="{{ asset('images/HolidayHubLogo.png') }}" alt="HolidayHub Logo" class="h-12 w-auto">
+            <span class="text-2xl sm:text-3xl font-extrabold text-tropical-blue hover:text-deep-ocean transition-colors duration-200">
+                HolidayHub
+            </span>
         </a>
 
         <nav class="space-x-4 flex items-center">
@@ -103,5 +109,19 @@
     </footer>
 
     @livewireScripts
+    {{-- Put this in your layout (e.g. layouts/app.blade.php) or inside the booking page view --}}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        Livewire.on('bookingConfirmed', ({ bookingId, message }) => {
+            console.log("✅ Booking confirmed event caught in JS!");
+            console.log("Booking ID:", bookingId);
+            console.log("Message:", message);
+
+            // Show a quick alert (replace with your toast/notification later)
+            alert("Booking #" + bookingId + " → " + message);
+        });
+    });
+</script>
+
 </body>
 </html>

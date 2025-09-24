@@ -31,7 +31,7 @@ class RoomTypeFactory extends Factory
         'price_per_night' => $this->faker->randomFloat(2, 100, 1000),
         'capacity' => $this->faker->numberBetween(1, 5),
         'beds' => $this->faker->numberBetween(1, 3),
-        'hero_image_url' => 'https://source.unsplash.com/800x600/?' . Str::slug($name) . ',room',
+        'hero_image_url' => 'https://picsum.photos/1200/800/?random=' . $this->faker->unique()->numberBetween(1, 1000) . '-' . Str::slug($name) . ',room',
         'slug' => Str::slug($name) . '-' . Str::uuid(),
         ];
     }

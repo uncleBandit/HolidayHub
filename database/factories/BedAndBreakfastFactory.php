@@ -39,7 +39,7 @@ class BedAndBreakfastFactory extends Factory
             'longitude' => $this->faker->longitude(-180, 180),
 
             'rooms' => $this->faker->numberBetween(3, 15),
-            
+
 
             'policies' => json_encode([
                 'check_in' => '13:00',
@@ -48,12 +48,12 @@ class BedAndBreakfastFactory extends Factory
             ]),
 
             'gallery' => json_encode([
-                $this->faker->imageUrl(1200, 800, 'bnb', true, 'BnB'),
-                $this->faker->imageUrl(1200, 800, 'room', true, 'Room'),
-                $this->faker->imageUrl(1200, 800, 'breakfast', true, 'Breakfast'),
+                'https://picsum.photos/1200/800/?random=' . $this->faker->unique()->numberBetween(1001, 2000),
+                'https://picsum.photos/1200/800/?random=' . $this->faker->unique()->numberBetween(2001, 3000),
+                'https://picsum.photos/1200/800/?random=' . $this->faker->unique()->numberBetween(3001, 4000),
             ]),
 
-            'cover_image' => $this->faker->imageUrl(1200, 800, 'bnb', true, 'Cover'),
+            'cover_image' => 'https://picsum.photos/1200/800/?random=' . $this->faker->unique()->numberBetween(1, 1000),
             'price_per_night' => $this->faker->randomFloat(2, 30, 300),
             'avg_rating' => $this->faker->randomFloat(1, 3.0, 5.0),
             'reviews_count' => $this->faker->numberBetween(0, 50),

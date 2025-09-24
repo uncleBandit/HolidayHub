@@ -32,6 +32,16 @@ class BookingManager
      */
     public function create(array $data, int $userId, ?string $idempotencyKey = null): Booking
     {
+        /** @var \App\Models\User $user */
+        $user = \App\Models\User::findOrFail($userId);
+
+        // 🔑 Ensure user has a guest profile
+        if (! $user->guest) {
+            throw new \DomainException("You must complete your guest profile before booking.");
+        }
+
+        $guest = $user->guest;
+
         /** @var Bookable $bookable */
         $bookable = $this->resolveBookable($data['bookable_type'], $data['bookable_id']);
 
@@ -39,42 +49,42 @@ class BookingManager
         $checkOut = Carbon::parse($data['check_out']);
         $guests   = $data['guests'] ?? $bookable->getIncludedGuests();
 
-        // Availability check
         if (! $bookable->isAvailable($checkIn->toDateString(), $checkOut->toDateString())) {
             throw new \DomainException("Selected item is not available for the given dates.");
         }
 
-        // Prevent duplicate booking requests (idempotency)
+        // Prevent duplicate booking requests
         $idempotencyKey ??= Str::uuid()->toString();
         if ($existing = Booking::where('idempotency_key', $idempotencyKey)->first()) {
             return $existing;
         }
 
-        // Calculate total price
         $totalPrice = $this->calculatePrice($bookable, $checkIn, $checkOut, $guests);
 
-        return DB::transaction(function () use ($bookable, $userId, $checkIn, $checkOut, $guests, $totalPrice, $idempotencyKey) {
+        return DB::transaction(function () use ($bookable, $guest, $checkIn, $checkOut, $guests, $totalPrice, $idempotencyKey) {
             $booking = Booking::create([
+                'guest_id'        => $guest->id,        // ✅ link to Guest profile
                 'bookable_type'   => get_class($bookable),
                 'bookable_id'     => $bookable->getId(),
-                'user_id'         => $userId,
-                'check_in'        => $checkIn,
-                'check_out'       => $checkOut,
-                'guests'          => $guests,
-                'total_price'     => $totalPrice,
-                'status'          => 'pending_payment',
+                'check_in_date'   => $checkIn,
+                'check_out_date'  => $checkOut,
+                'guests_adults'   => $guests,
+                'guests_children' => 0,                 // adjust if needed
+                'total_amount'    => $totalPrice,
+                'currency'        => $guest->preferred_currency ?? 'USD',
+                'status'          => 'pending',
                 'idempotency_key' => $idempotencyKey,
+                'confirmation_code' => strtoupper(Str::random(10)), // unique booking ref
             ]);
 
-            // Initiate payment
             $this->paymentGateway->charge($booking);
 
-            // Trigger events
             event(new BookingCreated($booking));
 
             return $booking;
         });
     }
+
 
     /**
      * Cancel a booking if allowed by policies.

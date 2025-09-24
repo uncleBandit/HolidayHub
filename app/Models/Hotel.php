@@ -240,7 +240,7 @@ class Hotel extends Model implements Bookable
     {
         return 'slug';
     }
-    
+
     public function getAllImagesAttribute(): array
     {
         $gallery = is_array($this->gallery)
@@ -257,6 +257,12 @@ class Hotel extends Model implements Bookable
             )
             ->toArray();
     }
+
+    public function wishlists()
+    {
+        return $this->morphMany(Wishlist::class, 'wishlistable');
+    }
+
 
 
 

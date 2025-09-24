@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use App\Services\Payments\PaymentGateway;
 use App\Services\Payments\Gateways\StripeGateway;
 use Livewire\Volt\Volt;
+use App\Services\Payments\NullPaymentGateway;
+
 
 
 
@@ -29,7 +31,12 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Bind PaymentGateway interface to StripeGateway implementation
-        $this->app->bind(PaymentGateway::class, StripeGateway::class);
+         $this->app->bind(PaymentGateway::class, function ($app) {
+        if (env('BOOKING_TEST_MODE', true)) {
+            return new NullPaymentGateway();
+        }
+        return new StripeGateway(); // your real gateway
+    });
     }
 
 

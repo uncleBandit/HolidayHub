@@ -28,7 +28,16 @@ class BedAndBreakfastShow extends Component
 
     public function mount(BedAndBreakfast $bnb): void
     {
-        if (!$bnb->is_active || !$bnb->is_verified) {
+         // Hide inactive for everyone
+        if (!$bnb->is_active) {
+            abort(404);
+        }
+
+        // If not verified, only the provider who created it can see
+        if (
+            !$bnb->is_verified &&
+            (!Auth::check() || Auth::id() !== $bnb->provider_id)
+        ) {
             abort(404, 'This Bed & Breakfast is not available.');
         }
 
@@ -50,7 +59,12 @@ class BedAndBreakfastShow extends Component
 
         // wishlist check
         if (Auth::check()) {
-            $this->isWishlisted = $this->bnb->isWishlistedBy(Auth::user());
+            $this->isWishlisted = Auth::check() && Auth::user()
+                ->wishlists()
+                ->where('wishlistable_type', BedAndBreakfast::class)
+                ->where('wishlistable_id', $this->bnb->id)
+                ->exists();
+
         }
     }
 
@@ -62,37 +76,55 @@ class BedAndBreakfastShow extends Component
 
     public function toggleWishlist(): void
     {
-        if (!Auth::check()) {
-            $this->dispatch('authRequired');
-            return;
-        }
-
-        Auth::user()->wishlistBnBs()->toggle($this->bnb->id);
-        $this->isWishlisted = !$this->isWishlisted;
+    if (!Auth::check()) {
+        $this->dispatch('authRequired');
+        return;
     }
 
-    /**
+    $user = Auth::user();
+
+    $existing = $user->wishlists()
+        ->where('wishlistable_type', BedAndBreakfast::class)
+        ->where('wishlistable_id', $this->bnb->id)
+        ->first();
+
+    if ($existing) {
+        $existing->delete();
+        $this->isWishlisted = false;
+    } else {
+        $user->wishlists()->create([
+            'wishlistable_id'   => $this->bnb->id,
+            'wishlistable_type' => BedAndBreakfast::class,
+            'priority'          => 'medium', // default if you want
+        ]);
+        $this->isWishlisted = true;
+    }
+    }
+
+
+     /**
      * Infinite scroll / load more reviews
      */
     public function loadReviews(): void
     {
         $perPage = 5;
 
-        $query = $this->bnb->reviews()
+        // Fetch new reviews for the current page
+        $newReviews = $this->bnb->reviews()
             ->with('guest')
             ->latest()
-            ->skip(($this->reviewPage - 1) * $perPage)
-            ->take($perPage + 1)
+            ->forPage($this->reviewPage, $perPage)
             ->get();
 
-        if ($query->count() > $perPage) {
-            $this->hasMoreReviews = true;
-            $query = $query->take($perPage);
-        } else {
-            $this->hasMoreReviews = false;
+        // Append the new reviews to the existing collection
+        if (is_null($this->reviews)) {
+            $this->reviews = collect();
         }
 
-        $this->reviews = $this->reviews->merge($query);
+        $this->reviews = $this->reviews->merge($newReviews);
+
+        // Check if there are more reviews to load
+        $this->hasMoreReviews = ($newReviews->count() === $perPage);
         $this->reviewPage++;
     }
 

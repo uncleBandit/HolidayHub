@@ -8,7 +8,7 @@
             if (!showDropdown) highlightIndex = 0;
         "
         class="relative w-full max-w-2xl"
-        
+
     >
         {{-- Search input --}}
         <div class="relative">
@@ -109,6 +109,63 @@
                     </ul>
                 </div>
             </template>
+
+            {{-- Bed and Breakfast --}}
+            <template x-if="$wire.results.bnbs && $wire.results.bnbs.length">
+                <div class="p-3 bg-gradient-to-r from-purple-50 to-white">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase mb-1">🏡 B&B</h3>
+                    <ul class="space-y-1">
+                        <template x-for="(bnb, i) in $wire.results.bnbs" :key="bnb.id ?? i">
+                            <li
+                                @click="$wire.selectResult('bnb', bnb.id)"
+                                :class="{'bg-purple-100 text-purple-800 rounded-lg': i === highlightIndex}"
+                                class="px-3 py-2 cursor-pointer hover:bg-purple-50 rounded-lg transition"
+                            >
+                                <span class="font-medium" x-text="bnb.name ?? 'Unnamed B&B'"></span>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+            </template>
+
+
+            {{-- Villas --}}
+            <template x-if="$wire.results.villas && $wire.results.villas.length">
+                <div class="p-3 bg-gradient-to-r from-pink-50 to-white">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase mb-1">🏘 Villas</h3>
+                    <ul class="space-y-1">
+                        <template x-for="(villa, i) in $wire.results.villas" :key="villa.id ?? i">
+                            <li
+                                @click="$wire.selectResult('villa', villa.id)"
+                                :class="{'bg-pink-100 text-pink-800 rounded-lg': i === highlightIndex}"
+                                class="px-3 py-2 cursor-pointer hover:bg-pink-50 rounded-lg transition"
+                            >
+                                <span class="font-medium" x-text="villa.name ?? 'Unnamed Villa'"></span>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+            </template>
+
+
+            {{-- Activities --}}
+            <template x-if="$wire.results.activities && $wire.results.activities.length">
+                <div class="p-3 bg-gradient-to-r from-orange-50 to-white">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase mb-1">🎯 Activities</h3>
+                    <ul class="space-y-1">
+                        <template x-for="(activity, i) in $wire.results.activities" :key="activity.id ?? i">
+                            <li
+                                @click="$wire.selectResult('activity', activity.id)"
+                                :class="{'bg-orange-100 text-orange-800 rounded-lg': i === highlightIndex}"
+                                class="px-3 py-2 cursor-pointer hover:bg-orange-50 rounded-lg transition"
+                            >
+                                <span class="font-medium" x-text="activity.name ?? 'Unnamed Activity'"></span>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+            </template>
+
 
 
             {{-- No results --}}

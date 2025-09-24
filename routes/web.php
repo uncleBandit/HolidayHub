@@ -19,6 +19,8 @@ use App\Livewire\Auth\ConfirmPassword;
 use App\Livewire\Auth\EmailVerification;
 use App\Livewire\Auth\UpdatePassword;
 use App\Livewire\BedAndBreakfast\BedAndBreakfastShow;
+use App\Livewire\Booking\BookingConfirmation;
+use App\Livewire\Booking\BookingIndex;
 use App\Livewire\Booking\BookingShow;
 use App\Livewire\Destination\DestinationIndex;
 use App\Livewire\Discover;
@@ -79,7 +81,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     //Guest routes
     Route::get('/discover', Discover::class)->name('discover');
-    Route::get('/bookings', BookingShow::class)->name('bookings');
+    Route::get('/bookings/{booking}', BookingShow::class)->name('bookings-show');
+    Route::get('/bookings', BookingIndex::class)->name('bookings');
+    Route::get('/booking-confirmation/{booking}', BookingConfirmation::class)->name('booking-confirmation');
     Route::get('/destination/{destination}', DestinationShow::class)->name('destination.show');
     Route::get('/hotel/{hotel}', HotelShow::class)->name('hotel-show');
     Route::get('/activity/{activity:slug}', ActivityShow::class)->name('activity.show');
@@ -87,7 +91,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/villa/{villa:slug}', VillaShow::class)->name('villa.show');
     Route::get('package/{package:slug}', PackageShow::class)->name('packages-show');
     Route::get('/accommodationlist', AccommodationList::class)->name('accommodation.list');
-  
+
 
 
     // Admin routes

@@ -67,11 +67,12 @@ class HotelShow extends Component
             ->get();
 
         if (Auth::check()) {
-            $this->isWishlisted = Auth::user()
-                ?->role
-                ?->wishlistHotels()
-                ->where('hotel_id', $this->hotel->id)
-                ->exists() ?? false;
+            $this->isWishlisted = Auth::check() && Auth::user()
+                    ->wishlists()
+                    ->where('wishlistable_type', Hotel::class)
+                    ->where('wishlistable_id', $this->hotel->id)
+                    ->exists();
+
         }
 
         // Group rooms by their room_type
@@ -83,16 +84,33 @@ class HotelShow extends Component
         $this->availability = $this->getMonthlyAvailability($this->hotel);
     }
 
-    public function toggleWishlist()
+    public function toggleWishlist(): void
     {
         if (!Auth::check()) {
-            $this->dispatch('authRequired'); // trigger login modal
+            $this->dispatch('authRequired');
             return;
         }
 
-        Auth::user()->wishlistHotels()->toggle($this->hotel->id);
-        $this->isWishlisted = !$this->isWishlisted;
+        $user = Auth::user();
+
+        $existing = $user->wishlists()
+            ->where('wishlistable_type', Hotel::class)
+            ->where('wishlistable_id', $this->hotel->id)
+            ->first();
+
+        if ($existing) {
+            $existing->delete();
+            $this->isWishlisted = false;
+        } else {
+            $user->wishlists()->create([
+                'wishlistable_id'   => $this->hotel->id,
+                'wishlistable_type' => Hotel::class,
+                'priority'          => 'medium', // default if you want
+            ]);
+            $this->isWishlisted = true;
+        }
     }
+
 
    // public function bookNow($roomId)
     //{

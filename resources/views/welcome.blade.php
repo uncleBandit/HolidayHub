@@ -4,7 +4,7 @@
 
 @section('content')
     <section class="relative h-[600px] md:h-[700px] overflow-hidden">
-        <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1549929255-a50d287c1265?q=80&w=2940&auto=format&fit=crop');">
+        <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ asset('images/welcome-screen.jpg') }}');">
             <div class="absolute inset-0 bg-deep-ocean opacity-50"></div>
         </div>
 

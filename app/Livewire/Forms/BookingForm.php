@@ -94,7 +94,7 @@ class BookingForm extends Component
     /** @var string|null Success confirmation */
 
     protected array $rules = [
-        'bookableType' => 'required|string|in:hotel,villa,tour,flight',
+        'bookableType' => 'required|string|in:hotel,villa,package,flight,activity,bed_and_breakfast',
         'bookableId'   => 'required|integer|min:1',
         'roomId'       => 'nullable|integer|min:1',
         'checkIn'      => 'required|date|after_or_equal:today',
@@ -137,12 +137,34 @@ class BookingForm extends Component
      */
     public function submit(BookingManager $bookingManager)
     {
+        Log::info('BookingForm::submit started', [
+            'user_id' => Auth::id(),
+            'bookableType' => $this->bookableType,
+            'bookableId' => $this->bookableId,
+            'roomId' => $this->roomId,
+            'checkIn' => $this->checkIn,
+            'checkOut' => $this->checkOut,
+            'guests' => $this->guests,
+        ]);
+
         $this->resetErrorBag();
-        //$this->confirmationMessage = null;
+        Log::info('BookingForm::submit error bag reset');
+
+        Log::info('BookingForm::submit before validation', [
+            'bookableType' => $this->bookableType,
+            'bookableId' => $this->bookableId,
+            'roomId' => $this->roomId,
+            'checkIn' => $this->checkIn,
+            'checkOut' => $this->checkOut,
+            'guests' => $this->guests,
+        ]);
 
         $this->validate();
+        Log::info('BookingForm::submit validation passed');
 
         try {
+            Log::info('BookingForm::submit attempting to create booking');
+
             $booking = $bookingManager->create([
                 'bookable_type' => $this->bookableType,
                 'bookable_id'   => $this->bookableId,
@@ -150,24 +172,60 @@ class BookingForm extends Component
                 'check_in'      => $this->checkIn,
                 'check_out'     => $this->checkOut,
                 'guests'        => $this->guests,
-            ],
-                 Auth::id(),
+                'guest_id'      => Auth::id(), // Associate with logged-in user
+            ], Auth::id());
+
+            Log::info('BookingForm::submit booking created', [
+                'booking_id' => $booking->id
+            ]);
+
+            // ✅ Correct Livewire 3 style with named params
+            $this->dispatch(
+                'bookingConfirmed',
+                bookingId: $booking->id,
+                message: __("Booking completed successfully!")
             );
 
-            $this->confirmationMessage = __("Booking #:id confirmed!", ['id' => $booking->id]);
+            session()->flash('success', __("Booking completed successfully!"));
+            return redirect()->route('booking-confirmation', $booking->id);
 
-            $this->reset(['roomId','checkIn','checkOut','guests','pricePreview']);
-            $this->guests = 1; // restore sensible default
+            Log::info('BookingForm::submit dispatched bookingConfirmed event');
+
+            // Reset form state if needed
+            // $this->reset(['roomId','checkIn','checkOut','guests','pricePreview']);
+            // $this->guests = 1;
+
+            Log::info('BookingForm::submit form state reset');
+
         } catch (\Throwable $e) {
-            Log::error("Booking failed", [
+            Log::error("BookingForm::submit failed", [
                 'user_id' => Auth::id(),
                 'error'   => $e->getMessage(),
                 'trace'   => $e->getTraceAsString(),
             ]);
 
+            // ✅ Also send error event to browser
+            $this->dispatch(
+                'bookingFailed',
+                message: __("Unable to complete booking. Please try again or contact support.")
+            );
+
+            Log::info('BookingForm::submit dispatched bookingFailed event');
+
             $this->addError('general', __("Unable to complete booking. Please try again or contact support."));
+            Log::info('BookingForm::submit added general error to form');
         }
+
+        Log::info('BookingForm::submit finished');
     }
+
+     #[On('bookingConfirmed')]
+    public function handleBookingConfirmed($bookingId, $message)
+    {
+        logger("Booking confirmed! ID: {$bookingId}, message: {$message}");
+    }
+
+
 
     public function previewPrice(string $type, int $id, ?int $roomId, Carbon $checkIn, Carbon $checkOut, int $guests): float
     {

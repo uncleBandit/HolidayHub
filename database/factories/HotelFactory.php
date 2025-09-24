@@ -49,7 +49,7 @@ class HotelFactory extends Factory
                 'check_out' => $this->faker->time('H:i'),
                 'cancellation' => 'Flexible'
             ]),
-            'cover_image' => "https://source.unsplash.com/800x600/?hotel," . $this->faker->word(),
+            'cover_image' => 'https://picsum.photos/1200/800/?random=' . $this->faker->unique()->numberBetween(1, 1000),
             'avg_price_per_night' => round($finalPrice, 2),
             'avg_rating' => $this->faker->randomFloat(1, 2.5, 5.0),
             'reviews_count' => $this->faker->numberBetween(10, 2000),

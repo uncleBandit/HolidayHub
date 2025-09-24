@@ -81,6 +81,11 @@ class User extends Authenticatable
         return $this->morphTo();
     }
 
+    public function wishlists()
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
 
 
 }

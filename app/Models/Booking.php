@@ -9,11 +9,12 @@ class Booking extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
+     protected $fillable = [
         'guest_id',
         'bookable_id',
         'bookable_type',
         'offer_id',
+        'destination_id',
         'check_in_date',
         'check_out_date',
         'guests_adults',
@@ -32,6 +33,7 @@ class Booking extends Model
     protected $casts = [
         'check_in_date' => 'date',
         'check_out_date' => 'date',
+        'price_per_night' => 'float',
         'total_amount' => 'float',
         'special_requests' => 'array',
         'cancelled_at' => 'datetime',
@@ -50,5 +52,10 @@ class Booking extends Model
     public function offer()
     {
         return $this->belongsTo(Offer::class);
+    }
+
+     public function destination()
+    {
+        return $this->belongsTo(Destination::class);
     }
 }

@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Support\Facades\Storage;
+
 
 class Villa extends Model implements Bookable
 {
@@ -263,5 +265,25 @@ class Villa extends Model implements Bookable
     {
         return 'slug';
     }
+
+     public function getMainImageUrlAttribute()
+    {
+        return $this->main_image
+            ? Storage::url($this->main_image)
+            : 'https://via.placeholder.com/1600x900';
+    }
+
+    public function getGalleryUrlsAttribute()
+    {
+        return collect($this->gallery ?? [])
+            ->map(fn ($path) => Storage::url($path))
+            ->toArray();
+    }
+
+    public function wishlists()
+    {
+        return $this->morphMany(Wishlist::class, 'wishlistable');
+    }
+
 
 }

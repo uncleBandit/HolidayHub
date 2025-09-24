@@ -100,8 +100,8 @@
                 <div class="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition transform hover:-translate-y-1">
                     {{-- Image --}}
                     <div class="relative">
-                        <img src="https://placehold.co/600x400" alt="{{ $bnb->name }}"
-                             class="w-full h-48 object-cover">
+                        <img src="{{ $bnb->cover_image_url }}" alt="{{ $bnb->name }}"
+                            class="w-full h-48 object-cover">
                         @if($bnb->is_featured)
                             <span class="absolute top-2 left-2 bg-indigo-600 text-white text-xs font-semibold px-3 py-1 rounded-full">Featured</span>
                         @endif

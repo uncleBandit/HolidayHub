@@ -6,7 +6,7 @@ use App\Contracts\Bookable;
 use App\Services\Engines\PricingEngine;
 use Carbon\Carbon;
 
-class BedAndBreakfastPricingStrategy
+class BedAndBreakfastPricingStrategy implements PricingStrategy
 {
     protected PricingEngine $pricingEngine;
 
@@ -25,8 +25,16 @@ class BedAndBreakfastPricingStrategy
      *
      * @return float
      */
-    public function calculateTotal(Bookable $bAndB, Carbon $checkIn, Carbon $checkOut, int $guests = 1): float
-    {
+    public function calculate(
+    int $bookableId,
+    ?int $roomId,
+    Carbon $checkIn,
+    Carbon $checkOut,
+    int $guests
+    ): float {
+        /** @var \App\Contracts\Bookable $bAndB */
+        $bAndB = \App\Models\BedAndBreakfast::findOrFail($bookableId);
+
         $days = max(1, $checkIn->diffInDays($checkOut));
         $total = 0.0;
 
@@ -37,6 +45,7 @@ class BedAndBreakfastPricingStrategy
 
         return round($total, 2);
     }
+
 
     /**
      * Calculate the price for a single night.
@@ -68,23 +77,23 @@ class BedAndBreakfastPricingStrategy
         }
 
         // 3. Holiday surcharge
-        $holidaySurcharge = $bAndB->holidaySurcharges()->where('date', $date->toDateString())->first();
-        if ($holidaySurcharge) {
-            $price *= 1 + ($holidaySurcharge->surcharge ?? 0.0);
-        }
+        //$holidaySurcharge = $bAndB->holidaySurcharges()->where('date', $date->toDateString())->first();
+        //if ($holidaySurcharge) {
+         //   $price *= 1 + ($holidaySurcharge->surcharge ?? 0.0);
+        //}
 
         // 4. Extra guest fees
-        $includedGuests = $bAndB->getIncludedGuests();
-        if ($guests > $includedGuests) {
-            $extraGuests = $guests - $includedGuests;
-            $price += $extraGuests * $bAndB->getExtraGuestFee();
-        }
+       // $includedGuests = $bAndB->getIncludedGuests();
+        //if ($guests > $includedGuests) {
+         //   $extraGuests = $guests - $includedGuests;
+          //  $price += $extraGuests * $bAndB->getExtraGuestFee();
+        //}
 
         // 5. Occupancy-based dynamic pricing
-        $occupancyRate = $this->getOccupancyRate($bAndB, $date);
-        if ($occupancyRate > 0.75) { // threshold for B&B
-            $price *= 1.12; // +12% for high demand
-        }
+       // $occupancyRate = $this->getOccupancyRate($bAndB, $date);
+       // if ($occupancyRate > 0.75) { // threshold for B&B
+       //     $price *= 1.12; // +12% for high demand
+       // }
 
         // 6. Active promotions / discounts
         $promo = $bAndB->offers()
@@ -103,16 +112,16 @@ class BedAndBreakfastPricingStrategy
     /**
      * Get the occupancy rate for a specific date.
      */
-    protected function getOccupancyRate(Bookable $bAndB, Carbon $date): float
-    {
-        $totalRooms = $bAndB->rooms()->count() ?: 1;
+    //protected function getOccupancyRate(Bookable $bAndB, Carbon $date): float
+    //{
+       // $totalRooms = $bAndB->rooms()->count() ?: 1;
 
-        $bookedRooms = $bAndB->bookings()
-            ->whereDate('check_in', '<=', $date)
-            ->whereDate('check_out', '>', $date)
-            ->whereIn('status', ['confirmed', 'checked_in'])
-            ->count();
+       // $bookedRooms = $bAndB->bookings()
+       //     ->whereDate('check_in', '<=', $date)
+        //    ->whereDate('check_out', '>', $date)
+        //    ->whereIn('status', ['confirmed', 'checked_in'])
+        //    ->count();
 
-        return min($bookedRooms / $totalRooms, 1.0);
-    }
+       // return min($bookedRooms / $totalRooms, 1.0);
+   // }
 }
