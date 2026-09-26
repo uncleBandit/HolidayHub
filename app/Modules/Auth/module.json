@@ -1,0 +1,7 @@
+{
+    "id": "auth",
+    "name": "Auth",
+    "description": "Authentication, authorization and session lifecycle: login, registration, password reset/change, email verification, API token issuance.",
+    "enabled": true,
+    "api_prefix": "api/v1"
+}

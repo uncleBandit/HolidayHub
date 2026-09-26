@@ -2,21 +2,15 @@
 
 namespace App\Providers;
 
-use App\Services\Engines\PolicyEngine;
+use App\Modules\Booking\Application\Services\PolicyEngine;
+use App\Modules\Payments\Domain\Contracts\PaymentGateway;
+use App\Modules\Payments\Infrastructure\Gateways\NullPaymentGateway;
+use App\Modules\Payments\Infrastructure\Gateways\StripeGateway;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Middleware\RoleMiddleware;
-use Illuminate\Database\Eloquent\Relations\Relation;
-use App\Services\Payments\PaymentGateway;
-use App\Services\Payments\Gateways\StripeGateway;
-use Livewire\Volt\Volt;
-use App\Services\Payments\NullPaymentGateway;
-
-
-
-
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,22 +21,22 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register PolicyEngine as a singleton
         $this->app->singleton(PolicyEngine::class, function ($app) {
-            return new PolicyEngine();
+            return new PolicyEngine;
         });
 
         if ($this->app->environment('local')) {
-        $this->app->register(\App\Providers\TelescopeServiceProvider::class);
+            $this->app->register(\App\Providers\TelescopeServiceProvider::class);
         }
 
         // Bind PaymentGateway interface to StripeGateway implementation
-         $this->app->bind(PaymentGateway::class, function ($app) {
-        if (env('BOOKING_TEST_MODE', true)) {
-            return new NullPaymentGateway();
-        }
-        return new StripeGateway(); // your real gateway
-    });
-    }
+        $this->app->bind(PaymentGateway::class, function ($app) {
+            if (env('BOOKING_TEST_MODE', true)) {
+                return new NullPaymentGateway;
+            }
 
+            return new StripeGateway; // your real gateway
+        });
+    }
 
     /**
      * Bootstrap any application services.
@@ -55,25 +49,16 @@ class AppServiceProvider extends ServiceProvider
         // Register Spatie role middleware
         Route::aliasMiddleware('role', RoleMiddleware::class);
 
-        Relation::enforceMorphMap([
-        'hotel'     => \App\Models\Hotel::class,
-        'room_type' => \App\Models\RoomType::class,
-        'room'      => \App\Models\Room::class,
-        'package'   => \App\Models\Package::class,
-        'bed_and_breakfast' => \App\Models\BedAndBreakfast::class,
-        'villa'     => \App\Models\Villa::class,
-        'review'    => \App\Models\Review::class,
-        'user'      => \App\Models\User::class,
-        'activity'  => \App\Models\Activity::class,
-        'seasonal_rate' => \App\Models\SeasonalRate::class,
-        'booking'   => \App\Models\Booking::class,
-        'destination' => \App\Models\Destination::class,
-        'accommodation' => \App\Models\Accommodation::class,
-        // add more bookables here...
-    ]);
-
-
-
+        // The polymorphic morph map is no longer declared here.
+        //
+        // It used to live in this method, which meant two authorities owned it:
+        // this hardcoded list and the per-module `morph_map` in each
+        // module.json. ModulesServiceProvider::registerMorphMap() runs later and
+        // replaced the whole map, so every alias below was silently discarded
+        // and only the manifest-declared ones survived. Each alias now lives in
+        // the manifest of the module that owns the model, so a module that moves
+        // or renames a model updates one file it already owns.
+        // See App\Providers\ModulesServiceProvider::registerMorphMap().
 
     }
 }

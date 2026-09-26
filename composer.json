@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.2",
         "blade-ui-kit/blade-heroicons": "^2.6",
+        "filament/filament": "^4.13",
         "inertiajs/inertia-laravel": "^2.0",
         "intervention/image": "^3.11",
         "laravel/framework": "^12.0",
@@ -19,6 +20,7 @@
         "livewire/flux": "^2.1.1",
         "livewire/livewire": "^3.6",
         "livewire/volt": "^1.7",
+        "predis/predis": "^2.3",
         "spatie/laravel-permission": "^6.21",
         "stripe/stripe-php": "^17.6",
         "tightenco/ziggy": "^2.0"

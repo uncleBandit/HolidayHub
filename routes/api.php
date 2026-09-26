@@ -1,19 +1,18 @@
 <?php
 
-use App\Http\Controllers\Api\v1\ActivityController;
-use App\Http\Controllers\Api\v1\AdminController;
-use App\Http\Controllers\Api\v1\AgentController;
-use App\Http\Controllers\Api\v1\AuthController;
-use App\Http\Controllers\Api\v1\BookingController;
-use App\Http\Controllers\Api\v1\DashboardController;
-use App\Http\Controllers\Api\v1\DestinationController;
-use App\Http\Controllers\Api\v1\HotelController;
-use App\Http\Controllers\Api\v1\OfferController;
-use App\Http\Controllers\Api\v1\PackageController;
-use App\Http\Controllers\Api\v1\ProfileController;
-use App\Http\Controllers\Api\v1\ProviderController;
-use App\Http\Controllers\Api\v1\ReviewController;
-use App\Http\Controllers\Api\v1\RoomController;
+use App\Modules\Accommodation\Presentation\Http\Controllers\Api\V1\HotelController;
+use App\Modules\Accommodation\Presentation\Http\Controllers\Api\V1\RoomController;
+use App\Modules\Activities\Presentation\Http\Controllers\Api\V1\ActivityController;
+use App\Modules\Agents\Presentation\Http\Controllers\Api\V1\AgentController;
+use App\Modules\Auth\Presentation\Http\Controllers\Api\V1\AuthController;
+use App\Modules\Booking\Presentation\Http\Controllers\Api\V1\BookingController;
+use App\Modules\Catalog\Presentation\Http\Controllers\Api\V1\OfferController;
+use App\Modules\Destinations\Presentation\Http\Controllers\Api\V1\DashboardController;
+use App\Modules\Destinations\Presentation\Http\Controllers\Api\V1\DestinationController;
+use App\Modules\Identity\Presentation\Http\Controllers\Api\V1\ProfileController;
+use App\Modules\Packages\Presentation\Http\Controllers\Api\V1\PackageController;
+use App\Modules\Providers\Presentation\Http\Controllers\Api\V1\ProviderController;
+use App\Modules\Reviews\Presentation\Http\Controllers\Api\V1\ReviewController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -47,28 +46,14 @@ Route::prefix('v1')->group(function () {
             'destroy' => 'api.profile.destroy',
         ]);
 
-
         // Dashboard
         Route::apiResource('/dashboard', DashboardController::class)->only(['index'])->names(['index' => 'api.dashboard.index']);
-
-        /**
-         * Admin-only routes
-         */
-        Route::middleware('role:admin')->group(function () {
-            Route::apiResource('/admin/dashboard', AdminController::class)->names([
-                'index' => 'api.admin.dashboard.index',
-                'store' => 'api.admin.dashboard.store',
-                'show' => 'api.admin.dashboard.show',
-                'update' => 'api.admin.dashboard.update',
-                'destroy' => 'api.admin.dashboard.destroy',
-            ]);
-        });
 
         /**
          * Provider-only routes
          */
         Route::middleware('role:provider')->group(function () {
-           Route::apiResource('/provider/dashboard', ProviderController::class)->names([
+            Route::apiResource('/provider/dashboard', ProviderController::class)->names([
                 'index' => 'api.provider.dashboard.index',
                 'store' => 'api.provider.dashboard.store',
                 'show' => 'api.provider.dashboard.show',
@@ -89,7 +74,7 @@ Route::prefix('v1')->group(function () {
                 'destroy' => 'api.agent.dashboard.destroy',
             ]);
             Route::apiResource('/agent/bookings', BookingController::class);
-            //Route::apiResource('/agent/analytics', AnalyticsController::class);
+            // Route::apiResource('/agent/analytics', AnalyticsController::class);
         });
 
         /**
@@ -120,9 +105,6 @@ Route::prefix('v1')->group(function () {
             'update' => 'bookings.update',
             'destroy' => 'bookings.destroy',
         ]);
-
-
-
 
     });
 });

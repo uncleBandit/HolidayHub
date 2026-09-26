@@ -1,0 +1,10 @@
+{
+    "id": "media",
+    "name": "Media",
+    "description": "Image and gallery storage with generated variants.",
+    "enabled": true,
+    "api_prefix": "api/v1",
+    "morph_map": {
+        "image": "App\\Modules\\Media\\Domain\\Models\\Image"
+    }
+}

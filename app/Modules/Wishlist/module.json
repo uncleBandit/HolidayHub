@@ -1,0 +1,7 @@
+{
+    "id": "wishlist",
+    "name": "Wishlist",
+    "description": "Saved lists of destinations and accommodation for guests.",
+    "enabled": true,
+    "api_prefix": "api/v1"
+}

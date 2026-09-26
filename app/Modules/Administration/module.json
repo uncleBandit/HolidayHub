@@ -1,0 +1,13 @@
+{
+    "id": "administration",
+    "name": "Administration",
+    "description": "Platform administration: tenant onboarding and verification, account moderation, and oversight of the marketplace.",
+    "enabled": true,
+    "api_prefix": "api/v1",
+    "morph_map": {
+        "tenant": "App\\Modules\\Administration\\Domain\\Models\\Tenant"
+    },
+    "seeders": [
+        "TenantSeeder"
+    ]
+}

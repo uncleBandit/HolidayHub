@@ -1,0 +1,10 @@
+{
+    "id": "availability",
+    "name": "Availability",
+    "description": "Bookable inventory calendars, blackout windows and capacity.",
+    "enabled": true,
+    "api_prefix": "api/v1",
+    "morph_map": {
+        "availability": "App\\Modules\\Availability\\Domain\\Models\\Availability"
+    }
+}

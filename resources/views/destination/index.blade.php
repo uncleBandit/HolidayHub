@@ -1,4 +1,4 @@
-<x-layout.header>
+<x-layouts.app.header>
 <div class="relative bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen">
     <!-- Hero Section -->
     <section class="relative py-20 text-center">
@@ -79,4 +79,4 @@
         </div>
     </section>
 </div>
-</x-layout.header>
+</x-layouts.app.header>

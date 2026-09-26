@@ -5,24 +5,24 @@
     $route = '';
 
     // Determine the correct route based on the model instance
-    if ($bookable instanceof \App\Models\Hotel) {
+    if ($bookable instanceof \App\Modules\Accommodation\Domain\Models\Hotel) {
         $route = route('hotel-show', $bookable->slug);
-    } elseif ($bookable instanceof \App\Models\BedAndBreakfast) {
+    } elseif ($bookable instanceof \App\Modules\Accommodation\Domain\Models\BedAndBreakfast) {
         $route = route('bedandbreakfast.show', $bookable->slug);
-    } elseif ($bookable instanceof \App\Models\Villa) {
+    } elseif ($bookable instanceof \App\Modules\Accommodation\Domain\Models\Villa) {
         $route = route('villa.show', $bookable->slug);
     }
 
     // Determine the type, color, and icon for the badge
     $badgeText = '';
     $badgeClass = '';
-    if ($bookable instanceof \App\Models\Hotel) {
+    if ($bookable instanceof \App\Modules\Accommodation\Domain\Models\Hotel) {
         $badgeText = "Hotel";
         $badgeClass = 'bg-yellow-500';
-    } elseif ($bookable instanceof \App\Models\BedAndBreakfast) {
+    } elseif ($bookable instanceof \App\Modules\Accommodation\Domain\Models\BedAndBreakfast) {
         $badgeText = "B&B";
         $badgeClass = 'bg-indigo-500';
-    } elseif ($bookable instanceof \App\Models\Villa) {
+    } elseif ($bookable instanceof \App\Modules\Accommodation\Domain\Models\Villa) {
         $badgeText = "Villa";
         $badgeClass = 'bg-lime-500';
     }
@@ -79,7 +79,7 @@
 
                 {{-- Dynamic Details based on Accommodation Type --}}
                 <div class="flex items-center space-x-3 text-sm text-gray-600 font-medium">
-                    @if ($bookable instanceof \App\Models\Villa)
+                    @if ($bookable instanceof \App\Modules\Accommodation\Domain\Models\Villa)
                         <span class="flex items-center">
                             <i class="fas fa-bed mr-1.5 text-lg"></i> {{ $bookable->bedrooms }}
                         </span>

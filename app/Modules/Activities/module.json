@@ -1,0 +1,15 @@
+{
+    "id": "activities",
+    "name": "Activities",
+    "description": "Tours, excursions and experiences offered at a destination.",
+    "enabled": true,
+    "api_prefix": "api/v1",
+    "seeders": [
+        "ExperienceSeeder",
+        "ActivitySeeder"
+    ],
+    "morph_map": {
+        "activity": "App\\Modules\\Activities\\Domain\\Models\\Activity",
+        "experience": "App\\Modules\\Activities\\Domain\\Models\\Experience"
+    }
+}

@@ -1,0 +1,14 @@
+{
+    "id": "packages",
+    "name": "Packages",
+    "description": "Multi-day travel packages assembled by agents, with their features and inclusions.",
+    "enabled": true,
+    "api_prefix": "api/v1",
+    "seeders": [
+        "PackageSeeder",
+        "PackageFeatureSeeder"
+    ],
+    "morph_map": {
+        "package": "App\\Modules\\Packages\\Domain\\Models\\Package"
+    }
+}

@@ -1,0 +1,51 @@
+# ---------------------------------------------------------------------------
+# Keep the build context small and prevent host artefacts leaking into images.
+# NOTE: package-lock.json and composer.lock MUST NOT be ignored — reproducible
+#       builds depend on them.
+# ---------------------------------------------------------------------------
+
+# Dependencies (rebuilt inside the image)
+node_modules
+vendor
+
+# Build output (rebuilt inside the image)
+public/build
+public/hot
+
+# Secrets — never bake these into an image layer
+.env
+.env.*
+!.env.example
+!.env.docker.example
+auth.json
+
+# VCS / CI
+.git
+.gitignore
+.github
+
+# Tests & QA (not needed at runtime)
+tests
+.phpunit.result.cache
+.phpunit.cache
+
+# Editor / OS noise
+.idea
+.vscode
+.zed
+.DS_Store
+*.log
+npm-debug.log
+docker-compose*.yml
+compose*.yaml
+Dockerfile*
+.dockerignore
+Makefile
+README.md
+docs
+
+# Local-only tooling
+# NOTE: docker/ and deploy/ are intentionally NOT ignored — the Dockerfile
+# COPYs the PHP ini files and entrypoint from here.
+storage/*.key
+storage/pail

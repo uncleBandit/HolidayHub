@@ -1,0 +1,10 @@
+{
+    "id": "reviews",
+    "name": "Reviews",
+    "description": "Guest reviews, ratings and moderation.",
+    "enabled": true,
+    "api_prefix": "api/v1",
+    "morph_map": {
+        "review": "App\\Modules\\Reviews\\Domain\\Models\\Review"
+    }
+}

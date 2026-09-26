@@ -1,0 +1,24 @@
+{
+    "id": "accommodation",
+    "name": "Accommodation",
+    "description": "Hotels, villas, B&Bs and the rooms, types and rates that make them bookable.",
+    "enabled": true,
+    "api_prefix": "api/v1",
+    "seeders": [
+        "RoomTypeSeeder",
+        "HotelSeeder",
+        "RoomSeeder",
+        "RoomPriceSeeder",
+        "VillaSeeder",
+        "BedAndBreakfastSeeder",
+        "AccommodationSeeder"
+    ],
+    "morph_map": {
+        "accommodation": "App\\Modules\\Accommodation\\Domain\\Models\\Accommodation",
+        "bed_and_breakfast": "App\\Modules\\Accommodation\\Domain\\Models\\BedAndBreakfast",
+        "hotel": "App\\Modules\\Accommodation\\Domain\\Models\\Hotel",
+        "room": "App\\Modules\\Accommodation\\Domain\\Models\\Room",
+        "room_type": "App\\Modules\\Accommodation\\Domain\\Models\\RoomType",
+        "villa": "App\\Modules\\Accommodation\\Domain\\Models\\Villa"
+    }
+}

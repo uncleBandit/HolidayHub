@@ -1,0 +1,15 @@
+{
+    "id": "identity",
+    "name": "Identity",
+    "description": "Users, guests, roles, permissions, API tokens and admin accounts.",
+    "enabled": true,
+    "api_prefix": "api/v1",
+    "seeders": [
+        "RoleSeeder",
+        "GuestSeeder",
+        "AdminSeeder"
+    ],
+    "morph_map": {
+        "user": "App\\Modules\\Identity\\Domain\\Models\\User"
+    }
+}

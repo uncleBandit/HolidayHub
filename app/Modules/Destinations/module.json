@@ -1,0 +1,10 @@
+{
+    "id": "destinations",
+    "name": "Destinations",
+    "description": "Geographic destination taxonomy, hierarchy and discovery metadata.",
+    "enabled": true,
+    "api_prefix": "api/v1",
+    "morph_map": {
+        "destination": "App\\Modules\\Destinations\\Domain\\Models\\Destination"
+    }
+}

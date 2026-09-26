@@ -1,0 +1,14 @@
+{
+    "id": "providers",
+    "name": "Providers",
+    "description": "Property owners and hosts who supply accommodation and services.",
+    "enabled": true,
+    "api_prefix": "api/v1",
+    "seeders": [
+        "ProviderSeeder",
+        "ServiceSeeder"
+    ],
+    "morph_map": {
+        "provider": "App\\Modules\\Providers\\Domain\\Models\\Provider"
+    }
+}

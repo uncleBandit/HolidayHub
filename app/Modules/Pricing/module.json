@@ -1,0 +1,10 @@
+{
+    "id": "pricing",
+    "name": "Pricing",
+    "description": "Base rates, seasonal rate windows and the pricing strategies.",
+    "enabled": true,
+    "api_prefix": "api/v1",
+    "morph_map": {
+        "seasonal_rate": "App\\Modules\\Pricing\\Domain\\Models\\SeasonalRate"
+    }
+}

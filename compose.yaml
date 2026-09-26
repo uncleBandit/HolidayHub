@@ -1,0 +1,163 @@
+# ---------------------------------------------------------------------------
+# HolidayHub — DEVELOPMENT stack
+#
+#   docker compose up -d
+#   docker compose exec app php artisan migrate --seed
+#
+# Source is bind-mounted for hot reload. vendor/ and node_modules/ are kept in
+# named volumes so the host tree stays clean and cross-platform (macOS/Windows
+# bind mounts are slow and break file permissions).
+# ---------------------------------------------------------------------------
+
+name: holidayhub
+
+x-app-env: &app-env
+  APP_NAME: HolidayHub
+  APP_ENV: local
+  APP_DEBUG: "true"
+  APP_URL: http://localhost:8000
+  APP_KEY: ${APP_KEY:-}
+
+  LOG_CHANNEL: stack
+  LOG_LEVEL: debug
+
+  DB_CONNECTION: pgsql
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_DATABASE: ${POSTGRES_DB:-holidayhub}
+  DB_USERNAME: ${POSTGRES_USER:-holidayhub}
+  DB_PASSWORD: ${POSTGRES_PASSWORD:-holidayhub}
+
+  # Redis is now mandatory, not optional: the availability engine needs atomic
+  # locks to prevent double-booking, which SQLite/database drivers cannot do.
+  CACHE_STORE: redis
+  QUEUE_CONNECTION: redis
+  SESSION_DRIVER: redis
+  BROADCAST_CONNECTION: log
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+
+  MAIL_MAILER: smtp
+  MAIL_HOST: mailpit
+  MAIL_PORT: "1025"
+  MAIL_USERNAME: null
+  MAIL_PASSWORD: null
+  MAIL_FROM_ADDRESS: hello@holidayhub.test
+  MAIL_FROM_NAME: "HolidayHub"
+
+  FILESYSTEM_DISK: public
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-holidayhub}
+      POSTGRES_USER: ${POSTGRES_USER:-holidayhub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-holidayhub}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-holidayhub} -d ${POSTGRES_DB:-holidayhub}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_DATABASE: /data/mailpit.db
+
+  app:
+    build:
+      context: .
+      target: dev
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      <<: *app-env
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - .:/var/www/html:cached
+      - vendor:/var/www/html/vendor
+      - node_modules:/var/www/html/node_modules
+      - public-build:/var/www/html/public/build
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8000/up') ? 0 : 1);"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  queue:
+    build:
+      context: .
+      target: dev
+    restart: unless-stopped
+    command: ["queue"]
+    depends_on:
+      app:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      <<: *app-env
+    volumes:
+      - .:/var/www/html:cached
+      - vendor:/var/www/html/vendor
+      - node_modules:/var/www/html/node_modules
+      - public-build:/var/www/html/public/build
+
+  # Vite dev server with hot module replacement. Started on demand:
+  #   docker compose --profile dev-assets up -d vite
+  vite:
+    image: node:22-bookworm-slim
+    profiles: ["dev-assets"]
+    working_dir: /var/www/html
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - app
+    environment:
+      APP_NAME: HolidayHub
+      VITE_APP_NAME: HolidayHub
+    ports:
+      - "${VITE_PORT:-5173}:5173"
+    volumes:
+      - .:/var/www/html:cached
+      - node_modules:/var/www/html/node_modules
+
+volumes:
+  postgres-data:
+  redis-data:
+  vendor:
+  node_modules:
+  public-build:

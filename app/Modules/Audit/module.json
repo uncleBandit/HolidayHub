@@ -1,0 +1,7 @@
+{
+    "id": "audit",
+    "name": "Audit",
+    "description": "Audit trail: records who changed what and when, for compliance and operational forensics.",
+    "enabled": true,
+    "api_prefix": "api/v1"
+}

@@ -1,0 +1,10 @@
+{
+    "id": "booking",
+    "name": "Booking",
+    "description": "The booking lifecycle: reservation, confirmation, cancellation and pricing resolution.",
+    "enabled": true,
+    "api_prefix": "api/v1",
+    "morph_map": {
+        "booking": "App\\Modules\\Booking\\Domain\\Models\\Booking"
+    }
+}

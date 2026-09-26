@@ -1,0 +1,16 @@
+{
+    "id": "catalog",
+    "name": "Catalog",
+    "description": "Promotional offers, discounts and the shared amenity catalogue.",
+    "enabled": true,
+    "api_prefix": "api/v1",
+    "seeders": [
+        "AmenitySeeder",
+        "FlightSeeder",
+        "OfferSeeder"
+    ],
+    "morph_map": {
+        "amenity": "App\\Modules\\Catalog\\Domain\\Models\\Amenity",
+        "offer": "App\\Modules\\Catalog\\Domain\\Models\\Offer"
+    }
+}

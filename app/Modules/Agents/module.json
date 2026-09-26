@@ -1,0 +1,10 @@
+{
+    "id": "agents",
+    "name": "Agents",
+    "description": "Travel agents and tour operators who curate and sell packages.",
+    "enabled": true,
+    "api_prefix": "api/v1",
+    "morph_map": {
+        "agent": "App\\Modules\\Agents\\Domain\\Models\\Agent"
+    }
+}

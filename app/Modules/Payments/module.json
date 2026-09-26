@@ -1,0 +1,7 @@
+{
+    "id": "payments",
+    "name": "Payments",
+    "description": "Payment gateway abstraction, charge/refund orchestration and webhooks.",
+    "enabled": true,
+    "api_prefix": "api/v1"
+}
