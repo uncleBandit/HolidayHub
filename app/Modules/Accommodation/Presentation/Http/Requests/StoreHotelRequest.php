@@ -2,6 +2,8 @@
 
 namespace App\Modules\Accommodation\Presentation\Http\Requests;
 
+use App\Modules\Accommodation\Domain\Models\Hotel;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreHotelRequest extends FormRequest
@@ -11,7 +13,7 @@ class StoreHotelRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return $this->user()?->can('create', Hotel::class) ?? false;
     }
 
     /**
@@ -23,12 +25,18 @@ class StoreHotelRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255|unique:hotels,slug',
             'description' => 'nullable|string',
-            'location' => 'required|string|max:255',
-            'price_per_night' => 'required|numeric|min:0',
-            'rating' => 'nullable|numeric|min:0|max:5',
-            'amenities' => 'nullable|array',
-            'image' => 'nullable|image|max:2048',
+            'address' => 'nullable|string|max:255',
+            'city' => 'required|string|max:255',
+            'country' => 'required|string|max:255',
+            'destination_id' => 'required|integer|exists:destinations,id',
+            'provider_id' => Auth::user()?->isPlatformAdmin()
+                ? 'required|integer|exists:providers,id'
+                : 'prohibited',
+            'policies' => 'required|array',
+            'stars' => 'required|integer|min:1|max:5',
+            'avg_price_per_night' => 'required|numeric|min:0',
         ];
     }
 }

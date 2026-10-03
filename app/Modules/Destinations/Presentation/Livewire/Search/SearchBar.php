@@ -36,16 +36,16 @@ class SearchBar extends Component
             $this->results['destinations'] = Destination::where('name', 'like', "%{$this->query}%")
                 ->limit(5)->get()->toArray();
 
-            $this->results['hotels'] = Hotel::where('name', 'like', "%{$this->query}%")
+            $this->results['hotels'] = Hotel::published()->whereHas('accommodation', fn ($query) => $query->where('name', 'like', "%{$this->query}%"))
                 ->limit(5)->get()->toArray();
 
             $this->results['packages'] = Package::where('title', 'like', "%{$this->query}%")
                 ->limit(5)->get()->toArray();
 
-            $this->results['villas'] = Villa::where('name', 'like', "%{$this->query}%")
+            $this->results['villas'] = Villa::published()->whereHas('accommodation', fn ($query) => $query->where('name', 'like', "%{$this->query}%"))
                 ->limit(5)->get()->toArray();
 
-            $this->results['bnbs'] = BedAndBreakfast::where('name', 'like', "%{$this->query}%")
+            $this->results['bnbs'] = BedAndBreakfast::published()->whereHas('accommodation', fn ($query) => $query->where('name', 'like', "%{$this->query}%"))
                 ->limit(5)->get()->toArray();
 
             $this->results['activities'] = Activity::where('name', 'like', "%{$this->query}%")
@@ -76,10 +76,10 @@ class SearchBar extends Component
     {
         return match ($type) {
             'destination' => redirect()->route('destination.show', Destination::findOrFail($id)),
-            'hotel' => redirect()->route('hotel-show', Hotel::findOrFail($id)),
+            'hotel' => redirect()->route('hotel-show', Hotel::published()->findOrFail($id)),
             'package' => redirect()->route('packages-show', Package::findOrFail($id)),
-            'villa' => redirect()->route('villa.show', Villa::findOrFail($id)),
-            'bnb' => redirect()->route('bedandbreakfast.show', BedAndBreakfast::findOrFail($id)),
+            'villa' => redirect()->route('villa.show', Villa::published()->findOrFail($id)),
+            'bnb' => redirect()->route('bedandbreakfast.show', BedAndBreakfast::published()->findOrFail($id)),
             'activity' => redirect()->route('activity.show', Activity::findOrFail($id)),
             default => null,
         };

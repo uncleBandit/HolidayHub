@@ -2,22 +2,27 @@
 
 namespace App\Modules\Activities\Domain\Models;
 
-use App\Modules\Accommodation\Domain\Models\Hotel;
+use App\Modules\Activities\Domain\Enums\ActivityStatus;
+use App\Modules\Activities\Domain\Enums\ActivityVerificationStatus;
 use App\Modules\Availability\Domain\Models\Availability;
 use App\Modules\Booking\Domain\Models\Booking;
 use App\Modules\Catalog\Domain\Models\Amenity;
 use App\Modules\Catalog\Domain\Models\Offer;
 use App\Modules\Destinations\Domain\Models\Destination;
 use App\Modules\Media\Domain\Models\Image;
+use App\Modules\Media\Domain\Models\MediaPost;
 use App\Modules\Pricing\Domain\Models\SeasonalRate;
 use App\Modules\Providers\Domain\Models\Provider;
 use App\Modules\Reviews\Domain\Models\Review;
 use App\Shared\Domain\Contracts\AvailabilityAware;
 use App\Shared\Domain\Contracts\Bookable;
 use App\Shared\Domain\Contracts\Pricable;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -27,19 +32,17 @@ class Activity extends Model implements AvailabilityAware, Bookable, Pricable
 {
     use HasFactory, SoftDeletes;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
     protected $fillable = [
         'hotel_id',
         'provider_id',
         'destination_id',
+        'category_id',
         'name',
         'slug',
         'type',
         'description',
+        'short_description',
+        'highlights',
         'thumbnail',
         'gallery',
         'video_url',
@@ -52,102 +55,129 @@ class Activity extends Model implements AvailabilityAware, Bookable, Pricable
         'capacity',
         'min_age',
         'max_age',
+        'age_policy',
+        'attributes',
+        'inclusions',
+        'exclusions',
+        'accessibility',
+        'booking_mode',
+        'booking_cutoff_minutes',
+        'minimum_notice_minutes',
+        'timezone',
+        'weather_dependent',
+        'weather_cancellation_policy',
+        'safety_instructions',
+        'included_participants',
         'is_featured',
-        'is_active',
         'available_from',
         'available_to',
-        'rating',
-        'reviews_count',
-        'bookings_count',
     ];
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
     protected $casts = [
+        'status' => ActivityStatus::class,
+        'verification_status' => ActivityVerificationStatus::class,
         'gallery' => 'array',
         'tags' => 'array',
+        'highlights' => 'array',
+        'age_policy' => 'array',
+        'attributes' => 'array',
+        'inclusions' => 'array',
+        'exclusions' => 'array',
+        'accessibility' => 'array',
         'base_price' => 'decimal:2',
         'rating' => 'decimal:2',
         'is_featured' => 'boolean',
         'is_active' => 'boolean',
+        'weather_dependent' => 'boolean',
         'available_from' => 'date',
         'available_to' => 'date',
+        'submitted_at' => 'datetime',
+        'published_at' => 'datetime',
+        'verified_at' => 'datetime',
     ];
 
-    /**
-     * Boot the model.
-     */
     protected static function booted(): void
     {
-        // Generate a unique slug before saving the model.
-        static::creating(function (Activity $activity) {
-            $activity->slug = Str::slug($activity->name);
+        static::creating(function (Activity $activity): void {
+            $baseSlug = Str::slug($activity->slug ?: $activity->name) ?: 'activity';
+            $slug = $baseSlug;
+            $suffix = 2;
+
+            while (static::withTrashed()->where('slug', $slug)->exists()) {
+                $slug = $baseSlug.'-'.$suffix++;
+            }
+
+            $activity->slug = $slug;
+            $activity->status ??= ActivityStatus::Draft;
+            $activity->verification_status ??= ActivityVerificationStatus::Unverified;
+            $activity->is_active = false;
+        });
+
+        static::updating(function (Activity $activity): void {
+            $listingFields = [
+                'provider_id',
+                'destination_id',
+                'category_id',
+                'name',
+                'description',
+                'short_description',
+                'highlights',
+                'thumbnail',
+                'gallery',
+                'video_url',
+                'tags',
+                'duration_minutes',
+                'capacity',
+                'base_price',
+                'min_age',
+                'max_age',
+                'age_policy',
+                'inclusions',
+                'exclusions',
+                'accessibility',
+                'booking_mode',
+                'booking_cutoff_minutes',
+                'minimum_notice_minutes',
+                'timezone',
+                'weather_dependent',
+                'weather_cancellation_policy',
+                'safety_instructions',
+            ];
+
+            if ($activity->status === ActivityStatus::Published && $activity->isDirty($listingFields)) {
+                $activity->status = ActivityStatus::Draft;
+                $activity->verification_status = ActivityVerificationStatus::Pending;
+                $activity->is_active = false;
+                $activity->published_at = null;
+            }
+        });
+
+        static::updated(function (Activity $activity): void {
+            if ($activity->wasChanged('status')
+                && $activity->status === ActivityStatus::Draft
+                && $activity->getRawOriginal('status') === ActivityStatus::Published->value) {
+                $activity->verificationHistory()->create([
+                    'status' => ActivityVerificationStatus::Pending->value,
+                    'notes' => 'Published activity content changed and requires review.',
+                ]);
+            }
         });
     }
 
-    /*
-     * Implementation of the Bookable interface.
-     */
-    public function getId(): int
+    public function scopePublished(Builder $query): Builder
     {
-        return $this->id;
+        return $query->where('status', ActivityStatus::Published)
+            ->where('verification_status', ActivityVerificationStatus::Approved)
+            ->where('is_active', true);
     }
 
-    public function getType(): string
+    public function isPublished(): bool
     {
-        return 'activity';
+        return $this->status === ActivityStatus::Published
+            && $this->verification_status === ActivityVerificationStatus::Approved
+            && $this->is_active;
     }
 
-    public function getName(): string
-    {
-        return $this->name;
-    }
-
-    public function getDescription(): string
-    {
-        return $this->description;
-    }
-
-    public function getImages(): array
-    {
-        return $this->gallery ?? [];
-    }
-
-    public function getBasePrice(): float
-    {
-        return $this->base_price;
-    }
-
-    public function getCurrency(): string
-    {
-        return $this->currency;
-    }
-
-    public function getCapacity(): int
-    {
-        return $this->capacity;
-    }
-
-    public function getPriceForDate(string $date): float
-    {
-        // Implement logic for dynamic pricing based on date.
-        // For now, return the base price.
-        return $this->base_price;
-    }
-
-    public function isAvailable(string $checkIn, string $checkOut): bool
-    {
-        // Implement availability logic based on dates and capacity.
-        // For now, assume it's always available within the general range.
-        return true;
-    }
-
-    /*
-     * Relationships
-     */
     public function destination(): BelongsTo
     {
         return $this->belongsTo(Destination::class);
@@ -158,9 +188,49 @@ class Activity extends Model implements AvailabilityAware, Bookable, Pricable
         return $this->belongsTo(Provider::class);
     }
 
-    public function hotel(): BelongsTo
+    public function category(): BelongsTo
     {
-        return $this->belongsTo(Hotel::class);
+        return $this->belongsTo(ActivityCategory::class, 'category_id');
+    }
+
+    public function options(): HasMany
+    {
+        return $this->hasMany(ActivityOption::class);
+    }
+
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(ActivitySchedule::class);
+    }
+
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(ActivitySession::class);
+    }
+
+    public function locations(): HasMany
+    {
+        return $this->hasMany(ActivityLocation::class)->orderBy('sequence');
+    }
+
+    public function itinerary(): HasMany
+    {
+        return $this->hasMany(ActivityItineraryItem::class)->orderBy('sequence');
+    }
+
+    public function requirements(): HasMany
+    {
+        return $this->hasMany(ActivityRequirement::class);
+    }
+
+    public function languages(): HasMany
+    {
+        return $this->hasMany(ActivityLanguage::class);
+    }
+
+    public function verificationHistory(): HasMany
+    {
+        return $this->hasMany(ActivityVerification::class)->latest();
     }
 
     public function reviews(): MorphMany
@@ -183,40 +253,113 @@ class Activity extends Model implements AvailabilityAware, Bookable, Pricable
         return $this->morphMany(Offer::class, 'offerable');
     }
 
-    public function getIncludedGuests(): int
-    {
-        // Assuming activities include 1 guest by default.
-        return 1;
-    }
-
-    public function getDefaultMaxGuests(): int
-    {
-        return $this->capacity ?? 1;
-    }
-
     public function seasonalRates(): MorphMany
     {
         return $this->morphMany(SeasonalRate::class, 'seasonal_rateable');
     }
 
-    /**
-     * Polymorphic images relationship.
-     */
     public function images(): MorphMany
     {
         return $this->morphMany(Image::class, 'imageable')->ordered();
     }
 
-    /**
-     * Optional: helper for primary image
-     */
-    public function primaryImage(): MorphMany
+    public function mediaPosts(): MorphMany
     {
-        return $this->images()->primary();
+        return $this->morphMany(MediaPost::class, 'targetable');
     }
 
     public function amenities(): MorphToMany
     {
         return $this->morphToMany(Amenity::class, 'amenable');
+    }
+
+    public function getId(): int
+    {
+        return (int) $this->id;
+    }
+
+    public function getType(): string
+    {
+        return 'activity';
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getDescription(): string
+    {
+        return (string) $this->description;
+    }
+
+    public function getImages(): array
+    {
+        $images = $this->images->pluck('path')->filter()->values()->all();
+
+        return $images !== [] ? $images : array_values(array_filter(array_merge(
+            [$this->thumbnail],
+            $this->gallery ?? []
+        )));
+    }
+
+    public function getBasePrice(): float
+    {
+        return (float) ($this->base_price ?? 0);
+    }
+
+    public function getCurrency(): string
+    {
+        return $this->currency ?: 'USD';
+    }
+
+    public function getCapacity(): int
+    {
+        return (int) ($this->capacity ?? 0);
+    }
+
+    public function getIncludedGuests(): int
+    {
+        return max(1, (int) $this->included_participants);
+    }
+
+    public function getDefaultMaxGuests(): int
+    {
+        return max(1, (int) ($this->capacity ?? 1));
+    }
+
+    public function getPriceForDate(string $date): float
+    {
+        $seasonalRate = $this->seasonalRates()
+            ->where('active', true)
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
+            ->orderByDesc('start_date')
+            ->first();
+
+        return (float) ($seasonalRate?->rate ?? $this->getBasePrice());
+    }
+
+    public function isAvailable(string $checkIn, string $checkOut): bool
+    {
+        if (! $this->isPublished()) {
+            return false;
+        }
+
+        $start = Carbon::parse($checkIn);
+        $end = Carbon::parse($checkOut);
+
+        if ($end->lessThanOrEqualTo($start)) {
+            return false;
+        }
+
+        return $this->sessions()
+            ->where('status', 'scheduled')
+            ->where('starts_at', '>=', $start)
+            ->where('starts_at', '<', $end)
+            ->where('starts_at', '>=', now()->addMinutes($this->minimum_notice_minutes))
+            ->whereColumn('booked_capacity', '<', 'capacity')
+            ->where(fn (Builder $query) => $query->whereNull('booking_cutoff_at')->orWhere('booking_cutoff_at', '>', now()))
+            ->exists();
     }
 }

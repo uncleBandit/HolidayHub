@@ -18,18 +18,8 @@ use Illuminate\Support\Facades\Schema;
  * does not exist. The failure only appears at query time, as a QueryException or
  * a ClassMorphViolationException, in a code path no test covered.
  *
- * Two specific shapes of defect are pinned here:
- *
- *   1. A relation that is not a morph. Experience::seasonalRates() was
- *      hasMany(SeasonalRate::class), which resolves to a foreign key of
- *      `experience_id`. seasonal_rates has no such column; it has
- *      seasonal_rateable_type and seasonal_rateable_id. Every seasonal rate
- *      lookup for an Experience therefore threw.
- *
- *   2. A morph target missing from the enforced morph map. Relation::enforceMorphMap()
- *      is on, so touching a morph relation on an unregistered model throws
- *      ClassMorphViolationException. Experience, Offer, Availability and Image
- *      were all unregistered even though they are morph targets.
+ * Each capability relation must be a polymorphic relation whose columns exist
+ * and whose parent model has an entry in the enforced morph map.
  */
 function bookableClasses(): array
 {
@@ -68,7 +58,7 @@ function capabilityRelations(): array
 it('finds the bookables to check', function () {
     expect(bookableClasses())->toContain(
         App\Modules\Accommodation\Domain\Models\Hotel::class,
-        App\Modules\Activities\Domain\Models\Experience::class,
+        App\Modules\Activities\Domain\Models\Activity::class,
         App\Modules\Packages\Domain\Models\Package::class,
     );
 })->group('architecture');

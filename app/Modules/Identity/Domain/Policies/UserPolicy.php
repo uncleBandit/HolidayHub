@@ -26,17 +26,17 @@ class UserPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->isPlatformAdmin();
+        return $user->can('users.view');
     }
 
     public function view(User $user, User $model): bool
     {
-        return $user->isPlatformAdmin();
+        return $user->can('users.view');
     }
 
     public function create(User $user): bool
     {
-        return $user->isPlatformAdmin();
+        return $user->can('users.manage');
     }
 
     /**
@@ -44,7 +44,7 @@ class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
-        return $user->isPlatformAdmin() && ! $this->isSelf($user, $model);
+        return $user->can('users.manage') && ! $this->isSelf($user, $model);
     }
 
     /**
@@ -60,7 +60,7 @@ class UserPolicy
      */
     public function resetPassword(User $user, User $model): bool
     {
-        return $user->isPlatformAdmin() && ! $this->isSelf($user, $model);
+        return $user->can('users.manage') && ! $this->isSelf($user, $model);
     }
 
     /**
@@ -68,7 +68,7 @@ class UserPolicy
      */
     public function manageRoles(User $user, User $model): bool
     {
-        return $user->isPlatformAdmin() && ! $this->isSelf($user, $model);
+        return $user->can('users.roles.manage') && ! $this->isSelf($user, $model);
     }
 
     /**
@@ -76,7 +76,7 @@ class UserPolicy
      */
     public function revokeTokens(User $user, User $model): bool
     {
-        return $user->isPlatformAdmin() && ! $this->isSelf($user, $model);
+        return $user->can('users.tokens.revoke') && ! $this->isSelf($user, $model);
     }
 
     /**
@@ -84,7 +84,7 @@ class UserPolicy
      */
     public function manageEmailVerification(User $user, User $model): bool
     {
-        return $user->isPlatformAdmin() && ! $this->isSelf($user, $model);
+        return $user->can('users.email.verify') && ! $this->isSelf($user, $model);
     }
 
     /**

@@ -3,6 +3,8 @@
 namespace App\Modules\Destinations\Presentation\Livewire\Destination;
 
 use App\Modules\Destinations\Domain\Models\Destination;
+use App\Modules\Accommodation\Domain\Models\Hotel;
+use App\Modules\Accommodation\Domain\Models\BedAndBreakfast;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -20,21 +22,23 @@ class DestinationShow extends Component
     {
         // Eager-load all relationships the view will need.
         $this->destination = $destination->load([
-            'accommodations.bookable.reviews',
+            'accommodations' => fn ($query) => $query->published()->with('bookable.reviews'),
             'hotels',
             'bedAndBreakfasts',
             'activities',
             'reviews.guest',
         ])->loadCount([
-            'accommodations as hotels_count',
-            'accommodations as bnb_count',
+            'hotels as hotels_count',
+            'bedAndBreakfasts as bnb_count',
             'activities',
             'reviews',
         ])->loadAvg('reviews', 'rating');
 
         // Filter accommodations for hotels and bnb
-        $this->destination->hotels = $this->destination->accommodations->where('bookable_type', \App\Modules\Accommodation\Domain\Models\Hotel::class);
-        $this->destination->bedAndBreakfasts = $this->destination->accommodations->where('bookable_type', \App\Modules\Accommodation\Domain\Models\BedAndBreakfast::class);
+        $this->destination->hotels = $this->destination->accommodations
+            ->where('bookable_type', (new Hotel)->getMorphClass());
+        $this->destination->bedAndBreakfasts = $this->destination->accommodations
+            ->where('bookable_type', (new BedAndBreakfast)->getMorphClass());
     }
 
     public function switchTab($tab)

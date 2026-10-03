@@ -34,7 +34,7 @@ class RoomPriceFactory extends Factory
             'discount_price' => $discountPrice,
             'start_date' => $startDate,
             'end_date' => $endDate,
-            'meta' => json_encode($meta),
+            'meta' => $meta,
             'created_at' => now(),
             'updated_at' => now(),
         ];

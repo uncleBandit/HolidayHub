@@ -1,7 +1,7 @@
 <?php
 
 use App\Modules\Accommodation\Domain\Models\RoomType;
-use App\Modules\Activities\Domain\Models\Experience;
+use App\Modules\Activities\Domain\Models\Activity;
 use App\Modules\Catalog\Domain\Models\Offer;
 use App\Modules\Pricing\Application\Services\PricingEngine;
 use App\Modules\Pricing\Domain\Models\SeasonalRate;
@@ -128,13 +128,12 @@ it('adds a surcharge for guests beyond the included count without crashing', fun
 
 it('prices a bookable that has no rooms relation without crashing', function () {
     $engine = app(PricingEngine::class);
-    // Experience has no rooms(); occupancy pricing used to call it unconditionally.
-    $experience = Experience::factory()->create(['price' => 80.0, 'included_guests' => 1]);
+    $activity = Activity::factory()->create(['base_price' => 80.0, 'included_participants' => 1]);
 
-    expect(fn () => $engine->calculateDaily($experience, midWeek()))
+    expect(fn () => $engine->calculateDaily($activity, midWeek()))
         ->not->toThrow(BadMethodCallException::class);
 
-    expect($engine->calculateDaily($experience, midWeek()))->toBeGreaterThan(0.0);
+    expect($engine->calculateDaily($activity, midWeek()))->toBeGreaterThan(0.0);
 });
 
 it('totals a date range as the sum of its nightly rates', function () {

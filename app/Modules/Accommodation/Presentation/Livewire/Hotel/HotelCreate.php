@@ -2,9 +2,11 @@
 
 namespace App\Modules\Accommodation\Presentation\Livewire\Hotel;
 
+use App\Modules\Accommodation\Application\Services\AccommodationPublicationService;
 use App\Modules\Accommodation\Application\Services\HotelCreator;
 use App\Modules\Accommodation\Domain\Models\Hotel;
 use App\Modules\Catalog\Domain\Models\Amenity;
+use App\Modules\Destinations\Domain\Models\Destination;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -35,6 +37,8 @@ class HotelCreate extends Component
     public $city;
 
     public $country;
+
+    public ?int $destination_id = null;
 
     public $latitude;
 
@@ -99,12 +103,13 @@ class HotelCreate extends Component
                     'string',
                     Rule::unique('hotels', 'slug')->ignore($this->draftHotel?->id),
                 ],
-                'description' => 'nullable|string',
+                'description' => 'required|string|min:20',
             ],
             2 => [
-                'address' => 'nullable|string|max:255',
-                'city' => 'nullable|string|max:255',
-                'country' => 'nullable|string|max:255',
+                'address' => 'required|string|max:255',
+                'city' => 'required|string|max:255',
+                'country' => 'required|string|max:255',
+                'destination_id' => 'required|integer|exists:destinations,id',
                 'latitude' => 'nullable|numeric',
                 'longitude' => 'nullable|numeric',
             ],
@@ -114,14 +119,14 @@ class HotelCreate extends Component
                 'seasonal_rates' => 'array',
             ],
             4 => [
-                'cover_image' => 'nullable|image|max:4096',
+                'cover_image' => 'required|image|max:4096',
                 'gallery.*' => 'nullable|image|max:4096',
             ],
             5 => [
                 'policies.check_in' => 'required|string',
                 'policies.check_out' => 'required|string',
                 'policies.cancellation' => 'nullable|string|max:500',
-                'selectedAmenities' => 'array',
+                'selectedAmenities' => 'required|array|min:1',
             ],
             6 => $this->roomTypeRules(),
             default => [],
@@ -133,13 +138,13 @@ class HotelCreate extends Component
     // ==========================
     protected function roomTypeRules(): array
     {
-        $rules = [];
+        $rules = ['roomTypes' => 'required|array|min:1'];
         foreach ($this->roomTypes as $index => $room) {
-            $rules["roomTypes.$index.name"] = 'nullable|string|max:255';
-            $rules["roomTypes.$index.slug"] = 'nullable|string|unique:room_types,slug';
-            $rules["roomTypes.$index.price_per_night"] = 'nullable|numeric|min:0';
-            $rules["roomTypes.$index.capacity"] = 'nullable|integer|min:1';
-            $rules["roomTypes.$index.beds"] = 'nullable|integer|min:1';
+            $rules["roomTypes.$index.name"] = 'required|string|max:255';
+            $rules["roomTypes.$index.slug"] = 'nullable|string|max:255';
+            $rules["roomTypes.$index.price_per_night"] = 'required|numeric|min:0.01';
+            $rules["roomTypes.$index.capacity"] = 'required|integer|min:1';
+            $rules["roomTypes.$index.beds"] = 'required|integer|min:1';
             $rules["roomTypes.$index.gallery_images.*"] = 'nullable|image|max:4096';
         }
 
@@ -206,6 +211,7 @@ class HotelCreate extends Component
                 'address',
                 'city',
                 'country',
+                'destination_id',
                 'latitude',
                 'longitude',
                 'stars',
@@ -214,12 +220,10 @@ class HotelCreate extends Component
                 'is_verified',
                 'avg_price_per_night',
                 'policies',
-                'cover_image',   // ✅ include from migration
-                'gallery',       // ✅ include from migration
             ]);
 
             // Ensure provider_id is always set
-            $data['provider_id'] = $providerId ?? auth()->id();
+            $data['provider_id'] = $providerId;
 
             // Add safe defaults if missing
             $data['stars'] = $data['stars'] ?? 3;
@@ -290,7 +294,12 @@ class HotelCreate extends Component
                 'rules_used' => array_keys($rules),
             ]);
 
-            // Try creating hotel with room types
+            $rules = [];
+            foreach (range(1, 6) as $step) {
+                $rules = array_merge($rules, $this->rules($step));
+            }
+            $this->validate($rules);
+
             $hotel = app(HotelCreator::class)->createHotelWithRoomTypes(
                 $this->draftHotel,
                 $this->cover_image,
@@ -298,6 +307,7 @@ class HotelCreate extends Component
                 $this->selectedAmenities,
                 $this->roomTypes
             );
+            app(AccommodationPublicationService::class)->submitForReview($hotel->accommodation()->firstOrFail());
 
             Log::info('Hotel created successfully', [
                 'hotelId' => $hotel->id,
@@ -306,11 +316,15 @@ class HotelCreate extends Component
                 'roomTypesCount' => $hotel->roomTypes()->count(),
             ]);
 
-            session()->flash('success', 'Hotel created successfully!');
+            session()->flash('success', 'Hotel submitted for review.');
 
             return redirect()->route('hotel-show', $hotel->slug);
 
         } catch (Throwable $e) {
+            if ($e instanceof \Illuminate\Validation\ValidationException) {
+                throw $e;
+            }
+
             Log::error('Hotel save failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -332,6 +346,7 @@ class HotelCreate extends Component
     {
         return view('livewire.hotel.hotel-create', [
             'amenities' => Amenity::active()->get(),
+            'destinations' => Destination::query()->orderBy('name')->get(['id', 'name', 'city', 'country']),
             'step' => $this->step,
         ]);
     }

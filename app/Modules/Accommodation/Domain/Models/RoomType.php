@@ -17,7 +17,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Str;
 
 class RoomType extends Model implements AvailabilityAware, Bookable, HasUnitCapacity, Pricable
@@ -40,7 +42,6 @@ class RoomType extends Model implements AvailabilityAware, Bookable, HasUnitCapa
         'beds',
         'hero_image_url',
         'gallery_images', // Stored as a JSON array of image URLs
-        'amenities',      // Stored as a JSON array
     ];
 
     /**
@@ -53,7 +54,6 @@ class RoomType extends Model implements AvailabilityAware, Bookable, HasUnitCapa
         'capacity' => 'integer',
         'beds' => 'integer',
         'gallery_images' => 'array',
-        'amenities' => 'array',
     ];
 
     /**
@@ -88,9 +88,20 @@ class RoomType extends Model implements AvailabilityAware, Bookable, HasUnitCapa
     /**
      * A RoomType can have many dynamic prices.
      */
-    public function prices(): HasMany
+    public function prices(): HasManyThrough
     {
-        return $this->hasMany(RoomPrice::class);
+        return $this->hasManyThrough(RoomPrice::class, Room::class, 'room_type_id', 'room_id', 'id', 'id');
+    }
+
+    public function amenities(): MorphToMany
+    {
+        return $this->morphToMany(
+            \App\Modules\Catalog\Domain\Models\Amenity::class,
+            'amenable',
+            'amenables',
+            'amenable_id',
+            'amenity_id'
+        );
     }
 
     /**
@@ -108,7 +119,16 @@ class RoomType extends Model implements AvailabilityAware, Bookable, HasUnitCapa
     protected static function booted(): void
     {
         static::creating(function (self $roomType) {
-            $roomType->slug = Str::slug($roomType->name);
+            $baseSlug = Str::slug($roomType->slug ?: $roomType->name);
+            $slug = $baseSlug;
+            $suffix = 1;
+
+            while (static::query()->where('slug', $slug)->exists()) {
+                $slug = "{$baseSlug}-{$suffix}";
+                $suffix++;
+            }
+
+            $roomType->slug = $slug;
         });
     }
 
@@ -173,7 +193,7 @@ class RoomType extends Model implements AvailabilityAware, Bookable, HasUnitCapa
      */
     public function getBasePrice(): float
     {
-        return $this->price_per_night;
+        return (float) $this->price_per_night;
     }
 
     /**
@@ -181,11 +201,8 @@ class RoomType extends Model implements AvailabilityAware, Bookable, HasUnitCapa
      */
     public function getPriceForDate(string $date): float
     {
-        $price = $this->prices()
-            ->where('date', $date)
-            ->value('price');
-
-        return $price ?? $this->base_price;
+        return $this->prices()->effectiveOn($date)->first()?->effective_price
+            ?? (float) $this->price_per_night;
     }
 
     /**

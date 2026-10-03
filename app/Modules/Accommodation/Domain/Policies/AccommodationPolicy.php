@@ -7,59 +7,63 @@ use App\Modules\Identity\Domain\Models\User;
 
 class AccommodationPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->can('accommodations.view') || $this->isProvider($user);
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, Accommodation $accommodation): bool
     {
-        return false;
+        return $accommodation->isPublished() || $user->can('accommodations.view') || $this->owns($user, $accommodation);
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return false;
+        return $this->isProvider($user);
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, Accommodation $accommodation): bool
     {
-        return false;
+        return $this->owns($user, $accommodation);
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, Accommodation $accommodation): bool
     {
-        return false;
+        return $this->update($user, $accommodation);
     }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
     public function restore(User $user, Accommodation $accommodation): bool
     {
-        return false;
+        return $this->update($user, $accommodation);
     }
 
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
     public function forceDelete(User $user, Accommodation $accommodation): bool
     {
         return false;
+    }
+
+    public function approve(User $user, ?Accommodation $accommodation = null): bool
+    {
+        return $user->can('accommodations.approve');
+    }
+
+    public function reject(User $user, ?Accommodation $accommodation = null): bool
+    {
+        return $user->can('accommodations.reject');
+    }
+
+    public function suspend(User $user, ?Accommodation $accommodation = null): bool
+    {
+        return $user->can('accommodations.suspend');
+    }
+
+    private function owns(User $user, Accommodation $accommodation): bool
+    {
+        return $this->isProvider($user) && $user->provider->is($accommodation->provider);
+    }
+
+    private function isProvider(User $user): bool
+    {
+        return $user->hasRole('provider') && $user->provider !== null;
     }
 }

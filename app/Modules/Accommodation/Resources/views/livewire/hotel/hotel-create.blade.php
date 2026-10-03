@@ -38,6 +38,9 @@
                 </div>
 
                 <form wire:submit.prevent="save" class="space-y-8">
+                    @error('publication')
+                        <div role="alert" class="rounded-lg bg-red-50 p-4 text-sm text-red-700">{{ $message }}</div>
+                    @enderror
                     {{-- Form Steps --}}
                     @if($step === 1)
                         <div class="space-y-6 animate-fade-in">
@@ -65,6 +68,16 @@
 
                     @if($step === 2)
                         <div class="space-y-6 animate-fade-in">
+                            <label class="block">
+                                <span class="text-gray-700 font-semibold">Destination</span>
+                                <select wire:model="destination_id" class="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">Select a destination</option>
+                                    @foreach($destinations as $destination)
+                                        <option value="{{ $destination->id }}">{{ $destination->name }}{{ $destination->city ? ', '.$destination->city : '' }}</option>
+                                    @endforeach
+                                </select>
+                                @error('destination_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                            </label>
                             <label class="block">
                                 <span class="text-gray-700 font-semibold">Address</span>
                                 <input type="text" wire:model.lazy="address" class="mt-2 block w-full rounded-xl border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">

@@ -2,80 +2,102 @@
 
 namespace App\Modules\Accommodation\Application\Services;
 
+use App\Modules\Accommodation\Domain\Models\Accommodation;
 use App\Modules\Accommodation\Domain\Models\Hotel;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class HotelManager
 {
-    public function getHotels(array $filters)
+    public function getHotels(array $filters, string $sort = 'latest', int $perPage = 15): LengthAwarePaginator
     {
-        $query = Hotel::query();
+        $query = Hotel::query()
+            ->published()
+            ->with(['rooms', 'reviews', 'accommodation'])
+            ->whereHas('accommodation', function ($accommodation) use ($filters) {
+                $accommodation->published()
+                    ->when($filters['location'] ?? null, fn ($q, $location) => $q->where(function ($q) use ($location) {
+                        $q->where('city', 'like', "%{$location}%")
+                            ->orWhere('country', 'like', "%{$location}%");
+                    }))
+                    ->when($filters['price_min'] ?? null, fn ($q, $price) => $q->where('avg_price_per_night', '>=', $price))
+                    ->when($filters['price_max'] ?? null, fn ($q, $price) => $q->where('avg_price_per_night', '<=', $price))
+                    ->when($filters['rating'] ?? null, fn ($q, $rating) => $q->where('avg_rating', '>=', $rating));
+            });
 
-        if (! empty($filters['location'])) {
-            $query->where('location', 'like', '%'.$filters['location'].'%');
-        }
+        match ($sort) {
+            'price_low' => $query->orderBy(
+                Accommodation::query()->select('avg_price_per_night')->whereColumn('bookable_id', 'hotels.id')
+                    ->where('bookable_type', (new Hotel)->getMorphClass())
+            ),
+            'price_high' => $query->orderByDesc(
+                Accommodation::query()->select('avg_price_per_night')->whereColumn('bookable_id', 'hotels.id')
+                    ->where('bookable_type', (new Hotel)->getMorphClass())
+            ),
+            'rating' => $query->orderByDesc(
+                Accommodation::query()->select('avg_rating')->whereColumn('bookable_id', 'hotels.id')
+                    ->where('bookable_type', (new Hotel)->getMorphClass())
+            ),
+            'name' => $query->orderBy(
+                Accommodation::query()->select('name')->whereColumn('bookable_id', 'hotels.id')
+                    ->where('bookable_type', (new Hotel)->getMorphClass())
+            ),
+            default => $query->latest(),
+        };
 
-        if (! empty($filters['min_price'])) {
-            $query->where('price_per_night', '>=', $filters['min_price']);
-        }
-
-        if (! empty($filters['max_price'])) {
-            $query->where('price_per_night', '<=', $filters['max_price']);
-        }
-
-        if (! empty($filters['rating'])) {
-            $query->where('rating', '>=', $filters['rating']);
-        }
-
-        // Future: availability filter using bookings
-
-        return $query->with(['rooms', 'reviews'])->paginate(10);
+        return $query->paginate(min(max($perPage, 1), 100));
     }
 
-    public function create(array $data)
+    public function create(array $data): Hotel
     {
-        if (isset($data['image'])) {
-            $data['image'] = $data['image']->store('hotels', 'public');
-        }
+        $providerId = Auth::user()?->isPlatformAdmin()
+            ? ($data['provider_id'] ?? null)
+            : Auth::user()?->provider?->id;
+        abort_unless($providerId, 403, 'A provider profile is required to create a hotel.');
 
-        return Hotel::create($data);
+        return DB::transaction(function () use ($data, $providerId): Hotel {
+            $destinationId = $data['destination_id'];
+            unset($data['destination_id'], $data['provider_id']);
+            $data['provider_id'] = $providerId;
+            $data['slug'] = $data['slug'] ?? Str::slug($data['name']).'-'.Str::lower(Str::random(8));
+
+            $hotel = Hotel::create($data);
+            $hotel->accommodation()->update(['destination_id' => $destinationId]);
+
+            return $hotel->fresh(['accommodation']);
+        });
     }
 
-    public function find(int $id)
+    public function find(int $id): Hotel
     {
-        return Hotel::with(['rooms', 'reviews'])->findOrFail($id);
+        return Hotel::with(['rooms', 'reviews', 'accommodation'])->findOrFail($id);
     }
 
-    public function update(int $id, array $data)
+    public function update(Hotel $hotel, array $data): Hotel
     {
-        $hotel = Hotel::findOrFail($id);
+        return DB::transaction(function () use ($hotel, $data): Hotel {
+            $destinationId = $data['destination_id'] ?? null;
+            unset($data['destination_id']);
+            $hotel->update($data);
 
-        if (isset($data['image'])) {
-            if ($hotel->image) {
-                Storage::disk('public')->delete($hotel->image);
+            if ($destinationId !== null) {
+                $hotel->accommodation()->update(['destination_id' => $destinationId]);
             }
-            $data['image'] = $data['image']->store('hotels', 'public');
-        }
 
-        $hotel->update($data);
-
-        return $hotel;
+            return $hotel->fresh(['accommodation']);
+        });
     }
 
-    public function delete(int $id)
+    public function delete(Hotel $hotel): void
     {
-        $hotel = Hotel::findOrFail($id);
-
-        if ($hotel->image) {
-            Storage::disk('public')->delete($hotel->image);
-        }
-
         $hotel->delete();
     }
 
-    public function findBySlug(string $slug)
+    public function findBySlug(string $slug): Hotel
     {
-        return Hotel::with(['rooms', 'reviews'])
+        return Hotel::published()->with(['rooms', 'reviews', 'accommodation'])
             ->where('slug', $slug)
             ->firstOrFail();
     }

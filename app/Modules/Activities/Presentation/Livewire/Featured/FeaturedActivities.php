@@ -2,8 +2,7 @@
 
 namespace App\Modules\Activities\Presentation\Livewire\Featured;
 
-use App\Modules\Activities\Domain\Models\Activity;
-use Illuminate\Support\Facades\Cache;
+use App\Modules\Activities\Application\Services\ActivitySearchQuery;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -19,7 +18,7 @@ class FeaturedActivities extends Component
 
     public int $perPage = 6;
 
-    public string $sortBy = 'name'; // Options: 'name' or 'created_at'
+    public string $sortBy = 'name';
 
     public string $direction = 'asc'; // 'asc' or 'desc'
 
@@ -36,7 +35,7 @@ class FeaturedActivities extends Component
     /**
      * Resets the page to 1 whenever the search property is updated.
      */
-    public function updatingSearch()
+    public function updatingSearch(): void
     {
         $this->resetPage();
     }
@@ -48,18 +47,12 @@ class FeaturedActivities extends Component
      */
     public function render()
     {
-        // Generate a unique cache key based on the current state of the component
-        $cacheKey = "featured_activities_{$this->search}_{$this->sortBy}_{$this->direction}_{$this->perPage}_page_".$this->page;
-
-        // Fetch activities from the cache or the database
-        $activities = Cache::remember($cacheKey, now()->addMinutes(10), function () {
-            return Activity::query()
-                ->when($this->search, fn ($q) => $q->where('name', 'like', "%{$this->search}%")
-                    ->orWhere('description', 'like', "%{$this->search}%")
-                )
-                ->orderBy($this->sortBy, $this->direction)
-                ->paginate($this->perPage);
-        });
+        $sort = $this->sortBy === 'created_at' ? 'latest' : 'rating';
+        $activities = app(ActivitySearchQuery::class)->build([
+            'search' => $this->search,
+            'sort' => $sort,
+            'featured' => true,
+        ])->paginate(min(50, max(1, $this->perPage)));
 
         return view('livewire.featured.featured-activities', [
             'activities' => $activities,

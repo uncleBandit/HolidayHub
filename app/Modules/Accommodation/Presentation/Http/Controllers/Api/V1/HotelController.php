@@ -22,7 +22,7 @@ class HotelController extends Controller
     {
         $filters = $request->only(['location', 'price_min', 'price_max', 'rating', 'availability']);
         $sort = $request->get('sort', 'latest'); // default sort
-        $perPage = $request->get('per_page', 15);
+        $perPage = (int) $request->get('per_page', 15);
 
         $hotels = $this->hotelManager->getHotels($filters, $sort, $perPage);
 
@@ -53,21 +53,21 @@ class HotelController extends Controller
     /**
      * Show a single hotel.
      */
-    public function show(string $slug): JsonResponse
+    public function show(Hotel $hotel): JsonResponse
     {
-        $hotel = $this->hotelManager->findBySlug($slug);
+        $this->authorize('view', $hotel);
 
         return response()->json([
-            'data' => new HotelResource($hotel),
+            'data' => new HotelResource($hotel->loadMissing(['accommodation', 'rooms', 'reviews'])),
         ]);
     }
 
     /**
      * Update a hotel (Admin only).
      */
-    public function update(UpdateHotelRequest $request, int $id): JsonResponse
+    public function update(UpdateHotelRequest $request, Hotel $hotel): JsonResponse
     {
-        $hotel = $this->hotelManager->update($id, $request->validated());
+        $hotel = $this->hotelManager->update($hotel, $request->validated());
 
         return response()->json([
             'data' => new HotelResource($hotel),
@@ -78,9 +78,10 @@ class HotelController extends Controller
     /**
      * Delete a hotel (Admin only).
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(Hotel $hotel): JsonResponse
     {
-        $this->hotelManager->delete($id);
+        $this->authorize('delete', $hotel);
+        $this->hotelManager->delete($hotel);
 
         return response()->json([
             'message' => 'Hotel deleted successfully.',

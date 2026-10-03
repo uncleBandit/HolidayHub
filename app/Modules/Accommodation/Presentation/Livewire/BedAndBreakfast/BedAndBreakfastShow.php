@@ -31,18 +31,12 @@ class BedAndBreakfastShow extends Component
 
     public function mount(BedAndBreakfast $bnb): void
     {
-        // Hide inactive for everyone
-        if (! $bnb->is_active) {
-            abort(404);
-        }
-
-        // If not verified, only the provider who created it can see
-        if (
-            ! $bnb->is_verified &&
-            (! Auth::check() || Auth::id() !== $bnb->provider_id)
-        ) {
-            abort(404, 'This Bed & Breakfast is not available.');
-        }
+        $bnb->loadMissing('accommodation');
+        $user = Auth::user();
+        $providerId = $user?->provider?->id;
+        $isOwner = $providerId !== null
+            && (int) $providerId === (int) $bnb->accommodation?->provider_id;
+        abort_unless($bnb->accommodation?->isPublished() || $isOwner || $user?->isPlatformAdmin(), 404);
 
         $this->bnb = $bnb->load([
             'amenities',

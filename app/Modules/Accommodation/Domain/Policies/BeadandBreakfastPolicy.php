@@ -2,63 +2,54 @@
 
 namespace App\Modules\Accommodation\Domain\Policies;
 
+use App\Modules\Accommodation\Domain\Models\BedAndBreakfast;
 use App\Modules\Identity\Domain\Models\User;
 
 class BeadandBreakfastPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->isPlatformAdmin() || $this->isProvider($user);
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, BeadandBreakfast $beadandBreakfast): bool
+    public function view(User $user, BedAndBreakfast $bedAndBreakfast): bool
     {
-        return false;
+        return $bedAndBreakfast->accommodation?->isPublished() || $this->owns($user, $bedAndBreakfast);
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return false;
+        return $user->isPlatformAdmin() || $this->isProvider($user);
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(User $user, BeadandBreakfast $beadandBreakfast): bool
+    public function update(User $user, BedAndBreakfast $bedAndBreakfast): bool
     {
-        return false;
+        return $user->isPlatformAdmin() || $this->owns($user, $bedAndBreakfast);
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(User $user, BeadandBreakfast $beadandBreakfast): bool
+    public function delete(User $user, BedAndBreakfast $bedAndBreakfast): bool
     {
-        return false;
+        return $this->update($user, $bedAndBreakfast);
     }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, BeadandBreakfast $beadandBreakfast): bool
+    public function restore(User $user, BedAndBreakfast $bedAndBreakfast): bool
     {
-        return false;
+        return $this->update($user, $bedAndBreakfast);
     }
 
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, BeadandBreakfast $beadandBreakfast): bool
+    public function forceDelete(User $user, BedAndBreakfast $bedAndBreakfast): bool
     {
-        return false;
+        return $user->isPlatformAdmin();
+    }
+
+    private function owns(User $user, BedAndBreakfast $bedAndBreakfast): bool
+    {
+        return $this->isProvider($user)
+            && (int) ($bedAndBreakfast->accommodation?->provider_id ?? $bedAndBreakfast->provider_id) === (int) $user->provider->id;
+    }
+
+    private function isProvider(User $user): bool
+    {
+        return $user->hasRole('provider') && $user->provider !== null;
     }
 }

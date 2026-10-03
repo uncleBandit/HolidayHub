@@ -10,22 +10,22 @@ class HotelResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
-            'slug' => $this->slug,
-            'description' => $this->description,
+            'name' => $this->accommodation?->name,
+            'slug' => $this->accommodation?->slug,
+            'description' => $this->accommodation?->description,
 
             // Location
             'location' => [
-                'address' => $this->address,
-                'city' => $this->city,
-                'country' => $this->country,
-                'latitude' => $this->latitude,
-                'longitude' => $this->longitude,
+                'address' => $this->accommodation?->address,
+                'city' => $this->accommodation?->city,
+                'country' => $this->accommodation?->country,
+                'latitude' => $this->accommodation?->latitude,
+                'longitude' => $this->accommodation?->longitude,
             ],
 
             // Features
             'stars' => $this->stars,
-            'is_featured' => (bool) $this->is_featured,
+            'is_featured' => (bool) $this->accommodation?->is_featured,
             'amenities' => $this->amenities,
             'policies' => $this->policies,
 
@@ -36,13 +36,14 @@ class HotelResource extends JsonResource
                                 : [],
 
             // Pricing & Ratings
-            'avg_price_per_night' => $this->avg_price_per_night,
-            'avg_rating' => $this->avg_rating,
-            'reviews_count' => $this->reviews_count,
+            'avg_price_per_night' => $this->accommodation?->avg_price_per_night,
+            'avg_rating' => $this->accommodation?->avg_rating,
+            'reviews_count' => $this->accommodation?->reviews_count,
 
             // Relations
-            'provider_id' => $this->provider_id,
-            'destination_id' => $this->destination_id,
+            'provider_id' => $this->accommodation?->provider_id,
+            'destination_id' => $this->accommodation?->destination_id,
+            'publication_status' => $this->accommodation?->status?->value,
 
             // Nested resources (only if eager-loaded)
             'rooms' => RoomResource::collection($this->whenLoaded('rooms')),

@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Storage;
 
 class Villa extends Model implements AvailabilityAware, Bookable, Pricable
 {
-    use HasFactory;
+    use HasFactory, Concerns\SyncsCanonicalAccommodation;
 
     protected $table = 'villas';
 
@@ -70,6 +70,11 @@ class Villa extends Model implements AvailabilityAware, Bookable, Pricable
     public function accommodation(): MorphOne
     {
         return $this->morphOne(Accommodation::class, 'bookable');
+    }
+
+    public function scopePublished($query)
+    {
+        return $query->whereHas('accommodation', fn ($accommodation) => $accommodation->published());
     }
 
     /**
@@ -156,7 +161,7 @@ class Villa extends Model implements AvailabilityAware, Bookable, Pricable
      */
     public function getBasePrice(): float
     {
-        return (float) $this->base_price;
+        return (float) $this->avg_price_per_night;
     }
 
     public function offers(): MorphMany
@@ -169,9 +174,11 @@ class Villa extends Model implements AvailabilityAware, Bookable, Pricable
      */
     public function getPriceForDate(string $date): float
     {
-        // For a more advanced system, you would check for special pricing
-        // or promotions on this specific date. For now, we'll return the base price.
-        return (float) $this->base_price;
+        return (float) ($this->availabilities()
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
+            ->where('status', 'available')
+            ->value('price_per_night') ?? $this->avg_price_per_night);
     }
 
     /**
@@ -244,7 +251,7 @@ class Villa extends Model implements AvailabilityAware, Bookable, Pricable
             'id',               // Foreign key on destinations table
             'id',               // Local key on hotels table
             'destination_id'    // Local key on accommodations table
-        )->where('bookable_type', self::class);
+        )->where('bookable_type', $this->getMorphClass());
     }
 
     public function bookings(): MorphMany

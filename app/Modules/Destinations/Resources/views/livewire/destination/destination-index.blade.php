@@ -1,77 +1,175 @@
-<div>
-    <div class="space-y-12 py-8">
-    <header class="bg-white rounded-3xl p-6 shadow-lg">
-        <h1 class="text-4xl font-bold text-gray-800 mb-2">Explore Destinations</h1>
-        <p class="text-gray-600 text-lg mb-6">Find your perfect getaway from our curated selection of amazing places.</p>
+{{-- Visual Discovery destination index: hero search, mood pills, editorial tabs. --}}
+<div class="dv-shell">
+    {{-- ──────────────────────────────  Hero  ────────────────────────────── --}}
+    <section class="dv-hero">
+        <img src="{{ $hero['image'] }}" alt="{{ $hero['alt'] }}">
+        <div class="dv-hero-shade" aria-hidden="true"></div>
 
-        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="relative flex-grow w-full md:w-auto">
-                <input wire:model.live.debounce.500ms="search" type="text"
-                    placeholder="Search destinations, cities, or countries..."
-                    class="w-full pl-10 pr-4 py-3 text-gray-700 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
-                <span class="absolute inset-y-0 left-0 pl-3 flex items-center">
-                    <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+        <div class="dv-hero-copy">
+            <p class="dv-eyebrow-light">Curated escapes</p>
+            <h1 class="dv-display">
+                Where are you<br>escaping to?
+            </h1>
+            <p class="dv-hero-subtitle">
+                Browse the destinations our travellers love — coastlines, savannah,
+                highlands and cities that stay with you long after you leave.
+            </p>
+
+            <form
+                class="dv-searchbar"
+                role="search"
+                wire:submit="resetPage"
+            >
+                <span class="dv-search-icon" aria-hidden="true">
+                    <x-line-icon name="search" :size="20" />
                 </span>
-            </div>
 
-            <div class="flex items-center space-x-4">
-                <label for="sort" class="text-gray-700 font-medium whitespace-nowrap hidden sm:inline">Sort by:</label>
-                <div class="relative">
-                    <select id="sort" wire:model="sortField"
-                        class="block w-full px-4 py-3 pr-8 rounded-full border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none transition duration-200">
-                        <option value="name">Name</option>
-                        <option value="popularity_score">Top Rated</option>
-                        {{--<option value="trending">Trending</option>
+                <span class="dv-search-copy">
+                    <input
+                        type="search"
+                        wire:model.live.debounce.500ms="search"
+                        placeholder="Search your next escape"
+                        aria-label="Search destinations"
+                        class="h-auto"
+                    >
+                    <small wire:key="result-count">
+                        {{ filled($search) && $resultCount > 0 ? $resultCount.' matches for “'.$search.'”' : 'Places, stays and experiences' }}
+                    </small>
+                </span>
 
-                        <option value="bookings_count">Most Booked</option>--}}
-                    </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                            <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-                        </svg>
-                    </div>
-                </div>
+                <button type="submit" class="dv-search-go" aria-label="Search destinations">
+                    <x-line-icon name="arrow" :size="19" />
+                </button>
+            </form>
+        </div>
+
+        <div class="dv-hero-meta">
+            <x-line-icon name="map" :size="17" />
+            <div>
+                <b>{{ $hero['place'] }}</b>
+                <span>{{ $hero['region'] }}</span>
             </div>
         </div>
-    </header>
+    </section>
 
-    <div wire:loading.class="opacity-50" class="transition-opacity duration-300">
-        @if ($destinations->isEmpty())
-            <div class="text-center p-12 bg-gray-100 rounded-xl">
-                <p class="text-2xl text-gray-500 font-medium">No destinations found matching your criteria.</p>
-                <p class="text-gray-400 mt-2">Try adjusting your search or filters.</p>
+    {{-- ───────────────────────────  Mood pills  ─────────────────────────── --}}
+    <section class="dv-section !pb-0" aria-label="Filter by travel mood">
+        <div class="dv-category-row">
+            @foreach ($moods as $value => $label)
+                <button
+                    type="button"
+                    wire:click="$set('category', '{{ $value }}')"
+                    @class(['dv-category', 'dv-category-active' => $category === $value])
+                    @if ($category === $value) aria-pressed="true" @else aria-pressed="false" @endif
+                >
+                    @if ($value !== 'all')
+                        <x-line-icon
+                            :name="match ($value) {
+                                'beaches' => 'waves',
+                                'wild' => 'map',
+                                'mountains' => 'mountain',
+                                'islands' => 'compass',
+                                default => 'users',
+                            }"
+                            :size="19"
+                        />
+                    @endif
+
+                    {{ $label }}
+                </button>
+            @endforeach
+        </div>
+    </section>
+
+    {{-- ─────────────────────────  Collections & grid  ───────────────────── --}}
+    <section class="dv-section !pt-8">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+            <div>
+                <p class="dv-eyebrow">The full atlas</p>
+                <p class="dv-title">
+                    {{ $tab === 'featured' ? 'Featured escapes' : ($tab === 'top-rated' ? 'Highest rated' : 'Everywhere worth going') }}
+                </p>
             </div>
-        @else
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                @foreach ($destinations as $destination)
-                    <a href="{{ route('destinations.show', $destination) }}" class="relative group block w-full h-80 rounded-2xl overflow-hidden shadow-lg transition-transform duration-300 transform hover:scale-105">
-                        <img src="{{ $destination->image_url ?? asset('images/paradise2.jpg') }}"
-                             alt="{{ $destination->name }}"
-                             class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
-                        <div class="relative p-6 flex flex-col justify-end h-full text-white">
-                            <h3 class="text-2xl font-bold mb-1">{{ $destination->name }}</h3>
-                            <p class="text-sm font-semibold text-gray-200 flex items-center">
-                                <svg class="w-4 h-4 mr-1 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.961a1 1 0 00.95.69h4.16a1 1 0 01.595 1.838l-3.376 2.454a1 1 0 00-.364 1.118l1.286 3.961c.3.921-.755 1.688-1.54 1.118L10 15.659l-3.376 2.454c-.785.57-1.84-.197-1.54-1.118l1.286-3.961a1 1 0 00-.364-1.118L2.094 9.416a1 1 0 01.595-1.838h4.16a1 1 0 00.95-.69l1.286-3.961z" />
-                                </svg>
-                                {{ number_format($destination->popularity_score ?? 0, 1) }}
 
-                            </p>
-                            <p class="text-gray-300 mt-2">{{ $destination->city }}, {{ $destination->country }}</p>
-                        </div>
-                    </a>
+            <div class="flex items-center gap-2.5 pb-1">
+                @php
+                    $sorts = [
+                        ['field' => 'name', 'label' => 'A–Z'],
+                        ['field' => 'popularity_score', 'label' => 'Top rated'],
+                    ];
+                @endphp
+
+                @foreach ($sorts as $sort)
+                    <button
+                        type="button"
+                        wire:click="sortBy('{{ $sort['field'] }}')"
+                        @class([
+                            'dv-btn dv-btn-ghost !min-h-[2.4rem] !px-4',
+                            '!border-forest !bg-forest !text-white' => $sortField === $sort['field'],
+                        ])
+                        aria-pressed="{{ $sortField === $sort['field'] ? 'true' : 'false' }}"
+                    >
+                        {{ $sort['label'] }}
+
+                        @if ($sortField === $sort['field'])
+                            <span class="text-[10px]">{{ $sortDirection === 'asc' ? '↑' : '↓' }}</span>
+                        @endif
+                    </button>
                 @endforeach
             </div>
-        @endif
-    </div>
-
-    @if ($destinations->hasPages())
-        <div class="mt-8">
-            {{ $destinations->links() }}
         </div>
-    @endif
-</div>
+
+        <div class="dv-tabs mt-8" role="tablist" aria-label="Collections">
+            @foreach ($tabs as $value => $label)
+                <button
+                    type="button"
+                    role="tab"
+                    wire:click="setTab('{{ $value }}')"
+                    @class(['dv-tab', 'dv-tab-active' => $tab === $value])
+                    aria-selected="{{ $tab === $value ? 'true' : 'false' }}"
+                >{{ $label }}</button>
+            @endforeach
+
+            <span class="ml-auto hidden items-center pb-4 text-[11px] text-muted md:flex">
+                {{ $resultCount }} {{ Illuminate\Support\Str::plural('destination', $resultCount) }}
+                @if ($isFallback)
+                    · curated preview
+                @endif
+            </span>
+        </div>
+
+        <div
+            class="dv-grid mt-8"
+            wire:loading.class="opacity-50"
+            wire:target="search,category,tab,sortBy,setTab,gotoPage,nextPage,previousPage"
+        >
+            @forelse ($cards as $index => $card)
+                <x-destination.discovery-card :card="$card" :featured="$index === 0" />
+            @empty
+                <div class="dv-panel col-span-full px-8 py-16 text-center">
+                    <p class="font-dm-serif text-[1.6rem] text-forest">No destinations found</p>
+                    <p class="mx-auto mt-3 max-w-md text-[14px] leading-relaxed text-muted">
+                        We couldn’t match that search. Try a different place, or clear the
+                        filters to see the full atlas.
+                    </p>
+
+                    <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+                        <button
+                            type="button"
+                            wire:click="$set('search', ''); $set('category', 'all'); $set('tab', 'all')"
+                            class="dv-btn dv-btn-primary"
+                        >Show all destinations</button>
+
+                        <a href="{{ route('destination.index') }}" class="dv-btn dv-btn-ghost">Reset</a>
+                    </div>
+                </div>
+            @endforelse
+        </div>
+
+        @if ($paginator->hasPages())
+            <div class="mt-10">
+                {{ $paginator->links() }}
+            </div>
+        @endif
+    </section>
 </div>

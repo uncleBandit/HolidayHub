@@ -42,7 +42,7 @@ class Discover extends Component
 
         // Dynamic collections (curated + data-driven)
         $this->collections = [
-            'Romantic Getaways' => Villa::where('tags', 'like', '%romantic%')
+            'Romantic Getaways' => Villa::published()
                 ->withAvg('reviews', 'rating')
                 ->orderByDesc('reviews_avg_rating')
                 ->take(6)->get(),
@@ -50,8 +50,8 @@ class Discover extends Component
                 ->withCount('bookings')
                 ->orderByDesc('bookings_count')
                 ->take(6)->get(),
-            'Family Escapes' => Villa::where('tags', 'like', '%family%')
-                ->orWhere('max_guests', '>=', 6)
+            'Family Escapes' => Villa::published()
+                ->where('max_guests', '>=', 6)
                 ->withAvg('reviews', 'rating')
                 ->take(6)->get(),
         ];
@@ -61,6 +61,7 @@ class Discover extends Component
     {
         if (! Auth::check()) {
             return Villa::query()
+                ->published()
                 ->withAvg('reviews', 'rating')
                 ->orderByDesc('reviews_avg_rating')
                 ->take(6)
@@ -76,12 +77,27 @@ class Discover extends Component
             ->pluck('bookable.city')
             ->unique()
             ->filter();
+        $wishlistedVillaIds = $user->wishlists()
+            ->whereIn('wishlistable_type', [Villa::class, (new Villa)->getMorphClass()])
+            ->pluck('wishlistable_id');
 
         return Villa::query()
-            ->when($visitedCities->isNotEmpty(), function ($query) use ($visitedCities) {
-                return $query->whereIn('city', $visitedCities);
+            ->published()
+            ->when($visitedCities->isNotEmpty() || $wishlistedVillaIds->isNotEmpty(), function ($query) use ($visitedCities, $wishlistedVillaIds) {
+                $query->where(function ($query) use ($visitedCities, $wishlistedVillaIds) {
+                    if ($visitedCities->isNotEmpty()) {
+                        $query->whereIn('city', $visitedCities);
+                    }
+
+                    if ($wishlistedVillaIds->isNotEmpty()) {
+                        if ($visitedCities->isNotEmpty()) {
+                            $query->orWhereIn('villas.id', $wishlistedVillaIds);
+                        } else {
+                            $query->whereIn('villas.id', $wishlistedVillaIds);
+                        }
+                    }
+                });
             })
-            ->orWhereIn('id', $user->wishlist()->pluck('villa_id')) // favorited villas
             ->withAvg('reviews', 'rating')
             ->orderByDesc('reviews_avg_rating')
             ->take(6)

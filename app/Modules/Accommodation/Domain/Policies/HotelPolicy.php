@@ -7,59 +7,49 @@ use App\Modules\Identity\Domain\Models\User;
 
 class HotelPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->isPlatformAdmin() || $this->isProvider($user);
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, Hotel $hotel): bool
     {
-        return false;
+        return $hotel->accommodation?->isPublished() || $this->owns($user, $hotel);
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return false;
+        return $user->isPlatformAdmin() || $this->isProvider($user);
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, Hotel $hotel): bool
     {
-        return false;
+        return $user->isPlatformAdmin() || $this->owns($user, $hotel);
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, Hotel $hotel): bool
     {
-        return false;
+        return $this->update($user, $hotel);
     }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
     public function restore(User $user, Hotel $hotel): bool
     {
-        return false;
+        return $this->update($user, $hotel);
     }
 
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
     public function forceDelete(User $user, Hotel $hotel): bool
     {
-        return false;
+        return $user->isPlatformAdmin();
+    }
+
+    private function owns(User $user, Hotel $hotel): bool
+    {
+        return $this->isProvider($user)
+            && (int) ($hotel->accommodation?->provider_id ?? $hotel->provider_id) === (int) $user->provider->id;
+    }
+
+    private function isProvider(User $user): bool
+    {
+        return $user->hasRole('provider') && $user->provider !== null;
     }
 }

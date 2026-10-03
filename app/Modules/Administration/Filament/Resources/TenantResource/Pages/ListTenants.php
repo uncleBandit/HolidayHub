@@ -4,7 +4,6 @@ namespace App\Modules\Administration\Filament\Resources\TenantResource\Pages;
 
 use App\Modules\Administration\Domain\Models\Tenant;
 use App\Modules\Administration\Filament\Resources\TenantResource;
-use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 /**
@@ -19,12 +18,7 @@ class ListTenants extends ListRecords
      */
     protected function getHeaderActions(): array
     {
-        return [
-            // Tenants normally arrive by applying. Creating one here exists for
-            // the offline case: a business onboarded by phone or in person.
-            CreateAction::make()
-                ->label('Add tenant manually'),
-        ];
+        return [];
     }
 
     /**

@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Administration\Application\Services\TenantVerificationService;
+use App\Modules\Administration\Database\Seeders\AdministrationAccessSeeder;
 use App\Modules\Identity\Domain\Models\User;
 use App\Modules\Providers\Domain\Models\Provider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -11,6 +12,7 @@ uses(RefreshDatabase::class);
 
 function adminUser(): User
 {
+    app(AdministrationAccessSeeder::class)->run();
     $role = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
     $u = User::factory()->create();
     $u->assignRole($role);
@@ -71,6 +73,21 @@ it('shows the overview counters on the dashboard', function (): void {
     $html = $this->get('/admin')->assertOk()->getContent();
 
     expect($html)->toContain('Platform overview');
+});
+
+it('limits dashboard metrics to the signed-in admin permissions', function (): void {
+    app(AdministrationAccessSeeder::class)->run();
+    $analyst = User::factory()->create();
+    $analyst->assignRole(Role::findByName('analyst', 'web'));
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    $this->actingAs($analyst);
+    $html = $this->get('/admin')->assertOk()->getContent();
+
+    expect($html)->toContain('Platform overview')
+        ->and($html)->not->toContain('Tenants awaiting review')
+        ->and($html)->not->toContain('Bookings (30 days)')
+        ->and($html)->not->toContain('Platform accounts');
 });
 
 it('reaches a tenant detail page with its verification history', function (): void {

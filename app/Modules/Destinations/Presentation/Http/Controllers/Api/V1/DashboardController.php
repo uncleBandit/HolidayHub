@@ -4,6 +4,7 @@ namespace App\Modules\Destinations\Presentation\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Accommodation\Domain\Models\Hotel;
+use App\Modules\Accommodation\Presentation\Http\Resources\HotelResource;
 use App\Modules\Activities\Domain\Models\Activity;
 use App\Modules\Catalog\Domain\Models\Offer;
 use App\Modules\Destinations\Domain\Models\Destination;
@@ -27,8 +28,9 @@ class DashboardController extends Controller
             ->get();
 
         // Fetch featured hotels
-        $featuredHotels = Hotel::where('is_featured', true)
-            ->select('id', 'name', 'slug', 'city', 'country', 'cover_image', 'rating', 'price_range')
+        $featuredHotels = Hotel::published()
+            ->whereHas('accommodation', fn ($query) => $query->where('is_featured', true))
+            ->with(['accommodation', 'amenities'])
             ->take($limit)
             ->get();
 
@@ -54,7 +56,7 @@ class DashboardController extends Controller
             'success' => true,
             'data' => [
                 'featured_destinations' => $featuredDestinations,
-                'featured_hotels' => $featuredHotels,
+                'featured_hotels' => HotelResource::collection($featuredHotels),
                 'featured_activities' => $featuredActivities,
                 'featured_offers' => $featuredOffers,
                 'featured_packages' => $featuredPackages,

@@ -34,6 +34,7 @@ class BookingScreenController extends Controller
 
         // Top 50 hotels with essential room info
         $hotels = Hotel::query()
+            ->published()
             ->with(['rooms:id,hotel_id,name,price_per_night,max_adults,max_children'])
             ->select('id', 'name', 'city', 'country', 'cover_image')
             ->orderBy('name')

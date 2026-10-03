@@ -32,6 +32,7 @@ class Booking extends Model
         'confirmation_code',
         'idempotency_key',
         'cancelled_at',
+        'activity_session_id',
     ];
 
     protected $casts = [
@@ -61,5 +62,10 @@ class Booking extends Model
     public function destination()
     {
         return $this->belongsTo(Destination::class);
+    }
+
+    public function activitySession()
+    {
+        return $this->belongsTo(\App\Modules\Activities\Domain\Models\ActivitySession::class);
     }
 }

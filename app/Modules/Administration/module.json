@@ -8,6 +8,7 @@
         "tenant": "App\\Modules\\Administration\\Domain\\Models\\Tenant"
     },
     "seeders": [
+        "AdministrationAccessSeeder",
         "TenantSeeder"
     ]
 }

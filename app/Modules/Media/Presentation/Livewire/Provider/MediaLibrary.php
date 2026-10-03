@@ -2,6 +2,7 @@
 
 namespace App\Modules\Media\Presentation\Livewire\Provider;
 
+use App\Modules\Activities\Domain\Models\Activity;
 use App\Modules\Media\Domain\Enums\MediaAssetStatus;
 use App\Modules\Media\Domain\Enums\MediaAssetType;
 use App\Modules\Media\Domain\Enums\MediaPostStatus;
@@ -33,6 +34,8 @@ class MediaLibrary extends Component
 
     public string $caption = '';
 
+    public ?int $activityId = null;
+
     public ?TemporaryUploadedFile $video = null;
 
     public ?TemporaryUploadedFile $thumbnail = null;
@@ -51,6 +54,13 @@ class MediaLibrary extends Component
             'type' => ['required', Rule::in(array_column(MediaPostType::cases(), 'value'))],
             'title' => ['nullable', 'string', 'max:255'],
             'caption' => ['nullable', 'string', 'max:1000'],
+            'activityId' => [
+                'nullable',
+                'integer',
+                Rule::exists('activities', 'id')
+                    ->where('provider_id', $this->providerId)
+                    ->whereNull('deleted_at'),
+            ],
             'video' => ['required', 'file', 'max:10240', 'mimes:mp4,webm'],
             'thumbnail' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
         ]);
@@ -97,6 +107,14 @@ class MediaLibrary extends Component
                     'visibility' => 'public',
                 ]);
 
+                if ($validated['activityId'] ?? null) {
+                    $activity = Activity::query()
+                        ->where('provider_id', $this->providerId)
+                        ->findOrFail($validated['activityId']);
+                    $post->targetable()->associate($activity);
+                    $post->save();
+                }
+
                 $post->assets()->create([
                     'type' => MediaAssetType::Original,
                     'disk' => $disk,
@@ -122,7 +140,7 @@ class MediaLibrary extends Component
             throw $exception;
         }
 
-        $this->reset(['type', 'title', 'caption', 'video', 'thumbnail']);
+        $this->reset(['type', 'title', 'caption', 'activityId', 'video', 'thumbnail']);
         $this->type = MediaPostType::Reel->value;
         $this->resetPage();
         session()->flash('status', 'Your video was submitted for review.');
@@ -153,6 +171,11 @@ class MediaLibrary extends Component
             ->latest()
             ->paginate(12);
 
-        return view('livewire.media.provider.media-library', compact('posts'));
+        $activities = Activity::query()
+            ->where('provider_id', $this->providerId)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('livewire.media.provider.media-library', compact('posts', 'activities'));
     }
 }

@@ -45,6 +45,9 @@
 
                 {{-- Form Cards --}}
                 <form wire:submit.prevent="save" class="space-y-8">
+                    @error('publication')
+                        <div role="alert" class="rounded-lg bg-red-50 p-4 text-sm text-red-700">{{ $message }}</div>
+                    @enderror
                     {{-- Step 1: Core Info --}}
                     @if($step === 1)
                         <div class="bg-gray-50 rounded-2xl p-8 space-y-6 shadow-inner">
@@ -76,6 +79,17 @@
                         <div class="bg-gray-50 rounded-2xl p-8 space-y-6 shadow-inner">
                             <h2 class="text-2xl font-bold text-gray-800">Villa Location</h2>
                             <p class="text-gray-500">Where can guests find your stunning property?</p>
+
+                            <label class="block">
+                                <span class="text-gray-700 font-semibold">Destination</span>
+                                <select wire:model="destination_id" class="w-full rounded-xl border-gray-300 p-3 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">Select a destination</option>
+                                    @foreach($destinations as $destination)
+                                        <option value="{{ $destination->id }}">{{ $destination->name }}{{ $destination->city ? ', '.$destination->city : '' }}</option>
+                                    @endforeach
+                                </select>
+                                @error('destination_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                            </label>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <input type="text" wire:model.lazy="address" placeholder="Address" class="rounded-xl border-gray-300 p-3 focus:ring-indigo-500 focus:border-indigo-500">

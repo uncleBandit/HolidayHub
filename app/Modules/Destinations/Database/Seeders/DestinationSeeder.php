@@ -32,7 +32,7 @@ class DestinationSeeder extends Seeder
 
         // Ensure Amenities exist before trying to attach them.
         if (Amenity::count() === 0) {
-            $this->call(App\Modules\Catalog\Database\Seeders\AmenitySeeder::class);
+            $this->call(\App\Modules\Catalog\Database\Seeders\AmenitySeeder::class);
         }
 
         // Attach Hotels, Villas, B&Bs, and Packages for each destination

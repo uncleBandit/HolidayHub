@@ -54,19 +54,23 @@ class FeaturedHotels extends Component
 
         $hotels = Cache::remember($cacheKey, now()->addMinutes(10), function () {
             return Hotel::query()
+                ->published()
                 ->when(empty($this->search), function ($query) {
                     // No search → show only featured hotels
                     $query->where('is_featured', true);
                 })
                 ->when($this->search, function ($query) {
                     // Search applied → search across all hotels
-                    $query->where(function ($q) {
-                        $q->where('name', 'like', "%{$this->search}%")
-                            ->orWhere('city', 'like', "%{$this->search}%");
+                    $query->whereHas('accommodation', function ($q) {
+                        $q->published()->where(function ($q) {
+                            $q->where('name', 'like', "%{$this->search}%")
+                                ->orWhere('city', 'like', "%{$this->search}%");
+                        });
                     });
                 })
                 ->orderByDesc('is_featured')
-                ->orderBy($this->sortBy, $this->direction)
+                ->orderBy(in_array($this->sortBy, ['name', 'city', 'created_at'], true) ? $this->sortBy : 'name',
+                    in_array($this->direction, ['asc', 'desc'], true) ? $this->direction : 'desc')
                 ->paginate($this->perPage);
         });
 

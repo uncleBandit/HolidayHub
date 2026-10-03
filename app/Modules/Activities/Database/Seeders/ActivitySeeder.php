@@ -2,33 +2,49 @@
 
 namespace App\Modules\Activities\Database\Seeders;
 
+use App\Modules\Activities\Application\Services\ActivityScheduleGenerator;
 use App\Modules\Activities\Domain\Models\Activity;
-use App\Modules\Destinations\Domain\Models\Destination; // Optional: if activities are tied to destinations
+use App\Modules\Destinations\Domain\Models\Destination;
 use Illuminate\Database\Seeder;
 
 class ActivitySeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Fetch all destinations (if you want activities tied to destinations)
-        $destinations = Destination::all();
+        $destinations = Destination::query()->get();
+        if ($destinations->isEmpty()) {
+            $this->command?->warn('No destinations found; no sample activities were created.');
 
-        foreach ($destinations as $destination) {
-            // Create 3-7 activities per destination
-            Activity::factory()
-                ->count(rand(3, 7))
-                ->for($destination) // Associate activity with destination
-                ->create();
+            return;
         }
 
-        // Optional: create some general activities not tied to any destination
-        Activity::factory()
-            ->count(10)
-            ->create();
+        foreach ($destinations as $destination) {
+            Activity::factory()
+                ->count(3)
+                ->for($destination)
+                ->published()
+                ->create()
+                ->each(function (Activity $activity): void {
+                    $schedule = $activity->schedules()->create([
+                        'day_of_week' => now()->addDay()->dayOfWeek,
+                        'start_time' => '09:00',
+                        'end_time' => '12:00',
+                        'timezone' => $activity->timezone,
+                        'capacity' => $activity->capacity ?: 12,
+                        'active_from' => now()->toDateString(),
+                        'active_until' => now()->addMonths(6)->toDateString(),
+                        'booking_cutoff_minutes' => $activity->booking_cutoff_minutes,
+                        'is_active' => true,
+                    ]);
 
-        $this->command->info('Activities seeded successfully!');
+                    app(ActivityScheduleGenerator::class)->generate(
+                        $schedule,
+                        now(),
+                        now()->addDays(30)
+                    );
+                });
+        }
+
+        $this->command?->info('Published activity samples and upcoming sessions created.');
     }
 }

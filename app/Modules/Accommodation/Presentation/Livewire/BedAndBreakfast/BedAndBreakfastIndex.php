@@ -3,6 +3,7 @@
 namespace App\Modules\Accommodation\Presentation\Livewire\BedAndBreakfast;
 
 use App\Modules\Accommodation\Domain\Models\BedAndBreakfast;
+use App\Modules\Accommodation\Domain\Models\Accommodation;
 use App\Modules\Catalog\Domain\Models\Amenity;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -74,41 +75,24 @@ class BedAndBreakfastIndex extends Component
     public function render()
     {
         $query = BedAndBreakfast::query()
-            ->where('is_active', true)
-            ->where('is_verified', true)
+            ->published()
             ->with(['provider', 'amenities'])
             ->withAvg('reviews', 'rating')
-            ->withCount('reviews');
+            ->withCount('reviews')
+            ->whereHas('accommodation', function ($query) {
+                $query->published()->when($this->search, function ($query) {
+                    $query->where(function ($q) {
+                        $q->where('name', 'like', "%{$this->search}%")
+                            ->orWhere('city', 'like', "%{$this->search}%")
+                            ->orWhere('country', 'like', "%{$this->search}%");
+                    });
+                })->when($this->city, fn ($q) => $q->where('city', 'like', "%{$this->city}%"))
+                    ->when($this->minPrice !== null, fn ($q) => $q->where('avg_price_per_night', '>=', $this->minPrice))
+                    ->when($this->maxPrice !== null, fn ($q) => $q->where('avg_price_per_night', '<=', $this->maxPrice))
+                    ->when($this->onlyFeatured, fn ($q) => $q->where('is_featured', true));
+            });
 
         // 🔍 Search
-        if ($this->search) {
-            $query->where(function ($q) {
-                $q->where('name', 'like', "%{$this->search}%")
-                    ->orWhere('city', 'like', "%{$this->search}%")
-                    ->orWhere('country', 'like', "%{$this->search}%");
-            });
-        }
-
-        // 🏙️ City
-        if ($this->city) {
-            $query->where('city', 'like', "%{$this->city}%");
-
-        }
-
-        // 💵 Price range
-        if ($this->minPrice) {
-            $query->where('price_per_night', '>=', $this->minPrice);
-        }
-
-        if ($this->maxPrice) {
-            $query->where('price_per_night', '<=', $this->maxPrice);
-        }
-
-        // 🌟 Featured
-        if ($this->onlyFeatured) {
-            $query->where('is_featured', true);
-        }
-
         // 🛎️ Amenities
         if (! empty($this->selectedAmenities)) {
             $query->whereHas('amenities', function ($q) {
@@ -121,7 +105,11 @@ class BedAndBreakfastIndex extends Component
         // 📊 Sorting options
         switch ($this->sortField) {
             case 'price':
-                $query->orderBy('price_per_night', $this->sortDirection);
+                $query->orderBy(
+                    Accommodation::query()->select('avg_price_per_night')->whereColumn('bookable_id', 'bed_and_breakfasts.id')
+                        ->where('bookable_type', (new BedAndBreakfast)->getMorphClass()),
+                    in_array($this->sortDirection, ['asc', 'desc'], true) ? $this->sortDirection : 'asc'
+                );
                 break;
             case 'rating':
                 $query->orderByRaw('reviews_avg_rating IS NULL') // push unrated to bottom
@@ -132,7 +120,11 @@ class BedAndBreakfastIndex extends Component
                 $query->orderBy('created_at', $this->sortDirection);
                 break;
             default: // name (alphabetical)
-                $query->orderBy('name', $this->sortDirection);
+                $query->orderBy(
+                    Accommodation::query()->select('name')->whereColumn('bookable_id', 'bed_and_breakfasts.id')
+                        ->where('bookable_type', (new BedAndBreakfast)->getMorphClass()),
+                    in_array($this->sortDirection, ['asc', 'desc'], true) ? $this->sortDirection : 'asc'
+                );
                 break;
         }
 

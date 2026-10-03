@@ -3,6 +3,8 @@
 namespace App\Modules\Administration\Providers;
 
 use App\Modules\Administration\Filament\Pages\Dashboard;
+use App\Modules\Administration\Filament\Resources\BookingOperationsResource;
+use App\Modules\Audit\Filament\Resources\AuditLogResource;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -46,6 +48,10 @@ class AdministrationPanelProvider extends PanelProvider
                 in: $this->discoverPath('Resources'),
                 for: 'App\\Modules\\Administration\\Filament\\Resources',
             )
+            ->resources([
+                AuditLogResource::class,
+                BookingOperationsResource::class,
+            ])
             // Widgets are not auto-discovered: PlatformOverview is listed by the
             // Dashboard page that hosts it, so it has exactly one home. A second
             // registration would render the same counters twice.

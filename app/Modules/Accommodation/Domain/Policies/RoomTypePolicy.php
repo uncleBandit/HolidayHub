@@ -7,59 +7,49 @@ use App\Modules\Identity\Domain\Models\User;
 
 class RoomTypePolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->isPlatformAdmin() || $this->isProvider($user);
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, RoomType $roomType): bool
     {
-        return false;
+        return $roomType->hotel?->accommodation?->isPublished() || $this->owns($user, $roomType);
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return false;
+        return $user->isPlatformAdmin() || $this->isProvider($user);
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, RoomType $roomType): bool
     {
-        return false;
+        return $user->isPlatformAdmin() || $this->owns($user, $roomType);
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, RoomType $roomType): bool
     {
-        return false;
+        return $this->update($user, $roomType);
     }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
     public function restore(User $user, RoomType $roomType): bool
     {
-        return false;
+        return $this->update($user, $roomType);
     }
 
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
     public function forceDelete(User $user, RoomType $roomType): bool
     {
-        return false;
+        return $user->isPlatformAdmin();
+    }
+
+    private function owns(User $user, RoomType $roomType): bool
+    {
+        return $this->isProvider($user)
+            && (int) ($roomType->hotel?->accommodation?->provider_id ?? $roomType->hotel?->provider_id) === (int) $user->provider->id;
+    }
+
+    private function isProvider(User $user): bool
+    {
+        return $user->hasRole('provider') && $user->provider !== null;
     }
 }

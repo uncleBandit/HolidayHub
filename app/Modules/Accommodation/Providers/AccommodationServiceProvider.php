@@ -5,8 +5,6 @@ namespace App\Modules\Accommodation\Providers;
 use App\Modules\Accommodation\Domain\Policies\AccommodationPolicy;
 use App\Modules\Accommodation\Domain\Policies\BeadandBreakfastPolicy;
 use App\Modules\Accommodation\Domain\Policies\HotelPolicy;
-use App\Modules\Accommodation\Domain\Policies\HotelReviewPolicy;
-use App\Modules\Accommodation\Domain\Policies\RoomAvailabilityPolicy;
 use App\Modules\Accommodation\Domain\Policies\RoomPolicy;
 use App\Modules\Accommodation\Domain\Policies\RoomPricePolicy;
 use App\Modules\Accommodation\Domain\Policies\RoomTypePolicy;
@@ -29,8 +27,6 @@ class AccommodationServiceProvider extends ServiceProvider
         Gate::policy(App\Modules\Accommodation\Domain\Models\Accommodation::class, AccommodationPolicy::class);
         Gate::policy(App\Modules\Accommodation\Domain\Models\BedAndBreakfast::class, BeadandBreakfastPolicy::class);
         Gate::policy(App\Modules\Accommodation\Domain\Models\Hotel::class, HotelPolicy::class);
-        Gate::policy(App\Modules\Accommodation\Domain\Models\Hotel::class, HotelReviewPolicy::class);
-        Gate::policy(App\Modules\Accommodation\Domain\Models\Room::class, RoomAvailabilityPolicy::class);
         Gate::policy(App\Modules\Accommodation\Domain\Models\Room::class, RoomPolicy::class);
         Gate::policy(App\Modules\Accommodation\Domain\Models\RoomPrice::class, RoomPricePolicy::class);
         Gate::policy(App\Modules\Accommodation\Domain\Models\RoomType::class, RoomTypePolicy::class);

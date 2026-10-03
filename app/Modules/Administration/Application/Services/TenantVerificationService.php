@@ -7,7 +7,7 @@ use App\Modules\Administration\Domain\Enums\TenantStatus;
 use App\Modules\Administration\Domain\Exceptions\InvalidTenantTransition;
 use App\Modules\Administration\Domain\Models\Tenant;
 use App\Modules\Administration\Domain\Models\TenantVerification;
-use App\Modules\Audit\Domain\Models\AuditLog;
+use App\Modules\Audit\Application\Services\AuditRecorder;
 use App\Modules\Identity\Domain\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -61,7 +61,13 @@ final class TenantVerificationService
 
             $this->record($tenant, null, TenantStatus::Pending, 'Application submitted.');
 
-            $this->audit('tenant.applied', $tenant, ['type' => $type]);
+            app(AuditRecorder::class)->record(
+                'tenant.applied',
+                $tenant,
+                $user,
+                after: ['status' => TenantStatus::Pending->value],
+                meta: ['type' => $type],
+            );
 
             return $tenant;
         });
@@ -158,7 +164,13 @@ final class TenantVerificationService
 
             $this->record($tenant, $from, TenantStatus::Pending, 'Application resubmitted.');
 
-            $this->audit('tenant.resubmitted', $tenant, ['previous_status' => $from->value], $admin);
+            app(AuditRecorder::class)->record(
+                'tenant.resubmitted',
+                $tenant,
+                $admin,
+                before: ['status' => $from->value],
+                after: ['status' => TenantStatus::Pending->value],
+            );
 
             return $tenant;
         });
@@ -213,10 +225,15 @@ final class TenantVerificationService
 
             $this->record($tenant, $from, $to, $reason, $admin, $metadata);
             $this->syncProfile($tenant);
-            $this->audit('tenant.'.$to->value, $tenant, array_filter([
-                'from' => $from->value,
-                'reason' => $reason,
-            ]), $admin);
+            app(AuditRecorder::class)->record(
+                'tenant.'.$to->value,
+                $tenant,
+                $admin,
+                before: ['status' => $from->value],
+                after: ['status' => $to->value],
+                reason: $reason,
+                meta: $metadata,
+            );
 
             return $tenant;
         });
@@ -273,22 +290,6 @@ final class TenantVerificationService
             'to_status' => $to,
             'reason' => $reason,
             'metadata' => $metadata === [] ? null : $metadata,
-        ]);
-    }
-
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    private function audit(string $action, Tenant $tenant, array $context = [], ?User $actor = null): void
-    {
-        AuditLog::create([
-            'admin_id' => ($actor ?? auth()->user())?->id,
-            'action' => $action,
-            'subject_type' => $tenant->getMorphClass(),
-            'subject_id' => $tenant->getKey(),
-            'meta' => $context === [] ? null : $context,
-            'ip_address' => request()->ip(),
-            'user_agent' => substr((string) request()->userAgent(), 0, 255),
         ]);
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Administration\Application\Services\TenantVerificationService;
+use App\Modules\Administration\Database\Seeders\AdministrationAccessSeeder;
 use App\Modules\Administration\Domain\Enums\TenantStatus;
 use App\Modules\Administration\Domain\Models\Tenant;
 use App\Modules\Identity\Domain\Models\User;
@@ -16,6 +17,7 @@ uses(RefreshDatabase::class);
  */
 function platformAdmin(): User
 {
+    app(AdministrationAccessSeeder::class)->run();
     $role = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
 
     $user = User::factory()->create();

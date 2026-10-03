@@ -1,6 +1,8 @@
 <?php
 
 use App\Modules\Identity\Domain\Models\User;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Livewire\Volt\Volt;
 
 test('login screen can be rendered', function () {
     $response = $this->get('/login');
@@ -11,22 +13,25 @@ test('login screen can be rendered', function () {
 test('users can authenticate using the login screen', function () {
     $user = User::factory()->create();
 
-    $response = $this->post('/login', [
-        'email' => $user->email,
-        'password' => 'password',
-    ]);
+    Volt::test('auth.login')
+        ->call('showEmailLogin')
+        ->set('email', $user->email)
+        ->set('password', 'password')
+        ->call('login')
+        ->assertRedirect(route('dashboard', absolute: false));
 
     $this->assertAuthenticatedAs($user);
-    $response->assertRedirect(route('dashboard', absolute: false));
 });
 
 test('users can not authenticate with invalid password', function () {
     $user = User::factory()->create();
 
-    $this->post('/login', [
-        'email' => $user->email,
-        'password' => 'wrong-password',
-    ]);
+    Volt::test('auth.login')
+        ->call('showEmailLogin')
+        ->set('email', $user->email)
+        ->set('password', 'wrong-password')
+        ->call('login')
+        ->assertHasErrors('email');
 
     $this->assertGuest();
 });
@@ -34,7 +39,9 @@ test('users can not authenticate with invalid password', function () {
 test('users can logout', function () {
     $user = User::factory()->create();
 
-    $response = $this->actingAs($user)->post('/logout');
+    $response = $this->withoutMiddleware(ValidateCsrfToken::class)
+        ->actingAs($user)
+        ->post('/logout');
 
     $this->assertGuest();
     $response->assertRedirect('/');

@@ -33,25 +33,26 @@ new #[Layout('layouts.auth')] class extends Component {
         $this->redirect('/', navigate: true);
     }
 }; ?>
-
-<div class="mt-4 flex flex-col gap-6">
-    <flux:text class="text-center">
-        {{ __('Please verify your email address by clicking on the link we just emailed to you.') }}
-    </flux:text>
+<div class="flex w-full flex-col gap-7">
+    <x-auth-header
+        eyebrow="One last tap"
+        title="{{ __('Confirm your email.') }}"
+        description="{{ __('We sent you a link. Open it and your account is ready for its first stay.') }}"
+    />
 
     @if (session('status') == 'verification-link-sent')
-        <flux:text class="text-center font-medium !dark:text-green-400 !text-green-600">
-            {{ __('A new verification link has been sent to the email address you provided during registration.') }}
-        </flux:text>
+        <p class="auth-alert auth-alert-ok" role="status">
+            {{ __('A fresh verification link is on its way to the email you signed up with.') }}
+        </p>
     @endif
 
-    <div class="flex flex-col items-center justify-between space-y-3">
-        <flux:button wire:click="sendVerification" variant="primary" class="w-full">
+    <div class="flex flex-col gap-4">
+        <button type="button" wire:click="sendVerification" class="auth-btn" wire:loading.attr="disabled" wire:target="sendVerification">
             {{ __('Resend verification email') }}
-        </flux:button>
+        </button>
 
-        <flux:link class="text-sm cursor-pointer" wire:click="logout">
+        <button type="button" wire:click="logout" class="auth-link mx-auto">
             {{ __('Log out') }}
-        </flux:link>
+        </button>
     </div>
 </div>

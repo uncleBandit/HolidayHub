@@ -1,3 +1,863 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    html {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply bg-paper font-sans text-ink antialiased;
+    }
+
+    /* Coral focus ring, matching the Figma focus treatment. */
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    [tabindex]:focus-visible {
+        outline: 3px solid rgba(239, 102, 77, 0.35);
+        outline-offset: 3px;
+    }
+
+    /* Alpine hides x-cloak elements until it initialises. */
+    [x-cloak] {
+        display: none !important;
+    }
+
+    ::selection {
+        background-color: rgba(239, 102, 77, 0.2);
+    }
+}
+
+@layer components {
+    /* Serif display face used for headlines. */
+    .font-display {
+        font-family: 'Instrument Serif', ui-serif, Georgia, serif;
+    }
+
+    .eyebrow {
+        @apply flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-coral;
+    }
+
+    .eyebrow::before {
+        content: '';
+        @apply block h-px w-6 bg-coral;
+    }
+
+    .pill {
+        @apply flex-none rounded-full border border-line px-[17px] py-2.5 text-xs text-ink-soft transition-colors duration-200;
+    }
+
+    .pill:hover {
+        @apply border-ink-soft text-ink;
+    }
+
+    .pill-active {
+        @apply border-ink bg-ink text-white;
+    }
+
+    .pill-active:hover {
+        @apply border-ink bg-ink text-white;
+    }
+
+    /* Thin, unobtrusive horizontal scroller for the category pills. */
+    .no-scrollbar {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Slow zoom used on card artwork. */
+    .media-zoom img {
+        @apply h-full w-full object-cover transition-transform duration-700 ease-out;
+    }
+
+    .group:hover .media-zoom img,
+    .media-zoom:hover img {
+        transform: scale(1.045);
+    }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Discovery visual language
+   Mirrors the Visual Discovery Travel Platform benchmark: cream canvas, forest
+   chrome, clay accents, DM Serif Display headlines over Manrope body copy.
+   Prefixed `dv-` so it coexists with the editorial components above.
+   ──────────────────────────────────────────────────────────────────────────── */
+@layer components {
+    .dv-shell {
+        background-color: #f7f3eb;
+        color: #18211c;
+        font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .dv-eyebrow {
+        @apply text-[11px] font-extrabold uppercase tracking-[0.15em] text-clay;
+    }
+
+    .dv-eyebrow-light {
+        @apply text-[11px] font-extrabold uppercase tracking-[0.15em] text-white/75;
+    }
+
+    .dv-display {
+        @apply mt-4 font-dm-serif text-[clamp(2.5rem,6vw,5.4rem)] leading-[0.95] tracking-[-0.03em] text-white;
+    }
+
+    .dv-title {
+        @apply mt-1.5 font-dm-serif text-[clamp(1.7rem,2.8vw,2.6rem)] leading-[1.05] tracking-[-0.02em] text-forest;
+    }
+
+    .dv-body {
+        @apply text-[15px] leading-[1.8] text-muted;
+    }
+
+    .dv-section {
+        padding: 4.5rem max(5vw, calc((100vw - 1350px) / 2));
+    }
+
+    /* ── Hero ─────────────────────────────────────────────────────────────── */
+    .dv-hero {
+        @apply relative isolate flex min-h-[34rem] items-center overflow-hidden bg-forest text-white;
+    }
+
+    .dv-hero > img,
+    .dv-hero > video {
+        @apply absolute inset-0 -z-10 h-full w-full object-cover;
+    }
+
+    .dv-hero-shade {
+        @apply absolute inset-0 -z-10;
+        background-image: linear-gradient(
+                90deg,
+                rgba(8, 26, 21, 0.82) 0%,
+                rgba(8, 26, 21, 0.45) 52%,
+                rgba(8, 26, 21, 0.18) 100%
+            ),
+            linear-gradient(0deg, rgba(8, 26, 21, 0.5), transparent 45%);
+    }
+
+    .dv-hero-copy {
+        @apply w-full max-w-[44rem] px-[5vw] py-16 md:py-24;
+    }
+
+    .dv-hero-subtitle {
+        @apply mt-6 max-w-[34rem] text-[15px] leading-[1.7] text-white/80;
+    }
+
+    .dv-hero-meta {
+        @apply absolute bottom-10 right-[5vw] hidden items-center gap-2.5 lg:flex;
+    }
+
+    .dv-hero-meta div {
+        @apply flex flex-col text-[13px] font-bold;
+    }
+
+    .dv-hero-meta span {
+        @apply mt-0.5 text-[11px] font-normal text-white/70;
+    }
+
+    /* ── Search bar ───────────────────────────────────────────────────────── */
+    .dv-searchbar {
+        @apply mt-8 flex min-h-[5rem] w-full max-w-[38rem] items-center gap-3 rounded-[1.2rem] bg-white/95 p-3 text-ink shadow-[0_20px_60px_rgba(20,36,28,0.12)];
+    }
+
+    .dv-search-icon {
+        @apply grid h-12 w-12 flex-none place-items-center rounded-[0.85rem] bg-cream text-clay;
+    }
+
+    .dv-search-go {
+        @apply grid h-12 w-12 flex-none place-items-center rounded-[0.85rem] bg-clay text-white transition-colors duration-200 hover:bg-clay-dark;
+    }
+
+    .dv-search-copy {
+        @apply flex min-w-0 flex-1 flex-col gap-0.5;
+    }
+
+    .dv-search-copy input {
+        @apply w-full border-0 bg-transparent p-0 text-[14px] font-bold text-ink placeholder:text-ink focus:ring-0;
+    }
+
+    .dv-search-copy small {
+        @apply truncate text-[11px] text-muted;
+    }
+
+    /* ── Category pills ────────────────────────────────────────────────────── */
+    .dv-category-row {
+        @apply flex gap-3 overflow-x-auto pb-1;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .dv-category-row::-webkit-scrollbar {
+        display: none;
+    }
+
+    .dv-category {
+        @apply flex flex-none items-center justify-center gap-2.5 rounded-full border border-line bg-white px-5 py-4 text-[12px] font-bold text-muted transition-colors duration-200;
+    }
+
+    .dv-category:hover {
+        @apply border-muted text-ink;
+    }
+
+    .dv-category-active,
+    .dv-category-active:hover {
+        @apply border-forest bg-forest text-white;
+    }
+
+    /* ── Tabs ──────────────────────────────────────────────────────────────── */
+    .dv-tabs {
+        @apply flex gap-8 overflow-x-auto border-b border-line text-[12px] text-muted;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .dv-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .dv-tab {
+        @apply whitespace-nowrap py-4 text-left transition-colors duration-200;
+    }
+
+    .dv-tab:hover {
+        @apply text-ink;
+    }
+
+    .dv-tab-active,
+    .dv-tab-active:hover {
+        @apply relative font-bold text-ink;
+    }
+
+    .dv-tab-active::after {
+        content: '';
+        @apply absolute inset-x-0 bottom-[-1px] h-0.5 bg-clay;
+    }
+
+    /* ── Cards ─────────────────────────────────────────────────────────────── */
+    .dv-grid {
+        @apply grid gap-4;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-auto-rows: 23rem;
+    }
+
+    .dv-card {
+        @apply relative isolate block overflow-hidden rounded-[1.2rem] bg-forest text-white;
+    }
+
+    .dv-card img {
+        @apply absolute inset-0 -z-10 h-full w-full object-cover transition-transform duration-700 ease-out;
+    }
+
+    .dv-card:hover img,
+    .dv-card:focus-visible img {
+        transform: scale(1.035);
+    }
+
+    .dv-card-gradient {
+        @apply absolute inset-0 -z-10;
+        background-image: linear-gradient(0deg, rgba(10, 20, 16, 0.84), rgba(10, 20, 16, 0.05) 58%);
+    }
+
+    .dv-card-body {
+        @apply absolute inset-x-5 bottom-5;
+    }
+
+    .dv-card-kicker {
+        @apply text-[9px] font-extrabold uppercase tracking-[0.11em] text-[#F6D6C9];
+    }
+
+    .dv-card-name {
+        @apply my-1 font-dm-serif text-[1.6rem] leading-[1.1];
+    }
+
+    .dv-card-sub {
+        @apply flex items-center gap-1 text-[10px] text-white/80;
+    }
+
+    .dv-card-mark {
+        @apply absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full border border-white/20 bg-black/30 backdrop-blur-md;
+    }
+
+    .dv-card-arrow {
+        @apply absolute bottom-5 right-5 z-10 grid h-10 w-10 place-items-center rounded-full border border-white/40 bg-white/10 transition-colors duration-200 group-hover:bg-white group-hover:text-forest;
+    }
+
+    /* ── Reels ─────────────────────────────────────────────────────────────── */
+    .dv-reel-grid {
+        @apply grid gap-4;
+        grid-template-columns: 1.3fr 1fr 1fr;
+        grid-auto-rows: 29rem;
+    }
+
+    .dv-reel-card {
+        @apply relative isolate block overflow-hidden rounded-[1.4rem] bg-forest text-white;
+    }
+
+    .group:hover .dv-reel-card img,
+    .group:hover .dv-reel-card video,
+    .group:focus-within .dv-reel-card img,
+    .group:focus-within .dv-reel-card video {
+        transform: scale(1.035);
+    }
+
+    .dv-reel-card img,
+    .dv-reel-card video {
+        @apply absolute inset-0 -z-10 h-full w-full object-cover transition-transform duration-700 ease-out;
+    }
+
+    .dv-reel-card:hover img,
+    .dv-reel-card:hover video,
+    .dv-reel-card:focus-visible img,
+    .dv-reel-card:focus-visible video {
+        transform: scale(1.035);
+    }
+
+    .dv-reel-card::after {
+        @apply pointer-events-none absolute inset-0 -z-10;
+        content: "";
+        background-image: linear-gradient(0deg, rgba(10, 20, 16, 0.86), rgba(10, 20, 16, 0.05) 58%);
+    }
+
+    .dv-reel-badge {
+        @apply absolute right-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1.5 text-[9px] font-extrabold backdrop-blur-md;
+    }
+
+    .dv-reel-play {
+        @apply absolute left-4 top-4 z-10 grid h-9 w-9 place-items-center rounded-full border border-white/25 bg-black/35 backdrop-blur-md;
+    }
+
+    .dv-reel-card-body {
+        @apply absolute inset-x-5 bottom-5 z-10;
+    }
+
+    .dv-reel-card-price {
+        @apply mt-2 inline-flex items-baseline gap-1 text-[12px] font-extrabold;
+    }
+
+    .dv-reel-card-price s {
+        @apply text-[10px] font-semibold text-white/60 no-underline;
+    }
+
+    .dv-reel-meta {
+        @apply mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-white/80;
+    }
+
+    /* Experience cards: how long it takes and what is included */
+    .dv-reel-duration {
+        @apply absolute left-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1.5 text-[9px] font-extrabold backdrop-blur-md;
+    }
+
+    .dv-reel-card-highlights {
+        @apply mt-1.5 text-[11px] leading-snug text-white/75;
+    }
+
+    .dv-reel-highlights {
+        @apply mt-2 flex flex-wrap gap-x-4 gap-y-1;
+    }
+
+    .dv-reel-highlights li {
+        @apply inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/85;
+    }
+
+    .dv-reel-highlights li svg {
+        @apply shrink-0 text-clay;
+    }
+
+    /* Full-screen feed */
+    .dv-reels-screen {
+        @apply relative isolate overflow-hidden bg-[#0C1511] text-white;
+        height: 100dvh;
+        min-height: 40rem;
+    }
+
+    .dv-feed {
+        @apply h-full w-full overflow-y-auto overscroll-contain;
+        scroll-snap-type: y mandatory;
+    }
+
+    .dv-feed-panel {
+        @apply relative isolate h-full w-full overflow-hidden;
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+    }
+
+    .dv-feed-panel > video {
+        @apply absolute inset-0 -z-20 h-full w-full object-cover;
+    }
+
+    .dv-feed-shade {
+        @apply absolute inset-0 -z-10;
+        background-image: linear-gradient(0deg, rgba(5, 14, 10, 0.9), transparent 55%), linear-gradient(180deg, rgba(5, 14, 10, 0.5), transparent 25%);
+    }
+
+    .dv-reel-side {
+        @apply absolute bottom-[13.5rem] right-7 z-20 flex flex-col gap-5;
+        filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.3));
+    }
+
+    .dv-side-action {
+        @apply flex flex-col items-center gap-1;
+    }
+
+    .dv-side-action small {
+        @apply text-[8px] font-bold;
+    }
+
+    .dv-side-action[data-on='true'] {
+        @apply text-[#FF725E];
+    }
+
+    .dv-side-action[data-saved='true'] {
+        @apply text-[#FFD498];
+    }
+
+    .dv-reel-bottom {
+        @apply absolute bottom-8 left-8 z-10 w-[min(38rem,calc(100%-8rem))];
+    }
+
+    .dv-provider-line {
+        @apply flex items-center gap-2.5;
+    }
+
+    .dv-provider-avatar {
+        @apply grid h-9 w-9 shrink-0 place-items-center rounded-full bg-clay text-[10px] font-extrabold text-white;
+    }
+
+    .dv-provider-line p {
+        @apply flex items-center gap-1.5 text-[12px] font-bold;
+    }
+
+    .dv-provider-line span {
+        @apply mt-0.5 flex items-center gap-1 text-[9px] opacity-75;
+    }
+
+    .dv-reel-title {
+        @apply mt-4 font-dm-serif text-[clamp(1.7rem,3vw,2.5rem)] leading-[1.05];
+    }
+
+    .dv-reel-caption {
+        @apply mt-1.5 max-w-[32rem] text-[11px] leading-relaxed opacity-75;
+    }
+
+    .dv-reel-product {
+        @apply mt-4 flex items-center justify-between gap-3 rounded-[1rem] border border-white/20 bg-white/15 px-4 py-3 backdrop-blur-xl;
+    }
+
+    .dv-reel-product span {
+        @apply text-[8px] font-extrabold uppercase tracking-[0.12em] text-[#F6C6B8];
+    }
+
+    .dv-reel-product p {
+        @apply text-[11px] font-bold;
+    }
+
+    .dv-reel-product b {
+        @apply text-[9px] opacity-70;
+    }
+
+    .dv-reel-cta {
+        @apply inline-flex shrink-0 items-center gap-1.5 rounded-[0.7rem] bg-clay px-3 py-2.5 text-[10px] font-extrabold text-white transition-colors duration-200 hover:bg-clay-dark;
+    }
+
+    .dv-video-tap {
+        @apply absolute inset-x-0 bottom-[15rem] top-24 z-[1];
+    }
+
+    .dv-pause {
+        @apply absolute left-1/2 top-1/2 grid h-16 w-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-black/35;
+    }
+
+    /* ── Surfaces ──────────────────────────────────────────────────────────── */
+    .dv-panel {
+        @apply rounded-[1.2rem] border border-line bg-white;
+    }
+
+    .dv-panel-shadow {
+        box-shadow: 0 20px 60px rgba(20, 36, 28, 0.12);
+    }
+
+    .dv-btn {
+        @apply inline-flex min-h-[2.9rem] items-center justify-center gap-2 rounded-[0.8rem] px-5 text-[12px] font-extrabold transition-colors duration-200;
+    }
+
+    .dv-btn-primary {
+        @apply bg-clay text-white hover:bg-clay-dark;
+    }
+
+    .dv-btn-ghost {
+        @apply border border-line bg-white text-ink hover:border-forest;
+    }
+
+    /* ── Filter bar ─────────────────────────────────────────────────────────── */
+    .dv-filter-bar {
+        @apply mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 border-y border-line py-3;
+    }
+
+    .dv-filter-count {
+        @apply text-[11px] font-semibold text-muted;
+    }
+
+    .dv-price {
+        @apply flex items-center gap-2 text-[11px] font-semibold text-muted;
+    }
+
+    .dv-price input {
+        @apply h-10 w-24 rounded-[0.7rem] border border-line bg-white px-3 text-[12px] font-bold text-ink outline-none transition-colors duration-200 focus:border-forest;
+        -moz-appearance: textfield;
+    }
+
+    .dv-price input::-webkit-outer-spin-button,
+    .dv-price input::-webkit-inner-spin-button {
+        margin: 0;
+        -webkit-appearance: none;
+    }
+
+    .dv-select-wrap {
+        @apply relative flex items-center gap-2 text-[11px] font-semibold text-muted;
+    }
+
+    .dv-select {
+        @apply h-10 appearance-none rounded-[0.7rem] border border-line bg-white py-0 pl-3 pr-9 text-[12px] font-bold text-ink outline-none transition-colors duration-200 focus:border-forest;
+    }
+
+    .dv-select-wrap > svg {
+        @apply pointer-events-none absolute right-3 text-muted;
+    }
+
+    .dv-filter-clear {
+        @apply ml-auto text-[11px] font-bold text-clay underline-offset-4 hover:underline;
+    }
+
+    /* ── Chrome ────────────────────────────────────────────────────────────── */
+    .dv-topbar {
+        @apply relative z-30 flex items-center justify-between gap-4 border-b border-line bg-cream px-6 text-forest md:px-[max(5vw,calc((100vw-1350px)/2))];
+    }
+
+    .dv-brand {
+        @apply flex items-center gap-2.5;
+    }
+
+    .dv-brand-name {
+        @apply font-dm-serif text-[1.55rem] tracking-[-0.03em];
+    }
+
+    .dv-brand-mark {
+        @apply relative h-7 w-7 -rotate-[8deg] text-clay;
+    }
+
+    .dv-brand-mark span {
+        @apply absolute block h-4 w-4 rounded-[50%_50%_50%_0] border-2 border-current;
+        transform: rotate(-45deg);
+    }
+
+    .dv-brand-mark span:last-child {
+        transform: rotate(135deg);
+        left: 0.6rem;
+        top: 0.45rem;
+    }
+
+    .dv-links {
+        @apply hidden items-center gap-8 text-[12px] font-semibold lg:flex;
+    }
+
+    .dv-link {
+        @apply text-muted transition-colors duration-200 hover:text-forest;
+    }
+
+    .dv-link-active {
+        @apply relative text-forest;
+    }
+
+    .dv-link-active::after {
+        content: '';
+        @apply absolute inset-x-0 -bottom-2 h-0.5 bg-clay;
+    }
+
+    .dv-location {
+        @apply hidden items-center gap-2 rounded-full border border-line bg-surface px-4 py-2.5 text-[11px] font-semibold text-ink md:flex;
+    }
+
+    .dv-round {
+        @apply hidden h-11 w-11 place-items-center rounded-full border border-line bg-surface text-forest transition-colors duration-200 hover:border-forest md:grid;
+    }
+
+    .dv-avatar {
+        @apply grid h-11 w-11 place-items-center rounded-full bg-clay text-[11px] font-extrabold text-white;
+    }
+
+    /* Full-bleed dark chrome, used by the stays reel feed. */
+    .dv-shell-dark {
+        @apply bg-[#0C1511] text-cream;
+    }
+
+    .dv-topbar-dark {
+        @apply border-white/10 bg-[#0C1511]/85 text-cream backdrop-blur-xl;
+    }
+
+    .dv-topbar-dark .dv-link {
+        @apply text-cream/60 hover:text-cream;
+    }
+
+    .dv-topbar-dark .dv-link-active {
+        @apply text-cream;
+    }
+
+    .dv-topbar-dark .dv-location,
+    .dv-topbar-dark .dv-round {
+        @apply border-white/15 bg-white/10 text-cream hover:border-white/40;
+    }
+
+    .dv-bottom-nav-dark {
+        @apply border-white/10 bg-[#0C1511]/85 text-cream;
+    }
+
+    .dv-bottom-nav-dark .dv-nav-item {
+        @apply text-cream/60;
+    }
+
+    .dv-bottom-nav-dark .dv-nav-item-active {
+        @apply text-cream;
+    }
+
+    .dv-footer {
+        @apply hidden min-h-[9rem] items-center gap-8 bg-forest px-[6vw] py-10 text-white md:flex;
+    }
+
+    .dv-footer-tagline {
+        @apply flex-1 text-center font-dm-serif text-[1.4rem] text-white/70;
+    }
+
+    .dv-footer-note {
+        @apply text-[10px] text-white/55;
+    }
+
+    .dv-bottom-nav {
+        @apply fixed inset-x-0 bottom-0 z-50 hidden h-[4.8rem] border-t border-line bg-surface/95 backdrop-blur-xl max-md:grid;
+        grid-template-columns: repeat(5, 1fr);
+        padding: 0.5rem 0.5rem max(0.45rem, env(safe-area-inset-bottom));
+    }
+
+    .dv-nav-item {
+        @apply flex flex-col items-center justify-center gap-1 text-[10px] font-semibold text-muted;
+    }
+
+    .dv-nav-item-active {
+        @apply text-clay;
+    }
+
+    .dv-nav-pill {
+        @apply grid h-8 w-11 place-items-center rounded-full bg-clay text-white;
+    }
+
+    .dv-bottom-nav-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .dv-shell-pad-bottom {
+        @apply pb-[4.8rem] md:pb-0;
+    }
+
+    .dv-main-flush {
+        padding-bottom: 0;
+    }
+
+    /* ── Auth ───────────────────────────────────────────────────────────────── */
+    .auth-shell {
+        @apply grid min-h-dvh bg-cream text-ink lg:grid-cols-[1.05fr_1fr];
+    }
+
+    .auth-panel {
+        @apply relative isolate hidden overflow-hidden bg-forest text-white lg:block;
+    }
+
+    .auth-media {
+        @apply absolute inset-0 -z-10 h-full w-full object-cover;
+    }
+
+    .auth-panel-shade {
+        @apply absolute inset-0 -z-10;
+        background-image: linear-gradient(0deg, rgba(9, 26, 21, 0.92), rgba(9, 26, 21, 0.1) 62%), linear-gradient(180deg, rgba(9, 26, 21, 0.55), transparent 32%);
+    }
+
+    .auth-panel-copy {
+        @apply absolute inset-x-0 bottom-0 p-10 xl:p-14;
+    }
+
+    .auth-quote {
+        @apply mt-4 max-w-[30rem] font-dm-serif text-[clamp(1.7rem,2.6vw,2.6rem)] leading-[1.08];
+    }
+
+    .auth-stats {
+        @apply mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px] font-semibold text-white/70;
+    }
+
+    .auth-form-column {
+        @apply flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-14 xl:px-20;
+    }
+
+    .auth-topbar {
+        @apply mb-10 flex items-center justify-between gap-4;
+    }
+
+    .auth-title {
+        @apply font-dm-serif text-[clamp(1.9rem,3.4vw,2.6rem)] leading-[1.08] text-forest;
+    }
+
+    .auth-sub {
+        @apply mt-3 max-w-[30rem] text-[13px] leading-relaxed text-muted;
+    }
+
+    .auth-label {
+        @apply mb-1.5 block text-[11px] font-extrabold uppercase tracking-[0.1em] text-forest;
+    }
+
+    .auth-input {
+        @apply block h-[3.1rem] w-full rounded-[0.8rem] border border-line bg-surface px-4 text-[13px] font-semibold text-ink outline-none transition-colors duration-200 placeholder:font-normal placeholder:text-muted/70 focus:border-forest;
+    }
+
+    .auth-input-error {
+        @apply border-clay;
+    }
+
+    .auth-error {
+        @apply mt-1.5 block text-[11px] font-bold text-clay;
+    }
+
+    .auth-btn {
+        @apply inline-flex min-h-[3.1rem] w-full items-center justify-center gap-2 rounded-[0.8rem] bg-clay px-5 text-[12px] font-extrabold text-white transition-colors duration-200 hover:bg-clay-dark disabled:cursor-not-allowed disabled:opacity-60;
+    }
+
+    .auth-btn-ghost {
+        @apply border border-line bg-surface text-forest hover:border-forest;
+    }
+
+    .auth-google {
+        @apply inline-flex min-h-[3.1rem] w-full items-center justify-center gap-3 rounded-[0.8rem] border border-line bg-surface px-5 text-[12px] font-extrabold text-forest transition-colors duration-200 hover:border-forest;
+    }
+
+    .auth-divider {
+        @apply flex items-center gap-3 text-[9px] font-extrabold uppercase tracking-[0.14em] text-muted;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+        @apply h-px flex-1 bg-line;
+        content: "";
+    }
+
+    .auth-alert {
+        @apply rounded-[0.8rem] px-4 py-3 text-[12px] font-semibold;
+    }
+
+    .auth-alert-error {
+        @apply border border-clay/30 bg-clay/10 text-clay-dark;
+    }
+
+    .auth-alert-ok {
+        @apply border border-forest/20 bg-forest/10 text-forest;
+    }
+
+    .auth-check {
+        @apply h-4 w-4 rounded border-line text-clay focus:ring-clay;
+    }
+
+    .auth-link {
+        @apply text-[11px] font-extrabold text-clay underline-offset-4 transition-colors duration-200 hover:text-clay-dark hover:underline;
+    }
+
+    .auth-foot {
+        @apply mt-8 text-center text-[12px] text-muted;
+    }
+}
+
+@media (max-width: 1023px) {
+    .dv-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dv-reel-grid {
+        grid-template-columns: 1.2fr 0.85fr;
+        gap: 0.7rem;
+        grid-auto-rows: 24rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .dv-section {
+        padding: 2.5rem 1.25rem;
+    }
+
+    .dv-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-auto-rows: 16rem;
+        gap: 0.7rem;
+    }
+
+    .dv-card-name {
+        @apply text-[1.2rem];
+    }
+
+    .dv-hero {
+        min-height: 28rem;
+    }
+
+    .dv-reel-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-auto-rows: 17rem;
+    }
+
+    .dv-reel-card {
+        @apply rounded-[1.1rem];
+    }
+
+    .dv-reel-card-body {
+        @apply inset-x-3.5 bottom-3.5;
+    }
+
+    .dv-reel-card .dv-card-name {
+        @apply text-[1.05rem];
+    }
+
+    .dv-reel-side {
+        @apply bottom-[12.2rem] right-3;
+        gap: 1rem;
+    }
+
+    .dv-reel-bottom {
+        @apply bottom-[5.5rem] left-4 w-[calc(100%-4.5rem)];
+    }
+
+    .dv-reel-title {
+        @apply text-[1.5rem];
+    }
+
+    .dv-reel-caption {
+        @apply line-clamp-2 text-[10px];
+    }
+
+    .dv-reel-product {
+        @apply w-[calc(100vw-2rem)] px-3 py-2.5;
+    }
+
+    .dv-video-tap {
+        @apply inset-x-0 bottom-[16rem] top-[4.5rem];
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}

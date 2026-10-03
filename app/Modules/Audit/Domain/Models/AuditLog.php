@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use LogicException;
 
 /**
  * Platform-wide record of an administrative action.
@@ -38,15 +39,28 @@ class AuditLog extends Model
         'subject_type',
         'subject_id',
         'meta',
+        'before',
+        'after',
+        'reason',
         'ip_address',
         'user_agent',
+        'request_id',
+        'correlation_id',
     ];
 
     protected function casts(): array
     {
         return [
             'meta' => 'array',
+            'before' => 'array',
+            'after' => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(fn () => throw new LogicException('Audit records are immutable.'));
+        static::deleting(fn () => throw new LogicException('Audit records are immutable.'));
     }
 
     /**

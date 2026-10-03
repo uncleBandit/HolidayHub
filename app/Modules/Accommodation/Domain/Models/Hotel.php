@@ -29,7 +29,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Hotel extends Model implements AvailabilityAware, Bookable, HasUnitCapacity, Pricable
 {
-    use HasFactory, HasImages, SoftDeletes;
+    use HasFactory, HasImages, SoftDeletes, Concerns\SyncsCanonicalAccommodation;
 
     protected $fillable = [
         'provider_id',
@@ -143,7 +143,12 @@ class Hotel extends Model implements AvailabilityAware, Bookable, HasUnitCapacit
             'id',               // Foreign key on destinations table
             'id',               // Local key on hotels table
             'destination_id'    // Local key on accommodations table
-        )->where('bookable_type', self::class);
+        )->where('bookable_type', $this->getMorphClass());
+    }
+
+    public function scopePublished($query)
+    {
+        return $query->whereHas('accommodation', fn ($accommodation) => $accommodation->published());
     }
 
     public function offers(): MorphMany
@@ -240,7 +245,7 @@ class Hotel extends Model implements AvailabilityAware, Bookable, HasUnitCapacit
 
     public function getIncludedGuests(): int
     {
-        return $this->max_guests ?? 2;
+        return (int) ($this->roomTypes()->max('capacity') ?: 2);
     }
 
     public function accommodation(): MorphOne

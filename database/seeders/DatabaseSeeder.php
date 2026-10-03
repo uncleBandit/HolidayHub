@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Modules\Activities\Database\Seeders\ActivitySeeder;
+use App\Modules\Activities\Database\Seeders\ExperienceSeeder;
 use App\Modules\Administration\Database\Seeders\TenantSeeder;
 use App\Modules\Agents\Database\Seeders\AgentSeeder;
 use App\Modules\Booking\Database\Seeders\BookingSeeder;
@@ -63,7 +63,7 @@ class DatabaseSeeder extends Seeder
             $this->call(OfferSeeder::class);
 
             $this->logSection('Activities');
-            $this->call(ActivitySeeder::class);
+            $this->call(ExperienceSeeder::class);
 
             // After providers and agents: a tenant is an application *from* one
             // of those profiles, so it cannot be seeded before they exist.

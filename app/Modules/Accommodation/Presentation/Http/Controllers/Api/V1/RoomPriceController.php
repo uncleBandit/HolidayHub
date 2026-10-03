@@ -17,6 +17,12 @@ class RoomPriceController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = RoomPrice::query();
+        $user = $request->user();
+
+        if (! $user->isPlatformAdmin()) {
+            $query->whereHas('room.hotel.accommodation', fn ($accommodation) => $accommodation
+                ->where('provider_id', $user->provider?->id));
+        }
 
         // Filter by room ID
         if ($roomId = $request->input('room_id')) {
@@ -32,12 +38,16 @@ class RoomPriceController extends Controller
         }
 
         // Sorting
-        $sortBy = $request->input('sort_by', 'start_date');
-        $sortDir = $request->input('sort_dir', 'asc');
+        $sortBy = in_array($request->input('sort_by'), ['start_date', 'end_date', 'base_price', 'created_at'], true)
+            ? $request->input('sort_by')
+            : 'start_date';
+        $sortDir = in_array($request->input('sort_dir'), ['asc', 'desc'], true)
+            ? $request->input('sort_dir')
+            : 'asc';
         $query->orderBy($sortBy, $sortDir);
 
         // Pagination
-        $roomPrices = $query->paginate($request->input('per_page', 15))->withQueryString();
+        $roomPrices = $query->paginate(min(max((int) $request->input('per_page', 15), 1), 100))->withQueryString();
 
         return response()->json($roomPrices);
     }
@@ -60,6 +70,8 @@ class RoomPriceController extends Controller
      */
     public function show(RoomPrice $roomPrice): JsonResponse
     {
+        $this->authorize('view', $roomPrice);
+
         return response()->json([
             'data' => $roomPrice,
         ]);
@@ -83,6 +95,7 @@ class RoomPriceController extends Controller
      */
     public function destroy(RoomPrice $roomPrice): JsonResponse
     {
+        $this->authorize('delete', $roomPrice);
         $roomPrice->delete();
 
         return response()->json([

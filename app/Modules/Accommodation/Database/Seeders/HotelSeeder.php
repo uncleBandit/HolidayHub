@@ -2,6 +2,8 @@
 
 namespace App\Modules\Accommodation\Database\Seeders;
 
+use App\Modules\Accommodation\Domain\Enums\AccommodationStatus;
+use App\Modules\Accommodation\Domain\Enums\VerificationStatus;
 use App\Modules\Accommodation\Domain\Models\Hotel;
 use App\Modules\Accommodation\Domain\Models\Room;
 use App\Modules\Accommodation\Domain\Models\RoomType;
@@ -51,12 +53,9 @@ class HotelSeeder extends Seeder
         // Create 30 hotels and attach all relationships
         Hotel::factory(30)
             ->recycle($providers)
-            ->create(['provider_id' => $providers->random()->id,
-                'destination_id' => $destinations->random()->id])
+            ->create(['provider_id' => $providers->random()->id])
             ->each(function (Hotel $hotel) use ($amenities, $destinations, $guests) {
-
-                // Associate with a random destination
-                $hotel->destination()->associate($destinations->random())->save();
+                $hotel->accommodation()->update(['destination_id' => $destinations->random()->id]);
 
                 // Attach a random subset of amenities (polymorphic many-to-many)
                 $hotel->amenities()->attach(
@@ -98,7 +97,7 @@ class HotelSeeder extends Seeder
                 // Create a few images for the hotel gallery
                 Image::factory(rand(3, 8))->create([
                     'imageable_id' => $hotel->id,
-                    'imageable_type' => Hotel::class,
+                    'imageable_type' => $hotel->getMorphClass(),
                 ]);
 
                 // Create 2 to 5 room types for the hotel
@@ -123,13 +122,26 @@ class HotelSeeder extends Seeder
                         $guest = Guest::inRandomOrder()->first(); // Ensure it exists in guests table
                         Booking::factory()->create([
                             'guest_id' => $guest->id,
-                            'bookable_type' => Room::class,
+                            'bookable_type' => $randomRoom->getMorphClass(),
                             'bookable_id' => $randomRoom->id,
                             'check_in_date' => $checkIn,
                             'check_out_date' => $checkOut,
                         ]);
 
                     });
+
+                $hotel->forceFill(['is_active' => true, 'is_verified' => true])->save();
+                $accommodation = $hotel->accommodation()->firstOrFail();
+                $accommodation->update([
+                    'status' => AccommodationStatus::Published,
+                    'verification_status' => VerificationStatus::Approved,
+                    'verified_at' => now(),
+                    'published_at' => now(),
+                ]);
+                $accommodation->verificationHistory()->create([
+                    'status' => VerificationStatus::Approved->value,
+                    'reason' => 'Seeded verified sample listing.',
+                ]);
             });
 
         $this->command->info('Hotels and all associated data seeded successfully!');

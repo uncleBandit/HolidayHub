@@ -29,6 +29,7 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
+        'google_id',
     ];
 
     /**
@@ -92,14 +93,14 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * Whether this user is platform staff rather than a marketplace participant.
+     * Whether this user holds the unrestricted break-glass administrator role.
      *
      * Platform staff administer the marketplace; everyone else is a guest,
      * agent or provider whose activity is administered.
      */
     public function isPlatformAdmin(): bool
     {
-        return $this->hasRole('admin');
+        return $this->hasRole('super_admin');
     }
 
     /**
@@ -112,6 +113,6 @@ class User extends Authenticatable implements FilamentUser
      */
     public function canAccessPanel(\Filament\Panel $panel): bool
     {
-        return $this->isPlatformAdmin();
+        return $this->can('admin.panel.access');
     }
 }

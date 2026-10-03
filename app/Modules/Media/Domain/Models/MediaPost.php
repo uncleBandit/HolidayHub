@@ -45,6 +45,11 @@ class MediaPost extends Model
         return $this->belongsTo(Provider::class);
     }
 
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Identity\Domain\Models\User::class, 'reviewed_by');
+    }
+
     public function assets(): HasMany
     {
         return $this->hasMany(MediaAsset::class);

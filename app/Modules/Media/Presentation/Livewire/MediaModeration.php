@@ -2,6 +2,7 @@
 
 namespace App\Modules\Media\Presentation\Livewire;
 
+use App\Modules\Media\Application\Services\MediaModerationService;
 use App\Modules\Media\Domain\Enums\MediaPostStatus;
 use App\Modules\Media\Domain\Models\MediaPost;
 use Illuminate\Support\Facades\Auth;
@@ -16,20 +17,17 @@ class MediaModeration extends Component
 
     public function approve(int $postId): void
     {
+        abort_unless(Auth::user()?->can('media.moderate'), 403);
         $post = MediaPost::query()
             ->where('status', MediaPostStatus::PendingReview->value)
             ->findOrFail($postId);
 
-        $post->forceFill([
-            'status' => MediaPostStatus::Published,
-            'published_at' => now(),
-            'reviewed_by' => Auth::id(),
-            'moderation_notes' => null,
-        ])->save();
+        app(MediaModerationService::class)->approve($post, Auth::user());
     }
 
     public function reject(int $postId): void
     {
+        abort_unless(Auth::user()?->can('media.moderate'), 403);
         $this->validate([
             'rejectionReason' => ['required', 'string', 'max:1000'],
         ]);
@@ -38,12 +36,7 @@ class MediaModeration extends Component
             ->where('status', MediaPostStatus::PendingReview->value)
             ->findOrFail($postId);
 
-        $post->forceFill([
-            'status' => MediaPostStatus::Rejected,
-            'published_at' => null,
-            'reviewed_by' => Auth::id(),
-            'moderation_notes' => $this->rejectionReason,
-        ])->save();
+        app(MediaModerationService::class)->reject($post, Auth::user(), $this->rejectionReason);
 
         $this->reset('rejectionReason');
     }

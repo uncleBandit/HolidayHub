@@ -23,8 +23,15 @@ class WelcomePage extends Component
             ->take(6)
             ->get();
 
-        $this->offeredHotels = Hotel::whereNotNull('avg_price_per_night')
-            ->orderByDesc('avg_price_per_night')
+        $this->offeredHotels = Hotel::published()
+            ->whereHas('accommodation', fn ($query) => $query->whereNotNull('avg_price_per_night'))
+            ->with('accommodation')
+            ->orderByDesc(
+                \App\Modules\Accommodation\Domain\Models\Accommodation::query()
+                    ->select('avg_price_per_night')
+                    ->whereColumn('bookable_id', 'hotels.id')
+                    ->where('bookable_type', (new Hotel)->getMorphClass())
+            )
             ->take(6)
             ->get();
 

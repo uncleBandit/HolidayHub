@@ -2,6 +2,7 @@
 
 namespace App\Modules\Reviews\Domain\Models;
 
+use App\Modules\Booking\Domain\Models\Booking;
 use App\Modules\Identity\Domain\Models\Guest;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,7 @@ class Review extends Model
      */
     protected $fillable = [
         'guest_id',
+        'booking_id',
         'reviewable_id',
         'reviewable_type',
         'rating',
@@ -42,13 +44,18 @@ class Review extends Model
     // Review belongs to a guest
     public function guest(): BelongsTo
     {
-        return $this->belongsTo(Guest::class, 'user_id');
+        return $this->belongsTo(Guest::class);
     }
 
     // Review can belong to Hotel, Destination, Activity, etc.
     public function reviewable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function booking(): BelongsTo
+    {
+        return $this->belongsTo(Booking::class);
     }
 
     /**

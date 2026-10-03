@@ -3,8 +3,10 @@
 namespace App\Modules\Accommodation\Presentation\Livewire\Villa;
 
 use App\Modules\Accommodation\Application\Services\VillaCreator;
+use App\Modules\Accommodation\Application\Services\AccommodationPublicationService;
 use App\Modules\Accommodation\Domain\Models\Villa;
 use App\Modules\Catalog\Domain\Models\Amenity;
+use App\Modules\Destinations\Domain\Models\Destination;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -34,6 +36,8 @@ class VillaCreate extends Component
     public $city;
 
     public $country;
+
+    public ?int $destination_id = null;
 
     public $latitude;
 
@@ -88,12 +92,13 @@ class VillaCreate extends Component
                     'string',
                     Rule::unique('villas', 'slug')->ignore($this->draftVilla?->id),
                 ],
-                'description' => 'nullable|string',
+                'description' => 'required|string|min:20',
             ],
             2 => [
-                'address' => 'nullable|string|max:255',
-                'city' => 'nullable|string|max:255',
-                'country' => 'nullable|string|max:255',
+                'address' => 'required|string|max:255',
+                'city' => 'required|string|max:255',
+                'country' => 'required|string|max:255',
+                'destination_id' => 'required|integer|exists:destinations,id',
                 'latitude' => 'nullable|numeric',
                 'longitude' => 'nullable|numeric',
             ],
@@ -101,14 +106,14 @@ class VillaCreate extends Component
                 'bedrooms' => 'required|integer|min:1',
                 'bathrooms' => 'required|integer|min:1',
                 'max_guests' => 'required|integer|min:1',
-                'avg_price_per_night' => 'required|numeric|min:0',
+                'avg_price_per_night' => 'required|numeric|min:0.01',
             ],
             4 => [
-                'cover_image' => 'nullable|image|max:4096',
+                'cover_image' => 'required|image|max:4096',
                 'gallery.*' => 'nullable|image|max:4096',
             ],
             5 => [
-                'selectedAmenities' => 'array',
+                'selectedAmenities' => 'required|array|min:1',
                 'policies.check_in' => 'required|string',
                 'policies.check_out' => 'required|string',
                 'policies.cancellation' => 'nullable|string|max:500',
@@ -159,7 +164,7 @@ class VillaCreate extends Component
     {
         $this->draftVilla = app(VillaCreator::class)->saveDraft(
             $this->only([
-                'provider_id', 'name', 'slug', 'description',
+                'provider_id', 'destination_id', 'name', 'slug', 'description',
                 'address', 'city', 'country', 'latitude', 'longitude',
                 'bedrooms', 'bathrooms', 'max_guests', 'has_private_pool', 'is_featured',
                 'is_active', 'is_verified', 'avg_price_per_night', 'policies',
@@ -173,7 +178,11 @@ class VillaCreate extends Component
     // ==========================
     public function save()
     {
-        $this->validate($this->stepRules($this->step));
+        $rules = [];
+        foreach (range(1, 5) as $step) {
+            $rules = array_merge($rules, $this->stepRules($step));
+        }
+        $this->validate($rules);
 
         $villa = app(VillaCreator::class)->createVilla(
             $this->draftVilla,
@@ -181,8 +190,9 @@ class VillaCreate extends Component
             $this->gallery,
             $this->selectedAmenities
         );
+        app(AccommodationPublicationService::class)->submitForReview($villa->accommodation()->firstOrFail());
 
-        session()->flash('success', 'Villa created successfully!');
+        session()->flash('success', 'Villa submitted for review.');
 
         return redirect()->route('villa.show', $villa->slug);
     }
@@ -194,6 +204,7 @@ class VillaCreate extends Component
     {
         return view('livewire.villa.villa-create', [
             'amenities' => Amenity::active()->get(),
+            'destinations' => Destination::query()->orderBy('name')->get(['id', 'name', 'city', 'country']),
             'step' => $this->step,
         ]);
     }

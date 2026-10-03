@@ -3,6 +3,8 @@
 namespace App\Modules\Accommodation\Database\Seeders;
 
 use App\Modules\Accommodation\Domain\Models\Villa;
+use App\Modules\Accommodation\Domain\Enums\AccommodationStatus;
+use App\Modules\Accommodation\Domain\Enums\VerificationStatus;
 use App\Modules\Catalog\Domain\Models\Amenity;
 use App\Modules\Destinations\Domain\Models\Destination;
 use App\Modules\Identity\Domain\Models\Guest;
@@ -43,7 +45,8 @@ class VillaSeeder extends Seeder
             ->recycle($providers)
             ->recycle($destinations)
             ->create()
-            ->each(function (Villa $villa) use ($amenities, $guests) {
+            ->each(function (Villa $villa) use ($amenities, $destinations, $guests) {
+                $villa->accommodation()->update(['destination_id' => $destinations->random()->id]);
                 // Attach a random subset of amenities to each villa
                 $villa->amenities()->attach(
                     $amenities->random(rand(3, 8))->pluck('id')->toArray()
@@ -66,17 +69,29 @@ class VillaSeeder extends Seeder
                         'end_date' => now()->addDays(rand(1, 30) + 7)->toDateString(), // 1 week window
                         'quantity' => 1,
                         'status' => 'available',
-                        'price_per_night' => $villa->base_price + rand(20, 100),
+                        'price_per_night' => $villa->avg_price_per_night + rand(20, 100),
                     ],
                     [
                         'start_date' => now()->addDays(rand(31, 60))->toDateString(),
                         'end_date' => now()->addDays(rand(31, 60) + 5)->toDateString(),
                         'quantity' => 0,
                         'status' => 'unavailable',
-                        'price_per_night' => $villa->base_price,
+                        'price_per_night' => $villa->avg_price_per_night,
                     ],
                 ]);
 
+                $villa->forceFill(['is_active' => true, 'is_verified' => true])->save();
+                $accommodation = $villa->accommodation()->firstOrFail();
+                $accommodation->update([
+                    'status' => AccommodationStatus::Published,
+                    'verification_status' => VerificationStatus::Approved,
+                    'verified_at' => now(),
+                    'published_at' => now(),
+                ]);
+                $accommodation->verificationHistory()->create([
+                    'status' => VerificationStatus::Approved->value,
+                    'reason' => 'Seeded verified sample listing.',
+                ]);
             });
     }
 }

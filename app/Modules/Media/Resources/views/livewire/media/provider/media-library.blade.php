@@ -33,6 +33,17 @@
             </div>
 
             <div class="md:col-span-2">
+                <label for="media-activity" class="mb-1 block text-sm font-medium text-gray-700">Show on activity profile (optional)</label>
+                <select id="media-activity" wire:model="activityId" class="w-full rounded-lg border-gray-300">
+                    <option value="">Provider profile only</option>
+                    @foreach ($activities as $activity)
+                        <option value="{{ $activity->id }}">{{ $activity->name }}</option>
+                    @endforeach
+                </select>
+                @error('activityId') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="md:col-span-2">
                 <label for="media-caption" class="mb-1 block text-sm font-medium text-gray-700">Caption</label>
                 <textarea id="media-caption" wire:model="caption" rows="3" maxlength="1000" class="w-full rounded-lg border-gray-300"></textarea>
                 @error('caption') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror

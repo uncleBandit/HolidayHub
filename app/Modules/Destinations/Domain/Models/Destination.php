@@ -113,17 +113,20 @@ class Destination extends Model
     // convenience accessors:
     public function hotels()
     {
-        return $this->accommodations()->where('bookable_type', Hotel::class);
+        return $this->accommodations()->published()
+            ->where('bookable_type', (new Hotel)->getMorphClass());
     }
 
     public function bedAndBreakfasts()
     {
-        return $this->accommodations()->where('bookable_type', BedAndBreakfast::class);
+        return $this->accommodations()->published()
+            ->where('bookable_type', (new BedAndBreakfast)->getMorphClass());
     }
 
     public function villas()
     {
-        return $this->accommodations()->where('bookable_type', Villa::class);
+        return $this->accommodations()->published()
+            ->where('bookable_type', (new Villa)->getMorphClass());
     }
 
     public function bookings()

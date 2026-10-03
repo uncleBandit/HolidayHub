@@ -21,32 +21,36 @@ new #[Layout('components.layouts.auth')] class extends Component {
         session()->flash('status', __('A reset link will be sent if the account exists.'));
     }
 }; ?>
-
-<div class="flex flex-col gap-6 p-8 bg-white dark:bg-zinc-800 rounded-2xl shadow-lg border border-zinc-200 dark:border-zinc-700">
+<div class="flex w-full flex-col gap-7">
     <x-auth-header
-        :title="__('Forgot Your Password? 🔑')"
-        :description="__('No problem. Enter your email below and we will send you a password reset link.')"
+        eyebrow="Password help"
+        title="{{ __('Forgot your password?') }}"
+        description="{{ __('No problem. Leave your email and we will send a reset link straight to your inbox.') }}"
     />
 
-    <x-auth-session-status class="text-center text-teal-700 dark:text-teal-400 font-medium" :status="session('status')" />
+    @if (session('status'))
+        <p class="auth-alert auth-alert-ok" role="status">{{ session('status') }}</p>
+    @endif
 
-    <form method="POST" wire:submit="sendPasswordResetLink" class="flex flex-col gap-6">
-        <flux:input
+    <form method="POST" wire:submit="sendPasswordResetLink" class="flex flex-col gap-5">
+        <x-auth.field
             wire:model="email"
-            :label="__('Email address')"
+            label="{{ __('Email address') }}"
             type="email"
             required
             autofocus
+            autocomplete="email"
             placeholder="you@example.com"
         />
 
-        <flux:button type="submit" class="w-full bg-stone-700 hover:bg-stone-800 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition-all duration-200">
-            {{ __('Send Reset Link') }}
-        </flux:button>
+        <button type="submit" class="auth-btn" wire:loading.attr="disabled" wire:target="sendPasswordResetLink">
+            <span wire:loading.remove wire:target="sendPasswordResetLink">{{ __('Send reset link') }}</span>
+            <span wire:loading wire:target="sendPasswordResetLink">{{ __('Sending…') }}</span>
+        </button>
     </form>
 
-    <div class="space-x-1 rtl:space-x-reverse text-center text-sm text-zinc-500 dark:text-zinc-400">
-        <span>{{ __('Remember your password?') }}</span>
-        <flux:link :href="route('login')" wire:navigate>{{ __('Return to log in') }}</flux:link>
-    </div>
+    <p class="auth-foot">
+        {{ __('Remembered it after all?') }}
+        <a href="{{ route('login') }}" class="auth-link" wire:navigate>{{ __('Back to log in') }}</a>
+    </p>
 </div>

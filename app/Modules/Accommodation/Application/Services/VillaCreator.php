@@ -3,8 +3,11 @@
 namespace App\Modules\Accommodation\Application\Services;
 
 use App\Modules\Accommodation\Domain\Models\Villa;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class VillaCreator
@@ -20,46 +23,65 @@ class VillaCreator
      */
     public function createVilla(?Villa $draft, $coverImage, array $gallery, array $amenities): Villa
     {
-        return DB::transaction(function () use ($draft, $coverImage, $gallery, $amenities) {
-            // Ensure draft exists
-            $villa = $draft ?? new Villa;
+        $provider = Auth::user()?->provider;
+        if (! $provider || ! Auth::user()->hasRole('provider')) {
+            throw new AuthorizationException('An authenticated provider account is required.');
+        }
 
-            // Ensure provider is set
-            $villa->provider_id = $villa->provider_id ?? Auth::user()->provider->id;
+        $storedPaths = [];
 
-            // Ensure slug is unique
-            $villa->slug = $this->generateSlug($villa->name, $villa);
+        try {
+            return DB::transaction(function () use ($draft, $coverImage, $gallery, $amenities, $provider, &$storedPaths): Villa {
+                $villa = $draft ?? new Villa;
+                Gate::authorize($draft ? 'update' : 'create', $draft ?? Villa::class);
 
-            // ✅ Handle media uploads
-            if ($coverImage) {
-                $villa->cover_image = is_string($coverImage)
-                    ? $coverImage
-                    : $coverImage->store('villas/covers', 'public');
-            }
+                $villa->provider_id = $provider->id;
+                $villa->slug = $this->generateSlug($villa->name, $villa);
 
-            if (! empty($gallery)) {
-                $galleryPaths = [];
-                foreach ($gallery as $image) {
-                    $galleryPaths[] = is_string($image)
-                        ? $image
-                        : $image->store('villas/gallery', 'public');
+                if ($coverImage) {
+                    if (is_string($coverImage)) {
+                        $villa->cover_image = $coverImage;
+                    } else {
+                        $path = $coverImage->store('villas/covers', 'public');
+                        if ($path === false) {
+                            throw new \RuntimeException('Unable to store the villa cover image.');
+                        }
+                        $storedPaths[] = $path;
+                        $villa->cover_image = $path;
+                    }
                 }
-                $villa->gallery = $galleryPaths;
-            }
 
-            // ✅ Mark as active and verified when publishing
-            $villa->is_active = true;
-            $villa->is_verified = false; // keep manual verification by admin if required
+                if ($gallery !== []) {
+                    $galleryPaths = [];
+                    foreach ($gallery as $image) {
+                        if (is_string($image)) {
+                            $path = $image;
+                        } else {
+                            $path = $image->store('villas/gallery', 'public');
+                            if ($path === false) {
+                                throw new \RuntimeException('Unable to store a villa gallery image.');
+                            }
+                            $storedPaths[] = $path;
+                        }
+                        $galleryPaths[] = $path;
+                    }
+                    $villa->gallery = $galleryPaths;
+                }
 
-            $villa->save();
-
-            // ✅ Sync amenities (many-to-many)
-            if (! empty($amenities)) {
+                $villa->is_active = true;
+                $villa->is_verified = false;
+                $villa->save();
                 $villa->amenities()->sync($amenities);
+
+                return $villa->fresh(['accommodation']);
+            });
+        } catch (\Throwable $exception) {
+            if ($storedPaths !== []) {
+                Storage::disk('public')->delete($storedPaths);
             }
 
-            return $villa;
-        });
+            throw $exception;
+        }
     }
 
     /**
@@ -69,9 +91,15 @@ class VillaCreator
      */
     public function saveDraft(array $data, ?Villa $draft = null): Villa
     {
-        return DB::transaction(function () use ($data, $draft) {
-            // Provider must always be set
-            $data['provider_id'] = $data['provider_id'] ?? Auth::user()->provider->id;
+        $provider = Auth::user()?->provider;
+        if (! $provider || ! Auth::user()->hasRole('provider')) {
+            throw new AuthorizationException('An authenticated provider account is required.');
+        }
+
+        return DB::transaction(function () use ($data, $draft, $provider): Villa {
+            $destinationId = $data['destination_id'] ?? null;
+            unset($data['destination_id'], $data['provider_id']);
+            $data['provider_id'] = $provider->id;
 
             // Normalize / sanitize input
             $data['name'] = trim($data['name'] ?? 'Untitled Villa');
@@ -89,13 +117,20 @@ class VillaCreator
 
             // If updating draft, update it, otherwise create new
             if ($draft) {
+                Gate::authorize('update', $draft);
                 $draft->fill($data);
                 $draft->save();
 
-                return $draft;
+                $villa = $draft;
+            } else {
+                $villa = Villa::create($data);
             }
 
-            return Villa::create($data);
+            if ($destinationId !== null) {
+                $villa->accommodation()->update(['destination_id' => $destinationId]);
+            }
+
+            return $villa->fresh(['accommodation']);
         });
     }
 

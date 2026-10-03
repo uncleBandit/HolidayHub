@@ -52,6 +52,13 @@ class HotelShow extends Component
 
     public function mount(Hotel $hotel) // 👈 accept Hotel directly
     {
+        $hotel->loadMissing('accommodation');
+        $user = Auth::user();
+        $providerId = $user?->provider?->id;
+        $isOwner = $providerId !== null
+            && (int) $providerId === (int) $hotel->accommodation?->provider_id;
+        abort_unless($hotel->accommodation?->isPublished() || $isOwner || $user?->isPlatformAdmin(), 404);
+
         // Eager load relationships immediately
         $this->hotel = $hotel->load([
             'images',

@@ -4,7 +4,6 @@ namespace App\Modules\Accommodation\Presentation\Livewire;
 
 use App\Modules\Accommodation\Domain\Models\Accommodation;
 use App\Modules\Destinations\Domain\Models\Destination;
-use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -54,38 +53,22 @@ class AccommodationList extends Component
 
     private function queryAccommodations()
     {
-        try {
-            $query = Accommodation::query()
-                ->with(['bookable', 'destination'])
-                ->withCount('reviews')
-                ->when($this->search, fn ($q) => $q->whereHas('bookable', fn ($sub) => $sub->where('name', 'like', "%{$this->search}%")
-                )
-                )
-                ->byDestination($this->destinationId)
-                ->byPriceRange($this->minPrice, $this->maxPrice)
-                ->byRating($this->minRating)
-                ->when($this->sortBy === 'price_low', fn ($q) => $q->orderBy('avg_price_per_night', 'asc'))
-                ->when($this->sortBy === 'price_high', fn ($q) => $q->orderBy('avg_price_per_night', 'desc'))
-                ->when($this->sortBy === 'rating', fn ($q) => $q->orderBy('avg_rating', 'desc'))
-                ->when($this->sortBy === 'latest', fn ($q) => $q->latest());
-
-            Log::info('Accommodation query built successfully', [
-                'search' => $this->search,
-                'destinationId' => $this->destinationId,
-                'sortBy' => $this->sortBy,
-                'minPrice' => $this->minPrice,
-                'maxPrice' => $this->maxPrice,
-                'minRating' => $this->minRating,
-            ]);
-
-            return $query;
-        } catch (\Throwable $e) {
-            Log::error('Accommodation query failed: '.$e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return Accommodation::query()->whereRaw('0 = 1'); // return empty if failed
-        }
+        return Accommodation::query()
+            ->published()
+            ->with(['bookable', 'destination'])
+            ->withCount('reviews')
+            ->when($this->search, fn ($q) => $q->where(function ($q) {
+                $q->where('name', 'like', "%{$this->search}%")
+                    ->orWhere('city', 'like', "%{$this->search}%")
+                    ->orWhere('country', 'like', "%{$this->search}%");
+            }))
+            ->byDestination($this->destinationId)
+            ->byPriceRange($this->minPrice, $this->maxPrice)
+            ->byRating($this->minRating)
+            ->when($this->sortBy === 'price_low', fn ($q) => $q->orderBy('avg_price_per_night', 'asc'))
+            ->when($this->sortBy === 'price_high', fn ($q) => $q->orderBy('avg_price_per_night', 'desc'))
+            ->when($this->sortBy === 'rating', fn ($q) => $q->orderBy('avg_rating', 'desc'))
+            ->when($this->sortBy === 'latest', fn ($q) => $q->latest());
     }
 
     private function groupResults($accommodations)

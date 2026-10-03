@@ -46,6 +46,9 @@
             </div>
 
             <form wire:submit.prevent="save">
+                @error('publication')
+                    <div role="alert" class="rounded-lg bg-red-50 p-4 text-sm text-red-700">{{ $message }}</div>
+                @enderror
                 {{-- Step 1: Basic Info --}}
                 @if($step === 1)
                     <div class="space-y-8 p-8 bg-gray-50 rounded-2xl shadow-inner">
@@ -102,6 +105,16 @@
                 @if($step === 3)
                     <div class="space-y-8 p-8 bg-gray-50 rounded-2xl shadow-inner">
                         <h2 class="text-3xl font-bold text-gray-800">3. Where to Find You</h2>
+                        <div>
+                            <label for="destination_id" class="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+                            <select id="destination_id" wire:model="destination_id" class="w-full rounded-xl border-gray-300 shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="">Select a destination</option>
+                                @foreach($destinations as $destination)
+                                    <option value="{{ $destination->id }}">{{ $destination->name }}{{ $destination->city ? ', '.$destination->city : '' }}</option>
+                                @endforeach
+                            </select>
+                            @error('destination_id') <p class="text-red-500 text-sm mt-1">{{ $message }}</p> @enderror
+                        </div>
                         <div class="grid md:grid-cols-2 gap-8">
                             <div>
                                 <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
@@ -200,7 +213,11 @@
                                 <div>
                                     <h3 class="font-bold text-xl text-gray-700 mb-4">Policies</h3>
                                     <p class="text-sm text-gray-500 mb-2">Specify your check-in, check-out, and cancellation policies.</p>
-                                    <textarea wire:model.defer="policies" rows="5" placeholder='e.g., {"check_in":"3:00 PM","check_out":"11:00 AM","cancellation":"Free cancellation up to 48 hours before check-in."}' class="w-full rounded-xl border-gray-300 shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                                    <div class="space-y-3">
+                                        <input type="text" wire:model.defer="policies.check_in" placeholder="Check-in time" class="w-full rounded-xl border-gray-300 shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500">
+                                        <input type="text" wire:model.defer="policies.check_out" placeholder="Check-out time" class="w-full rounded-xl border-gray-300 shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500">
+                                        <textarea wire:model.defer="policies.cancellation" rows="3" placeholder="Cancellation policy" class="w-full rounded-xl border-gray-300 shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                                    </div>
                                 </div>
 
                                 <div>

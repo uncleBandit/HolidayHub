@@ -3,6 +3,8 @@
 namespace App\Modules\Accommodation\Database\Seeders;
 
 use App\Modules\Accommodation\Domain\Models\BedAndBreakfast;
+use App\Modules\Accommodation\Domain\Enums\AccommodationStatus;
+use App\Modules\Accommodation\Domain\Enums\VerificationStatus;
 use App\Modules\Catalog\Domain\Models\Amenity;
 use App\Modules\Destinations\Domain\Models\Destination;
 use App\Modules\Identity\Domain\Models\Guest;
@@ -86,10 +88,10 @@ class BedAndBreakfastSeeder extends Seeder
 
         foreach ($sampleBnbs as $bnbData) {
             $bnb = BedAndBreakfast::create(array_merge($bnbData, [
-                'destination_id' => $destinations->random()->id,
                 'provider_id' => $providers->random()->id,
                 'slug' => Str::slug($bnbData['name']).'-'.Str::random(8),
             ]));
+            $bnb->accommodation()->update(['destination_id' => $destinations->random()->id]);
 
             // Attach amenities
             $bnb->amenities()->attach(
@@ -110,6 +112,19 @@ class BedAndBreakfastSeeder extends Seeder
                     ]),
                 ]);
             }
+
+            $bnb->forceFill(['is_active' => true, 'is_verified' => true])->save();
+            $accommodation = $bnb->accommodation()->firstOrFail();
+            $accommodation->update([
+                'status' => AccommodationStatus::Published,
+                'verification_status' => VerificationStatus::Approved,
+                'verified_at' => now(),
+                'published_at' => now(),
+            ]);
+            $accommodation->verificationHistory()->create([
+                'status' => VerificationStatus::Approved->value,
+                'reason' => 'Seeded verified sample listing.',
+            ]);
         }
 
         // Also create some randomized BnBs for variety
@@ -117,7 +132,8 @@ class BedAndBreakfastSeeder extends Seeder
             ->recycle($providers)
             ->recycle($destinations)
             ->create()
-            ->each(function (BedAndBreakfast $bnb) use ($amenities, $guests) {
+            ->each(function (BedAndBreakfast $bnb) use ($amenities, $destinations, $guests) {
+                $bnb->accommodation()->update(['destination_id' => $destinations->random()->id]);
                 $bnb->amenities()->attach(
                     $amenities->random(rand(2, 5))->pluck('id')->toArray()
                 );
@@ -129,6 +145,19 @@ class BedAndBreakfastSeeder extends Seeder
                         'comment' => 'This is a nice B&B for a short stay.',
                     ])
                 );
+
+                $bnb->forceFill(['is_active' => true, 'is_verified' => true])->save();
+                $accommodation = $bnb->accommodation()->firstOrFail();
+                $accommodation->update([
+                    'status' => AccommodationStatus::Published,
+                    'verification_status' => VerificationStatus::Approved,
+                    'verified_at' => now(),
+                    'published_at' => now(),
+                ]);
+                $accommodation->verificationHistory()->create([
+                    'status' => VerificationStatus::Approved->value,
+                    'reason' => 'Seeded verified sample listing.',
+                ]);
             });
     }
 }

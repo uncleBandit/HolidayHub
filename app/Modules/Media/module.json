@@ -5,6 +5,7 @@
     "enabled": true,
     "api_prefix": "api/v1",
     "morph_map": {
-        "image": "App\\Modules\\Media\\Domain\\Models\\Image"
+        "image": "App\\Modules\\Media\\Domain\\Models\\Image",
+        "media-post": "App\\Modules\\Media\\Domain\\Models\\MediaPost"
     }
 }

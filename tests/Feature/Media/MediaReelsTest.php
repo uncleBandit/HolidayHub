@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Administration\Database\Seeders\AdministrationAccessSeeder;
 use App\Modules\Identity\Domain\Models\User;
 use App\Modules\Media\Domain\Enums\MediaAssetType;
 use App\Modules\Media\Domain\Enums\MediaPostStatus;
@@ -37,6 +38,7 @@ function aMediaProvider(): array
 
 function aMediaAdmin(): User
 {
+    app(AdministrationAccessSeeder::class)->run();
     $role = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
     $user = User::factory()->create();
     $user->assignRole($role);
@@ -150,13 +152,13 @@ it('keeps the provider library scoped to the signed-in provider', function () {
 });
 
 it('requires admin access for the moderation queue', function () {
-    $this->get('/admin/media')->assertRedirect('/login');
+    $this->get('/admin/media-moderations')->assertRedirect('/admin/login');
 
     $this->actingAs(User::factory()->create())
-        ->get('/admin/media')
+        ->get('/admin/media-moderations')
         ->assertForbidden();
 
     $this->actingAs(aMediaAdmin())
-        ->get('/admin/media')
+        ->get('/admin/media-moderations')
         ->assertOk();
 });

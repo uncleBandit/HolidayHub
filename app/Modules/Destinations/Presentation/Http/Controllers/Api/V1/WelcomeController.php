@@ -24,9 +24,9 @@ class WelcomeController extends Controller
 
         // 2. Offered Hotels
         $offeredHotels = Hotel::query()
-            ->whereNotNull('discount_percentage')
-            ->where('discount_percentage', '>', 0)
-            ->orderByDesc('discount_percentage')
+            ->published()
+            ->whereHas('accommodation', fn ($query) => $query->whereNotNull('avg_price_per_night'))
+            ->orderByDesc('is_featured')
             ->take(6)
             ->get();
 

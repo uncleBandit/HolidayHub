@@ -2,6 +2,7 @@
 
 namespace App\Modules\Accommodation\Presentation\Http\Requests;
 
+use App\Modules\Accommodation\Domain\Models\Hotel;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateHotelRequest extends FormRequest
@@ -11,7 +12,9 @@ class UpdateHotelRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        $hotel = $this->route('hotel');
+
+        return $hotel instanceof Hotel && ($this->user()?->can('update', $hotel) ?? false);
     }
 
     /**
@@ -24,11 +27,13 @@ class UpdateHotelRequest extends FormRequest
         return [
             'name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
-            'location' => 'sometimes|string|max:255',
-            'price_per_night' => 'sometimes|numeric|min:0',
-            'rating' => 'nullable|numeric|min:0|max:5',
-            'amenities' => 'nullable|array',
-            'image' => 'nullable|image|max:2048',
+            'address' => 'nullable|string|max:255',
+            'city' => 'sometimes|string|max:255',
+            'country' => 'sometimes|string|max:255',
+            'destination_id' => 'sometimes|integer|exists:destinations,id',
+            'policies' => 'sometimes|array',
+            'stars' => 'sometimes|integer|min:1|max:5',
+            'avg_price_per_night' => 'sometimes|numeric|min:0',
         ];
     }
 }

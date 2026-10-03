@@ -67,49 +67,48 @@ new #[Layout('layouts.auth')] class extends Component {
         $this->redirectRoute('login', navigate: true);
     }
 }; ?>
-
-<div class="flex flex-col gap-6 p-8 bg-white dark:bg-zinc-800 rounded-2xl shadow-lg border border-zinc-200 dark:border-zinc-700">
+<div class="flex w-full flex-col gap-7">
     <x-auth-header
-        :title="__('Update Your Password 🔐')"
-        :description="__('Enter your email and new password to secure your account.')"
+        eyebrow="Almost there"
+        title="{{ __('Choose a new password.') }}"
+        description="{{ __('Pick something you have not used before, then confirm it to keep your account safe.') }}"
     />
 
-    <x-auth-session-status class="text-center text-teal-700 dark:text-teal-400 font-medium" :status="session('status')" />
+    @if (session('status'))
+        <p class="auth-alert auth-alert-ok" role="status">{{ session('status') }}</p>
+    @endif
 
-    <form method="POST" wire:submit="resetPassword" class="flex flex-col gap-6">
-        <flux:input
+    <form method="POST" wire:submit="resetPassword" class="flex flex-col gap-5">
+        <x-auth.field
             wire:model="email"
-            :label="__('Email address')"
+            label="{{ __('Email address') }}"
             type="email"
             required
             autocomplete="email"
             placeholder="you@example.com"
         />
 
-        <flux:input
+        <x-auth.field
             wire:model="password"
-            :label="__('New password')"
+            label="{{ __('New password') }}"
             type="password"
             required
             autocomplete="new-password"
-            :placeholder="__('Create a strong password')"
-            viewable
+            placeholder="{{ __('Create a strong password') }}"
         />
 
-        <flux:input
+        <x-auth.field
             wire:model="password_confirmation"
-            :label="__('Confirm new password')"
+            label="{{ __('Confirm new password') }}"
             type="password"
             required
             autocomplete="new-password"
-            :placeholder="__('Re-enter your password')"
-            viewable
+            placeholder="{{ __('Re-enter your new password') }}"
         />
 
-        <div class="flex items-center justify-end mt-2">
-            <flux:button type="submit" class="w-full bg-stone-700 hover:bg-stone-800 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition-all duration-200">
-                {{ __('Reset Password') }}
-            </flux:button>
-        </div>
+        <button type="submit" class="auth-btn" wire:loading.attr="disabled" wire:target="resetPassword">
+            <span wire:loading.remove wire:target="resetPassword">{{ __('Reset password') }}</span>
+            <span wire:loading wire:target="resetPassword">{{ __('Saving…') }}</span>
+        </button>
     </form>
 </div>

@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
  * booked, in order to work out demand. Only some bookables have that shape, and
  * PricingEngine used to find out by calling `$bookable->rooms()` unconditionally
  * — a relation that exists on Hotel and RoomType and nowhere else, so pricing a
- * Villa, BedAndBreakfast, Activity, Experience or Package threw.
+ * Villa, BedAndBreakfast, Activity or Package threw.
  *
  * Opting in explicitly means an unknown capacity is a normal, handled case
  * rather than a fatal call to a method that was never there.

@@ -11,7 +11,7 @@ class StoreActivityReviewRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return $this->user() !== null;
     }
 
     /**
@@ -22,7 +22,10 @@ class StoreActivityReviewRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'booking_id' => ['required', 'integer', 'exists:bookings,id'],
+            'rating' => ['required', 'integer', 'between:1,5'],
+            'title' => ['nullable', 'string', 'max:255'],
+            'comment' => ['required', 'string', 'min:10', 'max:5000'],
         ];
     }
 }

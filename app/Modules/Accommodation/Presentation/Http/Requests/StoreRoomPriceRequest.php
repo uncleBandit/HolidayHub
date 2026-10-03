@@ -2,27 +2,27 @@
 
 namespace App\Modules\Accommodation\Presentation\Http\Requests;
 
+use App\Modules\Accommodation\Domain\Models\Room;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreRoomPriceRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        $room = Room::query()->with('hotel.accommodation')->find($this->input('room_id'));
+
+        return $room !== null && ($this->user()?->can('update', $room) ?? false);
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'room_id' => 'required|integer|exists:rooms,id',
+            'base_price' => 'required|numeric|gt:0',
+            'discount_price' => 'nullable|numeric|min:0',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'meta' => 'nullable|array',
         ];
     }
 }

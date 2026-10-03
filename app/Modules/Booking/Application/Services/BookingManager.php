@@ -2,6 +2,13 @@
 
 namespace App\Modules\Booking\Application\Services;
 
+use App\Modules\Accommodation\Domain\Models\BedAndBreakfast;
+use App\Modules\Accommodation\Domain\Models\Hotel;
+use App\Modules\Accommodation\Domain\Models\Room;
+use App\Modules\Accommodation\Domain\Models\RoomType;
+use App\Modules\Accommodation\Domain\Models\Villa;
+use App\Modules\Activities\Domain\Models\Activity;
+use App\Modules\Activities\Domain\Models\ActivityOption;
 use App\Modules\Availability\Application\Services\AvailabilityEngine;
 use App\Modules\Booking\Domain\Events\BookingCancelled;
 use App\Modules\Booking\Domain\Events\BookingCreated;
@@ -116,6 +123,19 @@ class BookingManager
         }
 
         DB::transaction(function () use ($booking) {
+            $session = $booking->activitySession()->lockForUpdate()->first();
+            if ($session) {
+                $participants = $booking->guests_adults + $booking->guests_children;
+                $released = $session->newQuery()
+                    ->whereKey($session->id)
+                    ->where('booked_capacity', '>=', $participants)
+                    ->decrement('booked_capacity', $participants);
+
+                if ($released !== 1) {
+                    throw new RuntimeException('Activity session capacity is inconsistent with the booking being cancelled.');
+                }
+            }
+
             $booking->update(['status' => 'cancelled']);
             $this->paymentGateway->refund($booking);
 
@@ -199,6 +219,30 @@ class BookingManager
 
         if (! $bookable instanceof Bookable) {
             throw new \LogicException('Bookable class must implement '.Bookable::class);
+        }
+
+        if ($bookable instanceof Activity || $bookable instanceof ActivityOption) {
+            throw new \DomainException('Activity bookings must select and reserve a scheduled session.');
+        }
+
+        $accommodation = match (true) {
+            $bookable instanceof Hotel,
+            $bookable instanceof BedAndBreakfast,
+            $bookable instanceof Villa => $bookable->accommodation,
+            $bookable instanceof Room => $bookable->hotel?->accommodation,
+            $bookable instanceof RoomType => $bookable->hotel?->accommodation,
+            default => null,
+        };
+
+        $requiresPublishedAccommodation = $bookable instanceof Hotel
+            || $bookable instanceof BedAndBreakfast
+            || $bookable instanceof Villa
+            || $bookable instanceof Room
+            || ($bookable instanceof RoomType && $bookable->hotel !== null);
+
+        if ($requiresPublishedAccommodation
+            && ! $accommodation?->isPublished()) {
+            throw new \DomainException('This accommodation is not published and cannot be booked.');
         }
 
         return $bookable;

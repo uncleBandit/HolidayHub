@@ -3,12 +3,12 @@
 namespace App\Modules\Administration\Filament\Resources;
 
 use App\Modules\Administration\Filament\Resources\UserResource\Pages;
+use App\Modules\Audit\Application\Services\AuditRecorder;
 use App\Modules\Identity\Domain\Models\User;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
-use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
@@ -102,6 +102,13 @@ class UserResource extends Resource
                         $record->forceFill([
                             'email_verified_at' => $wasVerified ? null : now(),
                         ])->save();
+                        app(AuditRecorder::class)->record(
+                            $wasVerified ? 'users.email_verification_revoked' : 'users.email_verified',
+                            $record,
+                            auth()->user(),
+                            before: ['email_verified' => $wasVerified],
+                            after: ['email_verified' => ! $wasVerified],
+                        );
 
                         Notification::make()
                             ->success()
@@ -122,6 +129,12 @@ class UserResource extends Resource
                     // is not enough to lock them out.
                     ->action(function (User $record): void {
                         $revoked = $record->tokens()->delete();
+                        app(AuditRecorder::class)->record(
+                            'users.api_tokens_revoked',
+                            $record,
+                            auth()->user(),
+                            after: ['revoked_count' => $revoked],
+                        );
 
                         Notification::make()
                             ->warning()
@@ -173,11 +186,11 @@ class UserResource extends Resource
                     ->relationship('roles', 'name')
                     ->multiple
                     ->preload()
-                    ->helperText('Granting the admin role gives full access to the administration panel.'),
-
-                DateTimePicker::make('email_verified_at')
-                    ->label('Email verified at')
-                    ->seconds(false),
+                    ->visible(fn (?User $record): bool => $record !== null
+                        && auth()->user()?->can('manageRoles', $record) === true)
+                    ->dehydrated(fn (?User $record): bool => $record !== null
+                        && auth()->user()?->can('manageRoles', $record) === true)
+                    ->helperText('Roles grant only their explicitly assigned permissions. Super-admin access is restricted.'),
             ]);
     }
 

@@ -18,7 +18,7 @@ class RegisterUserRequest extends FormRequest
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
-            'role' => 'required|in:admin,agent,provider,user',
+            'role' => 'required|in:agent,provider,user',
         ];
     }
 }

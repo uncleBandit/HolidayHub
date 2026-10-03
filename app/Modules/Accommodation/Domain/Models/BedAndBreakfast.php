@@ -25,10 +25,11 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class BedAndBreakfast extends Model implements AvailabilityAware, Bookable, Pricable
 {
-    use HasFactory, HasImages;
+    use HasFactory, HasImages, SoftDeletes, Concerns\SyncsCanonicalAccommodation;
 
     protected $table = 'bed_and_breakfasts';
 
@@ -76,7 +77,7 @@ class BedAndBreakfast extends Model implements AvailabilityAware, Bookable, Pric
             'id',
             'id',
             'destination_id'
-        )->where('bookable_type', self::class);
+        )->where('bookable_type', $this->getMorphClass());
     }
 
     public function bookings(): MorphMany
@@ -137,9 +138,12 @@ class BedAndBreakfast extends Model implements AvailabilityAware, Bookable, Pric
     /** Scopes */
     public function scopeBookable($query)
     {
-        return $query->where('is_active', true)
-            ->where('is_verified', true)
-            ->whereNull('deleted_at');
+        return $this->scopePublished($query);
+    }
+
+    public function scopePublished($query)
+    {
+        return $query->whereHas('accommodation', fn ($accommodation) => $accommodation->published());
     }
 
     /** Accessors */
@@ -176,8 +180,11 @@ class BedAndBreakfast extends Model implements AvailabilityAware, Bookable, Pric
 
     public function getPriceForDate(string $date): float
     {
-        return $this->availabilities()->where('date', $date)->value('price')
-               ?? $this->price_per_night;
+        return (float) ($this->availabilities()
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
+            ->where('status', 'available')
+            ->value('price_per_night') ?? $this->price_per_night);
     }
 
     public function isAvailable(string $checkIn, string $checkOut): bool

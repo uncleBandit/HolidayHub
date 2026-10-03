@@ -1,9 +1,18 @@
 @props([
     'title',
-    'description',
+    'description' => null,
+    'eyebrow' => null,
 ])
 
-<div class="flex w-full flex-col text-center">
-    <flux:heading size="xl">{{ $title }}</flux:heading>
-    <flux:subheading>{{ $description }}</flux:subheading>
+{{-- Shared heading for every guest screen. --}}
+<div class="w-full">
+    @if (filled($eyebrow))
+        <p class="dv-eyebrow">{{ $eyebrow }}</p>
+    @endif
+
+    <h1 class="auth-title">{{ $title }}</h1>
+
+    @if (filled($description))
+        <p class="auth-sub">{{ $description }}</p>
+    @endif
 </div>

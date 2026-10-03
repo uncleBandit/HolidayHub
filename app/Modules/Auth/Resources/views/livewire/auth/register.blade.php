@@ -1,103 +1,48 @@
 <?php
 
-use App\Modules\Identity\Domain\Models\User;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
-new #[Layout('layouts.auth')] class extends Component {
-
-    public string $name = '';
-    public string $email = '';
-    public string $password = '';
-    public string $password_confirmation = '';
-
-    /**
-     * Handle an incoming registration request.
-     */
-    public function register(): void
-    {
-        $validated = $this->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
-            'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
-        ]);
-
-        $validated['password'] = Hash::make($validated['password']);
-
-        event(new Registered(($user = User::create($validated))));
-
-        Auth::login($user);
-
-        $this->redirectIntended(route('dashboard', absolute: false), navigate: true);
-    }
-};
+new #[Layout('layouts.auth')] class extends Component {};
 ?>
 
-{{-- ✅ Markup directly follows the Volt class --}}
-<div class="flex flex-col gap-6 p-8 bg-white dark:bg-zinc-800 rounded-2xl shadow-lg border border-zinc-200 dark:border-zinc-700">
+<div class="flex w-full flex-col gap-7">
+    <x-auth-header
+        eyebrow="Join HolidayHub"
+        title="{{ __('Your next stay starts with one tap.') }}"
+        description="{{ __('Create an account to save the reels you love, follow hosts and book in a few taps.') }}"
+    />
 
-    <x-auth-header :title="__('Create 22an account')" :description="__('Enter your details below to create your account')" />
+    @if ($errors->has('google'))
+        <p class="auth-alert auth-alert-error" role="alert">{{ $errors->first('google') }}</p>
+    @endif
 
-    <!-- Session Status -->
-    <x-auth-session-status class="text-center" :status="session('status')" />
+    <div class="flex flex-col gap-4">
+        <x-auth.google>{{ __('Sign up with Google') }}</x-auth.google>
 
-    <form method="POST" wire:submit="register" class="flex flex-col gap-6">
-        <!-- Name -->
-        <flux:input
-            wire:model="name"
-            :label="__('Name')"
-            type="text"
-            required
-            autofocus
-            autocomplete="name"
-            :placeholder="__('Full name')"
-        />
-
-        <!-- Email Address -->
-        <flux:input
-            wire:model="email"
-            :label="__('Email address')"
-            type="email"
-            required
-            autocomplete="email"
-            placeholder="email@example.com"
-        />
-
-        <!-- Password -->
-        <flux:input
-            wire:model="password"
-            :label="__('Password')"
-            type="password"
-            required
-            autocomplete="new-password"
-            :placeholder="__('Password')"
-            viewable
-        />
-
-        <!-- Confirm Password -->
-        <flux:input
-            wire:model="password_confirmation"
-            :label="__('Confirm password')"
-            type="password"
-            required
-            autocomplete="new-password"
-            :placeholder="__('Confirm password')"
-            viewable
-        />
-
-        <div class="flex items-center justify-end">
-            <flux:button type="submit" variant="primary" class="w-full">
-                {{ __('Create account') }}
-            </flux:button>
-        </div>
-    </form>
-
-    <div class="space-x-1 rtl:space-x-reverse text-center text-sm text-zinc-600 dark:text-zinc-400">
-        <span>{{ __('Already have an account?') }}</span>
-        <flux:link :href="route('login')" wire:navigate>{{ __('Log in') }}</flux:link>
+        <a href="{{ route('register.provider') }}" class="auth-btn auth-btn-ghost">
+            <x-line-icon name="bed" :size="17" />
+            {{ __('Apply as a service provider') }}
+        </a>
     </div>
+
+    <ul class="flex flex-col gap-2.5 border-t border-line pt-6 text-[12px] leading-relaxed text-muted">
+        <li class="flex items-start gap-2.5">
+            <x-line-icon name="play" :size="15" class="mt-0.5 text-clay" />
+            {{ __('Watch every stay as a reel before you book it.') }}
+        </li>
+        <li class="flex items-start gap-2.5">
+            <x-line-icon name="bookmark" :size="15" class="mt-0.5 text-clay" />
+            {{ __('Save stays and hosts to compare later.') }}
+        </li>
+        <li class="flex items-start gap-2.5">
+            <x-line-icon name="bell" :size="15" class="mt-0.5 text-clay" />
+            {{ __('Get told the moment a saved stay drops its rate.') }}
+        </li>
+    </ul>
+
+    <p class="auth-foot">
+        {{ __('Already have an account?') }}
+        <a href="{{ route('login') }}" class="auth-link">{{ __('Log in') }}</a>
+    </p>
 </div>

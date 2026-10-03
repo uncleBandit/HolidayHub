@@ -5,11 +5,11 @@
     "enabled": true,
     "api_prefix": "api/v1",
     "seeders": [
-        "ExperienceSeeder",
-        "ActivitySeeder"
+        "ExperienceSeeder"
     ],
     "morph_map": {
         "activity": "App\\Modules\\Activities\\Domain\\Models\\Activity",
-        "experience": "App\\Modules\\Activities\\Domain\\Models\\Experience"
+        "experience": "App\\Modules\\Activities\\Domain\\Models\\Activity",
+        "activity-option": "App\\Modules\\Activities\\Domain\\Models\\ActivityOption"
     }
 }

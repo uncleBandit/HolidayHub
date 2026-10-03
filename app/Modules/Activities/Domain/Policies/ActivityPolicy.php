@@ -7,59 +7,75 @@ use App\Modules\Identity\Domain\Models\User;
 
 class ActivityPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->can('activities.view') || $this->isProvider($user);
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, Activity $activity): bool
     {
-        return false;
+        return $activity->isPublished() || $user->can('activities.view') || $this->owns($user, $activity);
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return false;
+        return $this->isProvider($user);
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, Activity $activity): bool
     {
-        return false;
+        return $this->owns($user, $activity);
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, Activity $activity): bool
     {
-        return false;
+        return $this->owns($user, $activity);
     }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
     public function restore(User $user, Activity $activity): bool
     {
-        return false;
+        return $this->owns($user, $activity);
     }
 
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
     public function forceDelete(User $user, Activity $activity): bool
     {
-        return false;
+        return $user->can('activities.moderate');
+    }
+
+    public function submit(User $user, Activity $activity): bool
+    {
+        return $this->owns($user, $activity) || $user->isPlatformAdmin();
+    }
+
+    public function moderate(User $user): bool
+    {
+        return $user->can('activities.moderate');
+    }
+
+    public function approve(User $user): bool
+    {
+        return $user->can('activities.approve');
+    }
+
+    public function reject(User $user): bool
+    {
+        return $user->can('activities.reject');
+    }
+
+    public function suspend(User $user): bool
+    {
+        return $user->can('activities.suspend');
+    }
+
+    private function owns(User $user, Activity $activity): bool
+    {
+        return $this->isProvider($user)
+            && $activity->provider_id !== null
+            && $user->provider->is($activity->provider);
+    }
+
+    private function isProvider(User $user): bool
+    {
+        return $user->hasRole('provider') && $user->provider?->active === true;
     }
 }

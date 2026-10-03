@@ -3,7 +3,6 @@
 namespace App\Modules\Reviews\Providers;
 
 use App\Modules\Reviews\Domain\Policies\ReviewPolicy;
-use App\Modules\Reviews\Domain\Policies\TestimonialPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -20,6 +19,5 @@ class ReviewsServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(App\Modules\Reviews\Domain\Models\Review::class, ReviewPolicy::class);
-        Gate::policy(App\Modules\Reviews\Domain\Models\Review::class, TestimonialPolicy::class);
     }
 }

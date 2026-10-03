@@ -2,7 +2,7 @@
 
 namespace App\Modules\Audit\Domain\Policies;
 
-use App\Models\AuditLog;
+use App\Modules\Audit\Domain\Models\AuditLog;
 use App\Modules\Identity\Domain\Models\User;
 
 class AuditLogPolicy
@@ -12,7 +12,7 @@ class AuditLogPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->can('audit.view');
     }
 
     /**
@@ -20,7 +20,7 @@ class AuditLogPolicy
      */
     public function view(User $user, AuditLog $auditLog): bool
     {
-        return false;
+        return $user->can('audit.view');
     }
 
     /**

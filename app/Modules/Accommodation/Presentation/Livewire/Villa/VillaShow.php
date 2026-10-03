@@ -43,6 +43,13 @@ class VillaShow extends Component
 
     public function mount(Villa $villa): void
     {
+        $villa->loadMissing('accommodation');
+        $user = Auth::user();
+        $providerId = $user?->provider?->id;
+        $isOwner = $providerId !== null
+            && (int) $providerId === (int) $villa->accommodation?->provider_id;
+        abort_unless($villa->accommodation?->isPublished() || $isOwner || $user?->isPlatformAdmin(), 404);
+
         $this->villa = $villa->load([
 
             'amenities',

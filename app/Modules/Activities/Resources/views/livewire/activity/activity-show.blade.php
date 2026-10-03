@@ -1,133 +1,202 @@
-<div>
-<div class="bg-gray-100 min-h-screen">
-    {{-- Full-width image hero section with gradient overlay --}}
-    <div class="relative w-full h-[50vh] sm:h-[60vh] lg:h-[70vh] xl:h-[80vh] overflow-hidden">
-        <img src="{{ $activity->cover_image_url }}" alt="{{ $activity->title }}"
-             class="absolute inset-0 w-full h-full object-cover">
+<main class="min-h-screen bg-slate-50">
+    @php($cover = $activity->thumbnail ?: ($activity->getImages()[0] ?? 'https://placehold.co/1600x900?text=Activity'))
 
-        <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent"></div>
-
-        {{-- Content overlay --}}
-        <div class="absolute bottom-0 left-0 right-0 p-8 sm:p-12 text-white">
-            <div class="max-w-7xl mx-auto">
-                {{-- Title & Location --}}
-                <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight mb-2">
-                    {{ $activity->title }}
-                </h1>
-                <p class="text-lg sm:text-xl font-medium text-gray-200 flex items-center">
-                    <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
-                    </svg>
-                    {{ $activity->location }}
-                </p>
-
-                {{-- Dynamic Wishlist Button --}}
-                <button wire:click="toggleWishlist"
-                    class="absolute top-4 right-4 bg-white/80 hover:bg-white rounded-full p-3 shadow-md transition-all duration-300 transform hover:scale-110">
-                    {{-- @if($isWishlisted) --}}
-                    <svg class="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
-                    </svg>
-                    {{-- @else --}}
-                    <svg class="w-6 h-6 text-gray-600 hover:text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                    {{-- @endif --}}
-                </button>
-            </div>
+    <section class="relative isolate min-h-[420px] overflow-hidden bg-slate-900 sm:min-h-[560px]">
+        <img src="{{ $cover }}" alt="{{ $activity->name }}" class="absolute inset-0 h-full w-full object-cover opacity-75">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+        <div class="relative mx-auto flex min-h-[420px] max-w-7xl flex-col justify-end px-4 py-12 text-white sm:min-h-[560px] sm:px-6 lg:px-8">
+            @if($activity->category)
+                <span class="mb-4 w-fit rounded-full bg-white/15 px-4 py-1.5 text-sm font-medium backdrop-blur">{{ $activity->category->name }}</span>
+            @endif
+            <h1 class="max-w-4xl text-4xl font-bold tracking-tight sm:text-6xl">{{ $activity->name }}</h1>
+            <p class="mt-4 flex items-center gap-2 text-lg text-white/85">
+                <span>{{ $activity->destination?->name }}</span>
+                <span aria-hidden="true">·</span>
+                <span>{{ $activity->duration_minutes }} minutes</span>
+                <span aria-hidden="true">·</span>
+                <span>★ {{ number_format((float) $activity->rating, 1) }} ({{ $activity->reviews_count }} reviews)</span>
+            </p>
         </div>
-    </div>
+    </section>
 
-    {{-- Main content area --}}
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 -mt-16 sm:-mt-20 relative z-10">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:px-8">
+        <div class="space-y-8">
+            <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-8">
+                <h2 class="text-2xl font-semibold text-slate-900">About this experience</h2>
+                @if($activity->short_description)
+                    <p class="mt-3 text-lg text-slate-700">{{ $activity->short_description }}</p>
+                @endif
+                <p class="mt-4 whitespace-pre-line leading-7 text-slate-600">{{ $activity->description }}</p>
+                @if($activity->highlights)
+                    <ul class="mt-6 grid gap-2 sm:grid-cols-2">
+                        @foreach($activity->highlights as $highlight)
+                            <li class="flex gap-2 text-sm text-slate-700"><span class="text-teal-700">✓</span>{{ $highlight }}</li>
+                        @endforeach
+                    </ul>
+                @endif
+            </section>
 
-            {{-- Left column: Description & Details --}}
-            <div class="lg:col-span-2 space-y-12">
-                {{-- Description Card --}}
-                <div class="bg-white rounded-3xl shadow-xl p-8">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-4">About This Activity</h2>
-                    <p class="text-gray-700 leading-relaxed text-lg">
-                        {{ $activity->description }}
-                    </p>
-
-                    {{-- Key Features/Tags --}}
-                    <div class="mt-6 flex flex-wrap gap-2">
-                        <span class="px-4 py-1.5 rounded-full bg-indigo-50 text-indigo-700 text-sm font-medium">Adventure</span>
-                        <span class="px-4 py-1.5 rounded-full bg-green-50 text-green-700 text-sm font-medium">Family Friendly</span>
-                        <span class="px-4 py-1.5 rounded-full bg-yellow-50 text-yellow-700 text-sm font-medium">Guided Tour</span>
-                    </div>
-                </div>
-
-                {{-- Reviews Section --}}
-                <div class="bg-white rounded-3xl shadow-xl p-8">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6">What people are saying</h2>
-
-                    <div class="space-y-6">
-                        @forelse($reviews as $review)
-                            <div class="border-b border-gray-200 pb-6 last:border-b-0 last:pb-0">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center">
-                                        <img src="{{ $review->user->avatar_url ?? 'https://www.gravatar.com/avatar/' . md5($review->user->email) . '?d=mp' }}" alt="{{ $review->user->name }}" class="w-10 h-10 rounded-full mr-4">
-                                        <div>
-                                            <p class="font-semibold text-gray-900">{{ $review->user->name }}</p>
-                                            <p class="text-sm text-gray-500">{{ $review->created_at->diffForHumans() }}</p>
+            @if($activity->mediaPosts->isNotEmpty())
+                <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-8">
+                    <h2 class="text-2xl font-semibold text-slate-900">Watch this experience</h2>
+                    <div class="mt-5 grid gap-5 sm:grid-cols-2">
+                        @foreach($activity->mediaPosts->where('provider_id', $activity->provider_id) as $post)
+                            @php($video = $post->asset(\App\Modules\Media\Domain\Enums\MediaAssetType::Original))
+                            @if($video)
+                                <article class="overflow-hidden rounded-xl bg-slate-950">
+                                    <video class="aspect-[9/14] max-h-[560px] w-full bg-black object-contain" controls playsinline preload="metadata">
+                                        <source src="{{ $video->url }}" type="{{ $video->mime_type }}">
+                                    </video>
+                                    @if($post->title || $post->caption)
+                                        <div class="space-y-1 p-4 text-white">
+                                            @if($post->title)<h3 class="font-semibold">{{ $post->title }}</h3>@endif
+                                            @if($post->caption)<p class="text-sm text-white/75">{{ $post->caption }}</p>@endif
                                         </div>
-                                    </div>
-                                    {{-- Rating --}}
-                                    <div class="flex items-center space-x-1 text-yellow-500">
-                                        @for ($i = 1; $i <= 5; $i++)
-                                            <svg class="w-5 h-5 {{ $i <= $review->rating ? '' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.966a1 1 0 00.95.69h4.178c.969 0 1.371 1.24.588 1.81l-3.385 2.46a1 1 0 00-.364 1.118l1.287 3.966c.3.921-.755 1.688-1.54 1.118l-3.385-2.46a1 1 0 00-1.176 0l-3.385 2.46c-.784.57-1.838-.197-1.539-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.049 9.393c-.783-.57-.38-1.81.588-1.81h4.178a1 1 0 00.95-.69l1.286-3.966z" />
-                                            </svg>
-                                        @endfor
-                                    </div>
+                                    @endif
+                                </article>
+                            @endif
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+
+            @if($activity->inclusions || $activity->exclusions)
+                <section class="grid gap-5 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:grid-cols-2 sm:p-8">
+                    @foreach(['Included' => $activity->inclusions ?? [], 'Not included' => $activity->exclusions ?? []] as $heading => $items)
+                        <div>
+                            <h2 class="text-lg font-semibold text-slate-900">{{ $heading }}</h2>
+                            <ul class="mt-3 space-y-2">
+                                @forelse($items as $item)
+                                    <li class="text-sm text-slate-600">{{ $item }}</li>
+                                @empty
+                                    <li class="text-sm text-slate-400">Not specified</li>
+                                @endforelse
+                            </ul>
+                        </div>
+                    @endforeach
+                </section>
+            @endif
+
+            @if($activity->itinerary->isNotEmpty())
+                <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-8">
+                    <h2 class="text-2xl font-semibold text-slate-900">Itinerary</h2>
+                    <ol class="mt-5 space-y-5">
+                        @foreach($activity->itinerary as $item)
+                            <li class="flex gap-4">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-800">{{ $item->sequence }}</span>
+                                <div>
+                                    <h3 class="font-medium text-slate-900">{{ $item->title }}</h3>
+                                    @if($item->description)<p class="mt-1 text-sm text-slate-600">{{ $item->description }}</p>@endif
+                                    @if($item->duration_minutes)<p class="mt-1 text-xs text-slate-500">{{ $item->duration_minutes }} minutes</p>@endif
                                 </div>
-                                <p class="mt-3 text-gray-700">{{ $review->comment }}</p>
-                            </div>
-                        @empty
-                            <p class="text-gray-500 text-center py-4">No reviews yet. Be the first to share your experience!</p>
-                        @endforelse
+                            </li>
+                        @endforeach
+                    </ol>
+                </section>
+            @endif
+
+            @if($activity->locations->isNotEmpty() || $activity->requirements->isNotEmpty())
+                <section class="grid gap-6 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:grid-cols-2 sm:p-8">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">Meeting and pickup</h2>
+                        <ul class="mt-3 space-y-4">
+                            @forelse($activity->locations as $location)
+                                <li>
+                                    <p class="font-medium text-slate-800">{{ $location->name }}</p>
+                                    <p class="text-sm text-slate-600">{{ $location->address }}</p>
+                                    @if($location->instructions)<p class="mt-1 text-sm text-slate-500">{{ $location->instructions }}</p>@endif
+                                </li>
+                            @empty
+                                <li class="text-sm text-slate-400">Meeting details provided after booking.</li>
+                            @endforelse
+                        </ul>
                     </div>
-
-                    {{-- Load More --}}
-                    @if($hasMoreReviews)
-                        <div class="mt-6 text-center">
-                            <button wire:click="loadReviews"
-                                class="inline-flex items-center px-6 py-2 border border-gray-300 text-sm font-medium rounded-full shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                <span wire:loading.remove wire:target="loadReviews">Load More Reviews</span>
-                                <span wire:loading wire:target="loadReviews">Loading...</span>
-                            </button>
-                        </div>
-                    @endif
-                </div>
-            </div>
-
-            {{-- Right column: Booking CTA & Price --}}
-            <div class="lg:col-span-1">
-                <div class="sticky top-24">
-                    <div class="bg-white rounded-3xl shadow-xl p-8">
-                        <h3 class="text-2xl font-bold text-gray-900 mb-4">Book Your Adventure</h3>
-                        <p class="text-lg text-gray-600 mb-6">
-                            Secure your spot for an unforgettable experience.
-                        </p>
-
-                        <div class="flex items-end justify-between mb-8">
-                            <div>
-                                <span class="text-4xl font-extrabold text-gray-900">${{ number_format($activity->price) }}</span>
-                                <span class="text-gray-500 font-medium">/ person</span>
-                            </div>
-                        </div>
-
-                        {{-- Booking CTA --}}
-                        <button wire:click="bookNow"
-                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xl font-bold px-6 py-4 rounded-xl shadow-lg transition-colors duration-300 transform hover:scale-105">
-                            Book Now
-                        </button>
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">Before you go</h2>
+                        <ul class="mt-3 space-y-3">
+                            @forelse($activity->requirements as $requirement)
+                                <li class="text-sm text-slate-600">
+                                    <span class="font-medium text-slate-800">{{ $requirement->title }}</span>
+                                    @if($requirement->required)<span class="text-xs text-teal-700">Required</span>@endif
+                                    @if($requirement->description)<p class="mt-1">{{ $requirement->description }}</p>@endif
+                                </li>
+                            @empty
+                                @if($activity->safety_instructions)<li class="text-sm text-slate-600">{{ $activity->safety_instructions }}</li>@else<li class="text-sm text-slate-400">No additional requirements listed.</li>@endif
+                            @endforelse
+                        </ul>
                     </div>
+                </section>
+            @endif
+
+            <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-8">
+                <h2 class="text-2xl font-semibold text-slate-900">Guest reviews</h2>
+                <div class="mt-5 divide-y divide-slate-200">
+                    @forelse($reviews as $review)
+                        <article class="py-5 first:pt-0">
+                            <div class="flex items-center justify-between gap-4">
+                                <p class="font-medium text-slate-900">{{ $review['user_name'] }}</p>
+                                <span class="text-sm text-amber-700">★ {{ $review['rating'] }}/5</span>
+                            </div>
+                            <p class="mt-1 text-xs text-slate-500">{{ $review['created_at'] }}</p>
+                            @if($review['comment'])<p class="mt-3 text-sm leading-6 text-slate-700">{{ $review['comment'] }}</p>@endif
+                        </article>
+                    @empty
+                        <p class="py-5 text-sm text-slate-500">No published reviews yet.</p>
+                    @endforelse
                 </div>
-            </div>
+                @if($hasMoreReviews)
+                    <button type="button" wire:click="loadMoreReviews" class="mt-4 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                        Load more reviews
+                    </button>
+                @endif
+            </section>
         </div>
+
+        <aside class="h-fit rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:sticky lg:top-8">
+            <p class="text-sm text-slate-500">From</p>
+            <p class="mt-1 text-3xl font-bold text-slate-900">{{ $activity->currency }} {{ number_format((float) $activity->base_price, 2) }} <span class="text-sm font-normal text-slate-500">per person</span></p>
+            @if($activity->options->isNotEmpty())
+                <div class="mt-5">
+                    <h2 class="text-sm font-semibold text-slate-900">Available options</h2>
+                    <ul class="mt-2 space-y-2">
+                        @foreach($activity->options->where('is_active', true) as $option)
+                            <li class="flex justify-between gap-3 text-sm text-slate-600">
+                                <span>{{ $option->name }}</span>
+                                <span class="font-medium text-slate-800">{{ $option->currency }} {{ number_format((float) $option->base_price, 2) }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            <form wire:submit="bookNow" class="mt-6 space-y-4">
+                <label class="block text-sm font-medium text-slate-700">
+                    Choose a session
+                    <select wire:model="selectedSessionId" required class="mt-1 w-full rounded-lg border-slate-300">
+                        <option value="">Select a date and time</option>
+                        @foreach($availability as $session)
+                            <option value="{{ $session['id'] }}">
+                                {{ \Carbon\Carbon::parse($session['starts_at'])->setTimezone($session['timezone'])->format('D, M j · g:i A') }}
+                                — {{ $session['slots'] }} places left
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('selectedSessionId')<span class="mt-1 block text-sm text-red-700">{{ $message }}</span>@enderror
+                    @error('session')<span class="mt-1 block text-sm text-red-700">{{ $message }}</span>@enderror
+                </label>
+                <label class="block text-sm font-medium text-slate-700">
+                    Participants
+                    <input wire:model="participants" type="number" min="1" max="1000" required class="mt-1 w-full rounded-lg border-slate-300">
+                    @error('participants')<span class="mt-1 block text-sm text-red-700">{{ $message }}</span>@enderror
+                </label>
+                @error('guest')<p role="alert" class="text-sm text-red-700">{{ $message }}</p>@enderror
+                <button type="submit" @disabled($availability === []) class="w-full rounded-xl bg-teal-700 px-5 py-3 font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400">
+                    Continue to booking
+                </button>
+                @if($availability === [])
+                    <p class="text-center text-sm text-slate-500">No bookable sessions are currently available.</p>
+                @endif
+            </form>
+            <p class="mt-4 text-xs leading-5 text-slate-500">Times are shown in {{ $activity->timezone }}. Availability is confirmed atomically when you book.</p>
+        </aside>
     </div>
-</div>
-</div>
+</main>

@@ -31,28 +31,30 @@ new #[Layout('components.layouts.auth')] class extends Component {
         $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
     }
 }; ?>
-
-<div class="flex flex-col gap-6">
+<div class="flex w-full flex-col gap-7">
     <x-auth-header
-        :title="__('Confirm password')"
-        :description="__('This is a secure area of the application. Please confirm your password before continuing.')"
+        eyebrow="Secure area"
+        title="{{ __('Confirm your password') }}"
+        description="{{ __('One more step before you continue. This keeps your bookings and payouts yours.') }}"
     />
 
-    <!-- Session Status -->
-    <x-auth-session-status class="text-center" :status="session('status')" />
+    @if (session('status'))
+        <p class="auth-alert auth-alert-ok" role="status">{{ session('status') }}</p>
+    @endif
 
-    <form method="POST" wire:submit="confirmPassword" class="flex flex-col gap-6">
-        <!-- Password -->
-        <flux:input
+    <form method="POST" wire:submit="confirmPassword" class="flex flex-col gap-5">
+        <x-auth.field
             wire:model="password"
-            :label="__('Password')"
+            label="{{ __('Password') }}"
             type="password"
             required
-            autocomplete="new-password"
-            :placeholder="__('Password')"
-            viewable
+            autocomplete="current-password"
+            placeholder="••••••••"
         />
 
-        <flux:button variant="primary" type="submit" class="w-full">{{ __('Confirm') }}</flux:button>
+        <button type="submit" class="auth-btn" wire:loading.attr="disabled" wire:target="confirmPassword">
+            {{ __('Confirm and continue') }}
+            <x-line-icon name="arrow" :size="17" />
+        </button>
     </form>
 </div>

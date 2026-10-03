@@ -12,7 +12,7 @@ class ReviewPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return $user->can('reviews.view');
     }
 
     /**
@@ -20,7 +20,7 @@ class ReviewPolicy
      */
     public function view(User $user, Review $review): bool
     {
-        return false;
+        return $user->can('reviews.view');
     }
 
     /**
@@ -36,7 +36,7 @@ class ReviewPolicy
      */
     public function update(User $user, Review $review): bool
     {
-        return false;
+        return $user->can('reviews.moderate');
     }
 
     /**

@@ -2,8 +2,10 @@
 
 namespace App\Modules\Activities\Presentation\Livewire\Activity;
 
+use App\Modules\Activities\Application\Services\ActivitySessionBookingService;
 use App\Modules\Activities\Domain\Models\Activity;
-use Illuminate\Support\Facades\Auth;
+use App\Modules\Activities\Domain\Models\ActivitySession;
+use App\Modules\Media\Domain\Enums\MediaAssetStatus;
 use Livewire\Component;
 
 class ActivityShow extends Component
@@ -20,23 +22,36 @@ class ActivityShow extends Component
 
     public bool $hasMoreReviews = false;
 
-    public array $selectedSchedule = [];
+    public ?int $selectedSessionId = null;
 
-    // Wishlist support (optional)
-    // public bool $isWishlisted = false;
+    public int $participants = 1;
 
-    private int $reviewsPerPage = 5;
+    private const REVIEWS_PER_PAGE = 5;
 
-    public function mount($activity)
+    public function mount($activity): void
     {
-        $this->activity = Activity::with(['images', 'amenities'])
+        $this->activity = Activity::published()
+            ->with([
+                'images',
+                'amenities',
+                'category',
+                'destination',
+                'options',
+                'locations',
+                'itinerary',
+                'requirements',
+                'languages',
+                'mediaPosts' => fn ($query) => $query->publiclyPublished()
+                    ->latest('published_at')
+                    ->limit(6)
+                    ->with(['assets' => fn ($assets) => $assets->where('status', MediaAssetStatus::Ready->value)]),
+            ])
             ->where('slug', $activity->slug)
             ->firstOrFail();
 
         $this->loadInitialReviews();
         $this->loadAvailability();
 
-        // $this->setWishlistState();
     }
 
     /**
@@ -44,15 +59,15 @@ class ActivityShow extends Component
      */
     private function loadInitialReviews(): void
     {
-        $allReviews = $this->activity->reviews()->latest();
-        $this->hasMoreReviews = $allReviews->count() > $this->reviewsPerPage;
+        $allReviews = $this->activity->reviews()->where('status', 'approved')->latest();
+        $this->hasMoreReviews = $allReviews->count() > self::REVIEWS_PER_PAGE;
 
         $this->reviews = $allReviews
-            ->take($this->reviewsPerPage)
+            ->take(self::REVIEWS_PER_PAGE)
             ->get()
             ->map(fn ($r) => [
                 'id' => $r->id,
-                'user_name' => $r->user->name ?? 'Guest',
+                'user_name' => $r->guest?->user?->name ?? 'Guest',
                 'rating' => $r->rating,
                 'comment' => $r->comment,
                 'created_at' => $r->created_at->diffForHumans(),
@@ -68,13 +83,14 @@ class ActivityShow extends Component
         $this->reviewPage++;
 
         $moreReviews = $this->activity->reviews()
+            ->where('status', 'approved')
             ->latest()
-            ->skip(($this->reviewPage - 1) * $this->reviewsPerPage)
-            ->take($this->reviewsPerPage)
+            ->skip(($this->reviewPage - 1) * self::REVIEWS_PER_PAGE)
+            ->take(self::REVIEWS_PER_PAGE)
             ->get()
             ->map(fn ($r) => [
                 'id' => $r->id,
-                'user_name' => $r->user->name ?? 'Guest',
+                'user_name' => $r->guest?->user?->name ?? 'Guest',
                 'rating' => $r->rating,
                 'comment' => $r->comment,
                 'created_at' => $r->created_at->diffForHumans(),
@@ -84,7 +100,7 @@ class ActivityShow extends Component
         $this->reviews = array_merge($this->reviews, $moreReviews);
 
         // Check if more reviews are available
-        $totalReviews = $this->activity->reviews()->count();
+        $totalReviews = $this->activity->reviews()->where('status', 'approved')->count();
         $this->hasMoreReviews = count($this->reviews) < $totalReviews;
     }
 
@@ -93,64 +109,49 @@ class ActivityShow extends Component
      */
     private function loadAvailability(): void
     {
-        $this->availability = $this->activity->availabilities
+        $this->availability = $this->activity->sessions()
+            ->bookable()
+            ->where('starts_at', '>=', now()->addMinutes($this->activity->minimum_notice_minutes))
+            ->orderBy('starts_at')
+            ->limit(30)
+            ->get()
             ->map(fn ($a) => [
                 'id' => $a->id,
-                'start_date' => $a->start_date,
-                'end_date' => $a->end_date,
-                'slots' => $a->slots ?? 0,
-            ])
-            ->toArray() ?? [];
+                'starts_at' => $a->starts_at->toIso8601String(),
+                'ends_at' => $a->ends_at->toIso8601String(),
+                'timezone' => $a->timezone,
+                'slots' => $a->availableCapacity(),
+                'option_id' => $a->activity_option_id,
+            ])->toArray();
     }
 
     /**
      * Trigger booking modal.
      */
-    public function bookNow(?int $scheduleId = null)
+    public function bookNow()
     {
-        if (! $scheduleId) {
-            session()->flash('error', 'No schedule selected!');
-
-            return;
+        if (! auth()->check()) {
+            return redirect()->guest(route('login'));
         }
 
-        $schedule = $this->activity->availabilities->find($scheduleId);
+        $this->validate([
+            'selectedSessionId' => ['required', 'integer'],
+            'participants' => ['required', 'integer', 'min:1', 'max:1000'],
+        ]);
 
-        if (! $schedule) {
-            session()->flash('error', 'Invalid schedule selected!');
+        $schedule = ActivitySession::query()
+            ->where('activity_id', $this->activity->id)
+            ->findOrFail($this->selectedSessionId);
 
-            return;
-        }
+        $booking = app(ActivitySessionBookingService::class)->book(
+            $this->activity,
+            $schedule,
+            auth()->user(),
+            $this->participants
+        );
 
-        $this->selectedSchedule = $schedule->toArray();
-        session()->flash('success', "You selected schedule #{$scheduleId} for booking!");
+        return redirect()->route('booking-confirmation', $booking);
     }
-
-    /**
-     * Optional: Set wishlist state for the current user.
-     */
-    // private function setWishlistState(): void
-    // {
-    //     if (Auth::check()) {
-    //         $this->isWishlisted = Auth::user()
-    //             ->wishlistActivities()
-    //             ->where('activity_id', $this->activity->id)
-    //             ->exists();
-    //     }
-    // }
-
-    /**
-     * Optional: Toggle wishlist for authenticated user.
-     */
-    // public function toggleWishlist(): void
-    // {
-    //     if (!Auth::check()) {
-    //         $this->dispatch('authRequired');
-    //         return;
-    //     }
-    //     Auth::user()->wishlistActivities()->toggle($this->activity->id);
-    //     $this->isWishlisted = !$this->isWishlisted;
-    // }
 
     public function render()
     {

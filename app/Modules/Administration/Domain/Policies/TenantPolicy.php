@@ -18,22 +18,22 @@ class TenantPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->isPlatformAdmin();
+        return $user->can('tenants.view');
     }
 
     public function view(User $user, Tenant $tenant): bool
     {
-        return $user->isPlatformAdmin();
+        return $user->can('tenants.view');
     }
 
     public function create(User $user): bool
     {
-        return $user->isPlatformAdmin();
+        return false;
     }
 
     public function update(User $user, Tenant $tenant): bool
     {
-        return $user->isPlatformAdmin();
+        return false;
     }
 
     public function delete(User $user, Tenant $tenant): bool
@@ -51,22 +51,22 @@ class TenantPolicy
      */
     public function decide(User $user, Tenant $tenant): bool
     {
-        return $user->isPlatformAdmin() && $tenant->isActionable();
+        return $tenant->isActionable() && $user->can('tenants.review');
     }
 
     public function approve(User $user, Tenant $tenant): bool
     {
-        return $this->decide($user, $tenant);
+        return $tenant->isActionable() && $user->can('tenants.approve');
     }
 
     public function reject(User $user, Tenant $tenant): bool
     {
-        return $this->decide($user, $tenant);
+        return $tenant->isActionable() && $user->can('tenants.reject');
     }
 
     public function suspend(User $user, Tenant $tenant): bool
     {
-        return $this->decide($user, $tenant);
+        return $tenant->isActionable() && $user->can('tenants.suspend');
     }
 
     /**
@@ -74,6 +74,6 @@ class TenantPolicy
      */
     public function restore(User $user, Tenant $tenant): bool
     {
-        return $user->isPlatformAdmin();
+        return $user->can('tenants.restore');
     }
 }
