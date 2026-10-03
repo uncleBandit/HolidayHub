@@ -9,6 +9,9 @@ wire:poll.10s>
     <p class="text-lg text-gray-600 dark:text-gray-400">
         Manage your rooms, services, and bookings with ease.
     </p>
+    <a href="{{ route('media.provider.media') }}" class="mt-4 inline-flex rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700">
+        Manage videos and reels
+    </a>
 </div>
 
 {{-- Stats Panel --}}

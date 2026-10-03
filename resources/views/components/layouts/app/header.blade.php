@@ -71,6 +71,15 @@
                 >
                     {{ __('Stays') }}
                 </flux:navbar.item>
+                <flux:navbar.item
+                    icon="play"
+                    :href="route('media.reels')"
+                    :current="request()->routeIs('media.reels')"
+                    wire:navigate
+                    class="text-white font-medium transition duration-300 hover:text-white/80 transform hover:scale-105"
+                >
+                    {{ __('Reels') }}
+                </flux:navbar.item>
                 @auth
                     <flux:navbar.item
                         icon="calendar"
@@ -161,6 +170,9 @@
         <flux:navlist variant="outline" class="mt-4">
             <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                 {{ __('Discover') }}
+            </flux:navlist.item>
+            <flux:navlist.item icon="play" :href="route('media.reels')" :current="request()->routeIs('media.reels')" wire:navigate>
+                {{ __('Reels') }}
             </flux:navlist.item>
             @auth
                 <flux:navlist.item icon="calendar" :href="route('bookings')" :current="request()->routeIs('bookings')" wire:navigate>

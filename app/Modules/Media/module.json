@@ -1,7 +1,7 @@
 {
     "id": "media",
     "name": "Media",
-    "description": "Image and gallery storage with generated variants.",
+    "description": "Provider media posts, video assets, reels, and image galleries.",
     "enabled": true,
     "api_prefix": "api/v1",
     "morph_map": {

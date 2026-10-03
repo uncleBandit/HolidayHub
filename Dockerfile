@@ -40,33 +40,7 @@ RUN npm run build
 
 
 # ===========================================================================
-# Stage 2 — Composer dependencies
-# ===========================================================================
-FROM composer:2.8 AS vendor-base
-
-ENV COMPOSER_ALLOW_SUPERUSER=1 \
-    COMPOSER_NO_INTERACTION=1
-
-WORKDIR /app
-COPY composer.json composer.lock ./
-
-# Optional Composer credentials (not required for the current dependency set).
-RUN --mount=type=secret,id=flux_auth,required=false \
-    if [ -f /run/secrets/flux_auth ]; then \
-        mkdir -p /root/.composer && cp /run/secrets/flux_auth /root/.composer/auth.json; \
-    fi
-
-# --no-scripts: package discovery needs the full source tree, so it runs later.
-RUN --mount=type=cache,target=/root/.composer/cache \
-    composer install --prefer-dist --no-scripts --no-autoloader
-
-# Split the two dependency sets so the prod image carries no dev packages.
-RUN --mount=type=cache,target=/root/.composer/cache \
-    composer install --no-dev --prefer-dist --no-scripts --no-autoloader --optimize-autoloader
-
-
-# ===========================================================================
-# Stage 3 — Base PHP runtime (shared by dev and prod)
+# Stage 2 — Base PHP runtime (shared by dev and prod)
 # ===========================================================================
 # Debian (not Alpine) is deliberate: Alpine/musl does not provide pcntl, posix,
 # sysvmsg or shmop, which Laravel queue workers need for graceful timeouts and
@@ -118,6 +92,36 @@ CMD ["php-fpm"]
 
 
 # ===========================================================================
+# Stage 3 — Composer dependencies
+# ===========================================================================
+# Use the runtime PHP image so Composer checks the lock file against the same
+# extensions available to the application.
+FROM base AS vendor-base
+
+COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
+
+ENV COMPOSER_ALLOW_SUPERUSER=1 \
+    COMPOSER_NO_INTERACTION=1
+
+WORKDIR /app
+COPY composer.json composer.lock ./
+
+# Optional Composer credentials (not required for the current dependency set).
+RUN --mount=type=secret,id=flux_auth,required=false \
+    if [ -f /run/secrets/flux_auth ]; then \
+        mkdir -p /root/.composer && cp /run/secrets/flux_auth /root/.composer/auth.json; \
+    fi
+
+# --no-scripts: package discovery needs the full source tree, so it runs later.
+RUN --mount=type=cache,target=/root/.composer/cache \
+    composer install --prefer-dist --no-scripts --no-autoloader
+
+# Split the two dependency sets so the prod image carries no dev packages.
+RUN --mount=type=cache,target=/root/.composer/cache \
+    composer install --no-dev --prefer-dist --no-scripts --no-autoloader --optimize-autoloader
+
+
+# ===========================================================================
 # Stage 4 — Development image
 # ===========================================================================
 FROM base AS dev
@@ -127,6 +131,7 @@ COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
 
 COPY --from=vendor-base /app/vendor/            ./vendor/
 COPY . .
+COPY --from=assets /build/public/build/         ./public/build/
 
 RUN composer dump-autoload --optimize \
     && chmod +x docker/entrypoint.sh \
@@ -142,8 +147,11 @@ CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
 # ===========================================================================
 FROM base AS prod
 
+COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
+
 COPY --from=vendor-base /app/vendor/ ./vendor/
 COPY . .
+COPY --from=assets /build/public/build/ ./public/build/
 
 # package discovery + optimized autoloader (replaces the --no-scripts install)
 RUN composer dump-autoload --no-dev --classmap-authoritative --no-scripts \
@@ -151,6 +159,7 @@ RUN composer dump-autoload --no-dev --classmap-authoritative --no-scripts \
     && chmod +x docker/entrypoint.sh \
     && mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
+    && rm -f /usr/bin/composer \
     && rm -rf /root/.composer
 
 USER www-data

@@ -10,6 +10,7 @@ use App\Modules\Administration\Domain\Concerns\TracksVerification;
 use App\Modules\Administration\Domain\Contracts\VerifiableProfile;
 use App\Modules\Catalog\Domain\Models\Offer;
 use App\Modules\Identity\Domain\Models\User;
+use App\Modules\Media\Domain\Models\MediaPost;
 use App\Modules\Reviews\Domain\Models\Review;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -114,6 +115,11 @@ class Provider extends Model implements VerifiableProfile
     public function services()
     {
         return $this->hasMany(Service::class);
+    }
+
+    public function mediaPosts()
+    {
+        return $this->hasMany(MediaPost::class);
     }
 
     public function accommodations()

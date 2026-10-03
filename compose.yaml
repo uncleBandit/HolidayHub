@@ -110,7 +110,7 @@ services:
       - .:/var/www/html:cached
       - vendor:/var/www/html/vendor
       - node_modules:/var/www/html/node_modules
-      - public-build:/var/www/html/public/build
+      - public-assets:/var/www/html/public/build
     healthcheck:
       test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8000/up') ? 0 : 1);"]
       interval: 15s
@@ -135,7 +135,7 @@ services:
       - .:/var/www/html:cached
       - vendor:/var/www/html/vendor
       - node_modules:/var/www/html/node_modules
-      - public-build:/var/www/html/public/build
+      - public-assets:/var/www/html/public/build
 
   # Vite dev server with hot module replacement. Started on demand:
   #   docker compose --profile dev-assets up -d vite
@@ -160,4 +160,4 @@ volumes:
   redis-data:
   vendor:
   node_modules:
-  public-build:
+  public-assets:

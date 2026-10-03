@@ -54,6 +54,7 @@
         <nav class="space-x-4 flex items-center">
             <a href="{{ route('dashboard') }}" class="hover:text-tropical-blue transition-colors duration-200 font-semibold">Dashboard</a>
             <a href="{{ route('destination.index') }}" class="hover:text-tropical-blue transition-colors duration-200 font-semibold">Destinations</a>
+            <a href="{{ route('media.reels') }}" class="hover:text-tropical-blue transition-colors duration-200 font-semibold">Reels</a>
             <a href="{{ route('hotel.index') }}" class="hover:text-tropical-blue transition-colors duration-200 font-semibold">Hotels</a>
             <a href="{{ route('bedandbreakfast-index') }}" class="hover:text-tropical-blue transition-colors duration-200 font-semibold">B&B</a>
 
