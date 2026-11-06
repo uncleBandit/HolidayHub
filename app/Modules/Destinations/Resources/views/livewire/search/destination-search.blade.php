@@ -22,7 +22,7 @@
                     @if($showResults)
                         <div class="absolute top-full mt-4 w-full z-50 bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-800 overflow-hidden max-h-96 overflow-y-auto animate-fade-in-up">
                             @forelse($destinations as $destination)
-                                <a href="{{ route('destination.show', $destination->id) }}" class="flex items-center gap-6 p-4 md:p-6 hover:bg-gray-50 dark:hover:bg-gray-800 transition duration-200">
+                                <a href="{{ route('destination.show', $destination) }}" class="flex items-center gap-6 p-4 md:p-6 hover:bg-gray-50 dark:hover:bg-gray-800 transition duration-200">
                                     <img src="{{ $destination->image_url ?? 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2946&auto=format&fit=crop' }}"
                                          onerror="this.onerror=null;this.src='https://placehold.co/800x600/D4D4D8/FFFFFF?text=Destination';"
                                          class="w-16 h-16 rounded-xl object-cover shadow-sm"
@@ -61,7 +61,7 @@
     <!-- Destination Cards Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12 mt-12">
         @forelse($destinations as $destination)
-            <a href="{{ route('destination.show', $destination->id) }}" class="group relative rounded-3xl shadow-xl overflow-hidden cursor-pointer transform transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl">
+            <a href="{{ route('destination.show', $destination) }}" class="group relative rounded-3xl shadow-xl overflow-hidden cursor-pointer transform transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl">
                 <img src="{{ $destination->image_url ?? 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2946&auto=format&fit=crop' }}"
                      onerror="this.onerror=null;this.src='https://placehold.co/800x600/D4D4D8/FFFFFF?text=Destination';"
                      class="w-full h-72 object-cover transition-transform duration-500 group-hover:scale-110"

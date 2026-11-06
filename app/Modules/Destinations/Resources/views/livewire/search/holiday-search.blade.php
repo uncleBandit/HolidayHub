@@ -26,7 +26,7 @@ Search
 @if ($showResults && count($results) > 0)
     <div class="absolute mt-2 w-full max-w-5xl z-50 bg-white dark:bg-zinc-800 rounded-2xl shadow-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden max-h-60 overflow-y-auto">
         @foreach ($results as $destination)
-            <a href="{{ route('destination.show',  $destination->id) }}" class="flex items-center gap-4 p-4 hover:bg-indigo-50 dark:hover:bg-zinc-700 transition">
+            <a href="{{ route('destination.show', $destination) }}" class="flex items-center gap-4 p-4 hover:bg-indigo-50 dark:hover:bg-zinc-700 transition">
                 <img src="{{ $destination->thumbnail }}" alt="{{ $destination->name }}" class="w-12 h-12 rounded-lg object-cover">
                 <div class="flex flex-col">
                     <span class="font-semibold text-zinc-900 dark:text-white">{{ $destination->name }}</span>

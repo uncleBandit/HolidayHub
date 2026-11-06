@@ -20,6 +20,26 @@ class Destination extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /** Destination URLs use the slug: /destination/diani-beach. */
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+    /**
+     * Accept the slug, and a numeric id too so links shared before URLs
+     * switched to slugs keep working.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if ($field === null && ctype_digit((string) $value)) {
+            return $this->newQuery()->whereKey((int) $value)->first()
+                ?? parent::resolveRouteBinding($value, $field);
+        }
+
+        return parent::resolveRouteBinding($value, $field);
+    }
+
     /**
      * The attributes that are mass assignable.
      *
