@@ -2,7 +2,8 @@
 # ---------------------------------------------------------------------------
 # Targets:
 #   dev   → full source + dev dependencies, runs `artisan serve` (hot reload)
-#   prod  → optimised, no dev dependencies, php-fpm behind nginx
+#   prod  → optimised, no dev dependencies, php-fpm
+#   web   → Caddy serving public/ and proxying PHP to prod (HTTPS built in)
 #
 # Build (prod):
 #   docker build --target prod -t holidayhub/app:latest .
@@ -135,7 +136,7 @@ COPY --from=assets /build/public/build/         ./public/build/
 
 RUN composer dump-autoload --optimize \
     && chmod +x docker/entrypoint.sh \
-    && mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
+    && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
 EXPOSE 8000
@@ -154,10 +155,13 @@ COPY . .
 COPY --from=assets /build/public/build/ ./public/build/
 
 # package discovery + optimized autoloader (replaces the --no-scripts install)
-RUN composer dump-autoload --no-dev --classmap-authoritative --no-scripts \
+# Runtime directories first: artisan (run by the composer scripts) needs them,
+# and storage/ is not part of the build context.
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache storage/app/public \
+    && composer dump-autoload --no-dev --classmap-authoritative --no-scripts \
     && composer run-script post-autoload-dump --no-interaction --no-dev \
     && chmod +x docker/entrypoint.sh \
-    && mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
+    && ln -sfn ../storage/app/public public/storage \
     && chown -R www-data:www-data storage bootstrap/cache \
     && rm -f /usr/bin/composer \
     && rm -rf /root/.composer
@@ -165,3 +169,17 @@ RUN composer dump-autoload --no-dev --classmap-authoritative --no-scripts \
 USER www-data
 EXPOSE 9000
 CMD ["php-fpm"]
+
+
+# ===========================================================================
+# Stage 6 — Web server (Caddy)
+# ===========================================================================
+# Serves public/ (built assets, Filament assets, the public/storage link to
+# uploads) and passes PHP to the app container. The path must match the app
+# image's, because php-fpm resolves scripts from the root Caddy sends.
+FROM caddy:2.8-alpine AS web
+
+COPY deploy/caddy/Caddyfile /etc/caddy/Caddyfile
+COPY --from=prod /var/www/html/public /var/www/html/public
+
+EXPOSE 80 443 443/udp

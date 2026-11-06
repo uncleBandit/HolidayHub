@@ -1,0 +1,58 @@
+# HolidayHub web server (production).
+#
+# Caddy serves public/ directly, hands PHP to the app container (php-fpm on
+# app:9000) and gets and renews the HTTPS certificate for SITE_ADDRESS by
+# itself (Let's Encrypt). Certificates live in the caddy-data volume, so they
+# survive restarts and deploys.
+#
+#   SITE_ADDRESS  holidayhub.unclecanvas.com in production; ":80" for a plain
+#                 HTTP run on a laptop (no certificate).
+#   ACME_EMAIL    where Let's Encrypt sends expiry warnings.
+
+{
+	email {$ACME_EMAIL:admin@unclecanvas.com}
+}
+
+{$SITE_ADDRESS:localhost} {
+	# Must match the path inside the app image, because php-fpm resolves
+	# SCRIPT_FILENAME from it.
+	root * /var/www/html/public
+
+	encode zstd gzip
+
+	# Films go up to 200 MB (Media::UPLOAD_RULE); leave headroom.
+	request_body {
+		max_size 300MB
+	}
+
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+
+	# Vite and Filament assets have content-hashed or versioned names.
+	@immutable path /build/* /css/filament/* /js/filament/* /fonts/filament/*
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+	# Uploaded photos and films (public/storage -> storage/app/public).
+	@media path /storage/*
+	header @media Cache-Control "public, max-age=2592000"
+
+	# Never serve dotfiles (.env, .git, …) even if one slips into public/.
+	@dotfiles path */.*
+	respond @dotfiles 404
+
+	php_fastcgi app:9000 {
+		read_timeout 300s
+	}
+
+	file_server
+
+	log {
+		output stdout
+		format console
+	}
+}

@@ -114,7 +114,7 @@ elif [ "${1:-}" = "scheduler" ]; then
     bootstrap_vendor
     wait_for_db
     log "Starting scheduler…"
-    exec php artisan schedule:work "${@:-}"
+    exec php artisan schedule:work "$@"
 
 elif [ "${1:-}" = "migrate" ]; then
     shift
@@ -122,7 +122,7 @@ elif [ "${1:-}" = "migrate" ]; then
     bootstrap_vendor
     wait_for_db
     log "Running migrations…"
-    exec php artisan migrate --force --no-interaction "${@:-}"
+    exec php artisan migrate --force --no-interaction "$@"
 
 elif [ "${1:-}" = "test" ]; then
     shift
@@ -130,7 +130,7 @@ elif [ "${1:-}" = "test" ]; then
     bootstrap_vendor
     wait_for_db
     log "Running test suite…"
-    exec php artisan test "${@:-}"
+    exec php artisan test "$@"
 
 else
     fix_permissions

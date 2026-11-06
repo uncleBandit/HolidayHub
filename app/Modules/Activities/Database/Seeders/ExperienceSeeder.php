@@ -29,7 +29,7 @@ class ExperienceSeeder extends Seeder
     /**
      * Experience categories, in browse order.
      */
-    private const CATEGORIES = [
+    public const CATEGORIES = [
         'safari-wildlife' => ['name' => 'Safari & Wildlife', 'sort_order' => 1],
         'ocean-water' => ['name' => 'Ocean & Water', 'sort_order' => 2],
         'adventure-trekking' => ['name' => 'Adventure & Trekking', 'sort_order' => 3],

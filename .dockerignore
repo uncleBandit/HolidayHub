@@ -50,3 +50,11 @@ docs
 storage/framework/testing
 storage/*.key
 storage/pail
+
+# Runtime state from local runs — uploads, caches, sessions, logs. The image
+# recreates the empty directories, and production keeps uploads on a volume.
+storage/app/*
+storage/framework/*
+storage/logs/*
+bootstrap/cache/*.php
+public/storage
