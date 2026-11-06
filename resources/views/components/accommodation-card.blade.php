@@ -1,104 +1,71 @@
 @props(['accommodation'])
 
+{{-- A published stay (the Accommodation wrapper or the hotel / villa / B&B behind
+     it) shown as a discovery reel card: its own photograph, house footage on
+     hover, price per night and rating. Renders nothing when the stay has no
+     detail page to link to. --}}
 @php
-    $bookable = $accommodation->bookable;
-    $route = '';
+    $isWrapper = $accommodation instanceof \App\Modules\Accommodation\Domain\Models\Accommodation;
+    $bookable = $isWrapper ? $accommodation->bookable : $accommodation;
+    $stay = $isWrapper ? $accommodation : null;
 
-    // Determine the correct route based on the model instance
-    if ($bookable instanceof \App\Modules\Accommodation\Domain\Models\Hotel) {
-        $route = route('hotel-show', $bookable->slug);
-    } elseif ($bookable instanceof \App\Modules\Accommodation\Domain\Models\BedAndBreakfast) {
-        $route = route('bedandbreakfast.show', $bookable->slug);
-    } elseif ($bookable instanceof \App\Modules\Accommodation\Domain\Models\Villa) {
-        $route = route('villa.show', $bookable->slug);
-    }
+    [$route, $type, $label] = match (true) {
+        $bookable instanceof \App\Modules\Accommodation\Domain\Models\Hotel => [route('hotel-show', $bookable->slug), 'hotel', 'Hotel'],
+        $bookable instanceof \App\Modules\Accommodation\Domain\Models\BedAndBreakfast => [route('bedandbreakfast.show', $bookable->slug), 'bed_and_breakfast', 'B&B'],
+        $bookable instanceof \App\Modules\Accommodation\Domain\Models\Villa => [route('villa.show', $bookable->slug), 'villa', 'Villa'],
+        default => [null, null, null],
+    };
 
-    // Determine the type, color, and icon for the badge
-    $badgeText = '';
-    $badgeClass = '';
-    if ($bookable instanceof \App\Modules\Accommodation\Domain\Models\Hotel) {
-        $badgeText = "Hotel";
-        $badgeClass = 'bg-yellow-500';
-    } elseif ($bookable instanceof \App\Modules\Accommodation\Domain\Models\BedAndBreakfast) {
-        $badgeText = "B&B";
-        $badgeClass = 'bg-indigo-500';
-    } elseif ($bookable instanceof \App\Modules\Accommodation\Domain\Models\Villa) {
-        $badgeText = "Villa";
-        $badgeClass = 'bg-lime-500';
+    $card = null;
+
+    if ($route) {
+        $image = collect([
+            $bookable->getAttribute('cover_image'),
+            (array) ($bookable->getAttribute('gallery') ?? []),
+            $stay?->getAttribute('cover_image'),
+        ])->flatten()->first(fn ($candidate) => is_string($candidate)
+            && filled($candidate)
+            && ! \Illuminate\Support\Str::contains($candidate, ['placeholder', 'placehold', 'picsum', 'lorempixel']));
+
+        if ($image && ! \Illuminate\Support\Str::startsWith($image, ['http://', 'https://', '/'])) {
+            $image = asset('storage/'.ltrim($image, '/'));
+        }
+
+        $clips = (array) config('stays.reels.'.$type, []);
+        $clip = $clips === [] ? null : config('stays.clips.'.$clips[crc32((string) $bookable->getKey()) % count($clips)]);
+
+        $image = $image ?: ($clip['poster'] ?? null) ?: match ($type) {
+            'villa' => 'https://images.unsplash.com/photo-1561501900-3701fa6a0864?auto=format&fit=crop&w=1000&q=84',
+            'hotel' => 'https://images.unsplash.com/photo-1574236170880-fbbca132d83d?auto=format&fit=crop&w=1000&q=84',
+            default => 'https://images.unsplash.com/photo-1708119063168-4785d1359824?auto=format&fit=crop&w=1000&q=84',
+        };
+
+        $rating = (float) ($stay?->avg_rating ?: ($bookable->getAttribute('avg_rating') ?: 0));
+        $reviews = (int) ($stay?->reviews_count ?? $bookable->getAttribute('reviews_count') ?? 0);
+        if ($reviews === 0 && $bookable->relationLoaded('reviews')) {
+            $reviews = $bookable->reviews->count();
+        }
+
+        $card = [
+            'name' => $bookable->name ?: ($stay?->name ?? 'Stay'),
+            'alt' => $bookable->name ?: ($stay?->name ?? 'Stay'),
+            'type_label' => $label,
+            'place' => collect([$bookable->getAttribute('city') ?: $stay?->city, $bookable->getAttribute('country') ?: $stay?->country])->filter()->implode(', ') ?: ($stay?->destination?->name ?? 'Kenya'),
+            'destination' => null,
+            'rating' => $rating,
+            'reviews' => $reviews,
+            'price' => (float) ($bookable->getAttribute('price_per_night') ?? $bookable->getAttribute('avg_price_per_night') ?? $stay?->avg_price_per_night ?? 0),
+            'currency' => 'KSh',
+            'guests' => (int) ($bookable->getAttribute('max_guests') ?? 0),
+            'image' => $image,
+            'video' => $clip['video'] ?? null,
+            'poster' => $clip['poster'] ?? null,
+            'featured' => (bool) ($bookable->getAttribute('is_featured') ?? $stay?->is_featured),
+            'url' => $route,
+        ];
     }
 @endphp
 
-{{-- Only render the card if a valid route was found --}}
-@if ($route)
-    <a href="{{ $route }}"
-       class="block relative rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 ease-in-out transform hover:-translate-y-2 group">
-
-        {{-- Main Image with Subtle Gradient Overlay and Animation --}}
-        <div class="relative w-full h-72 lg:h-80 overflow-hidden">
-            <img
-                src="{{ $bookable->main_image ?? 'https://via.placeholder.com/600x400' }}"
-                alt="{{ $bookable->name }}"
-                class="w-full h-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-110"
-            >
-            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-
-            {{-- Price Badge on the bottom left of the image --}}
-            <div class="absolute bottom-4 left-4">
-                <span class="text-3xl font-extrabold text-white drop-shadow-lg">
-                    ${{ number_format($bookable->base_price, 0) }}
-                </span>
-                <span class="text-lg font-medium text-white/90"> / night</span>
-            </div>
-
-            {{-- Top Right Badge for Accommodation Type --}}
-            @if ($badgeText)
-                <span class="absolute top-4 right-4 {{ $badgeClass }} text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
-                    {{ $badgeText }}
-                </span>
-            @endif
-        </div>
-
-        {{-- Content Section with Modern Layout and Typography --}}
-        <div class="p-6 bg-white">
-            <h3 class="text-2xl font-bold text-gray-900 leading-tight mb-1 group-hover:text-indigo-600 transition-colors duration-300">
-                {{ $bookable->name }}
-            </h3>
-            <p class="text-gray-500 text-sm font-medium mb-3">
-                <i class="fas fa-map-marker-alt mr-1"></i> {{ $bookable->city }}, {{ $bookable->country }}
-            </p>
-
-            {{-- Rating and Details Row --}}
-            <div class="flex items-center justify-between">
-                <div class="flex items-center text-yellow-500 font-bold text-base">
-                    <i class="fas fa-star mr-1"></i>
-                    {{ number_format($bookable->average_rating ?? 0, 1) }}
-                    <span class="text-gray-500 text-xs font-medium ml-1">
-                        ({{ $bookable->reviews->count() }} reviews)
-                    </span>
-                </div>
-
-                {{-- Dynamic Details based on Accommodation Type --}}
-                <div class="flex items-center space-x-3 text-sm text-gray-600 font-medium">
-                    @if ($bookable instanceof \App\Modules\Accommodation\Domain\Models\Villa)
-                        <span class="flex items-center">
-                            <i class="fas fa-bed mr-1.5 text-lg"></i> {{ $bookable->bedrooms }}
-                        </span>
-                    @endif
-                    <span class="flex items-center">
-                        <i class="fas fa-users mr-1.5 text-lg"></i> {{ $bookable->max_guests }}
-                    </span>
-                </div>
-            </div>
-
-            {{-- Animated "View Details" Call to Action at the bottom --}}
-            <div class="mt-6">
-                <span class="text-indigo-600 font-semibold text-sm inline-flex items-center">
-                    Explore Details
-                    <span class="ml-2 transform transition-transform duration-300 group-hover:translate-x-1">
-                        →
-                    </span>
-                </span>
-            </div>
-        </div>
-    </a>
+@if ($card)
+    <x-stay.reel-card :card="$card" />
 @endif

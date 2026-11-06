@@ -20,6 +20,7 @@ class ViewUser extends ViewRecord
     {
         return [
             EditAction::make(),
+            ...UserResource::accountActions(),
         ];
     }
 }

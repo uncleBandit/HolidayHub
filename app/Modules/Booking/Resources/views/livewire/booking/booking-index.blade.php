@@ -1,159 +1,226 @@
+@php
+    use App\Modules\Booking\Presentation\Support\TripPresenter;
+
+    $trips = $bookings->getCollection()->map(fn ($booking) => ['booking' => $booking] + TripPresenter::make($booking));
+    $groups = collect([
+        'upcoming' => ['label' => 'Upcoming', 'line' => 'Packed, planned and counting down.'],
+        'past' => ['label' => 'Past trips', 'line' => 'Places you have already fallen for.'],
+        'cancelled' => ['label' => 'Cancelled', 'line' => 'Plans that changed along the way.'],
+    ])->map(fn ($group, $key) => $group + ['trips' => $trips->where('bucket', $key)])
+      ->filter(fn ($group) => $group['trips']->isNotEmpty());
+
+    $statuses = ['' => 'All trips', 'pending' => 'Pending', 'confirmed' => 'Confirmed', 'completed' => 'Completed', 'cancelled' => 'Cancelled'];
+    $sorts = ['check_in_date' => 'Trip date', 'status' => 'Status', 'created_at' => 'Booked on'];
+@endphp
+
 <div>
-<div class="bg-gray-100 min-h-screen py-10 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-7xl mx-auto">
+    {{-- ────────────────────────────  Header  ───────────────────────────── --}}
+    <section class="dv-section dv-foryou-head pb-8 md:pb-10">
+        <div class="relative grid items-end gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+            <div>
+                <p class="dv-eyebrow dv-magic-in" style="--i: 0">My trips</p>
+                <h1 class="dv-magic-in mt-3 font-dm-serif text-[clamp(2.5rem,6vw,5rem)] leading-[0.95] tracking-[-0.03em] text-forest" style="--i: 1">
+                    Every escape,<br><span class="italic text-clay">in one place.</span>
+                </h1>
+                <p class="dv-magic-in mt-5 max-w-[34rem] text-[14px] leading-relaxed text-muted" style="--i: 2">
+                    Manage your upcoming adventures and look back on past trips — tickets, dates and totals, all together.
+                </p>
+            </div>
 
-        {{-- Header & Title --}}
-        <div class="text-center mb-12">
-            <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight tracking-tight">
-                My Bookings ✈️
-            </h1>
-            <p class="mt-3 text-lg text-gray-500">
-                Manage your upcoming adventures and past trips.
-            </p>
-        </div>
-
-        {{-- Search & Filters --}}
-        <div class="bg-white rounded-3xl p-6 shadow-xl mb-8 border border-gray-200">
-            <div class="flex flex-col md:flex-row items-center gap-4">
-                {{-- Search Input --}}
-                <div class="flex-grow w-full">
-                    <label for="search" class="sr-only">Search bookings</label>
-                    <div class="relative rounded-full shadow-sm">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <input
-                            wire:model.live.debounce.300ms="search"
-                            id="search"
-                            type="text"
-                            placeholder="Search by name or code..."
-                            class="block w-full rounded-full border-gray-300 pl-12 pr-4 py-3 focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out sm:text-sm"
-                        >
-                    </div>
-                </div>
-
-                {{-- Status Filter --}}
-                <div class="w-full md:w-auto flex-shrink-0">
-                    <label for="status" class="sr-only">Filter by status</label>
-                    <select
-                        wire:model.live="status"
-                        id="status"
-                        class="block w-full rounded-full border-gray-300 py-3 pl-4 pr-10 text-gray-700 shadow-sm focus:border-blue-500 focus:ring-blue-500 transition duration-150 ease-in-out sm:text-sm"
+            <div class="dv-magic-in w-full lg:max-w-[26rem] lg:justify-self-end" style="--i: 3">
+                <label for="search" class="sr-only">Search bookings</label>
+                <div class="relative">
+                    <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-muted">
+                        <x-line-icon name="search" :size="18" />
+                    </span>
+                    <input
+                        wire:model.live.debounce.300ms="search"
+                        id="search"
+                        type="text"
+                        placeholder="Search by name or code…"
+                        class="auth-input !h-[3.4rem] !rounded-full !bg-white pl-12 pr-5 shadow-[0_14px_40px_rgba(20,36,28,0.08)]"
                     >
-                        <option value="">All Statuses</option>
-                        <option value="pending">Pending</option>
-                        <option value="confirmed">Confirmed</option>
-                        <option value="cancelled">Cancelled</option>
-                        <option value="completed">Completed</option>
-                    </select>
                 </div>
             </div>
         </div>
+    </section>
 
-        {{-- Booking List --}}
-        <div class="bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden">
-            @if($bookings->isEmpty())
-                <div class="py-20 text-center text-gray-500">
-                    <svg class="h-16 w-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <p class="text-xl font-medium">No bookings found</p>
-                    <p class="mt-2 text-sm text-gray-400">Try adjusting your search or filters.</p>
-                </div>
-            @else
-                <div class="min-w-full overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    Trip Details
-                                </th>
-                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    Dates
-                                </th>
-                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    <button wire:click="sortBy('status')" class="flex items-center space-x-1">
-                                        <span>Status</span>
-                                        <svg class="h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                            @if ($sortField === 'status' && $sortDirection === 'asc')
-                                                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
-                                            @else
-                                                <path d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"/>
+    {{-- ─────────────────────────  Sticky filters  ──────────────────────── --}}
+    <div class="dv-foryou-filters">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div class="dv-category-row" role="tablist" aria-label="Filter by status" data-no-reveal>
+                @foreach ($statuses as $value => $label)
+                    <button
+                        type="button"
+                        role="tab"
+                        wire:click="$set('status', '{{ $value }}')"
+                        @class(['dv-category py-3', 'dv-category-active' => $status === $value])
+                        aria-selected="{{ $status === $value ? 'true' : 'false' }}"
+                    >{{ $label }}</button>
+                @endforeach
+            </div>
+
+            <div class="-mx-1 flex items-center gap-1 overflow-x-auto px-1 no-scrollbar" aria-label="Sort trips" data-no-reveal>
+                <span class="mr-1 shrink-0 text-[11px] font-semibold text-muted">Sort</span>
+                @foreach ($sorts as $field => $label)
+                    @php $active = $sortField === $field; @endphp
+                    <button
+                        type="button"
+                        wire:click="sortBy('{{ $field }}')"
+                        @class([
+                            'inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-2 text-[11px] font-extrabold transition-colors',
+                            'bg-forest text-white' => $active,
+                            'text-ink hover:bg-sand' => ! $active,
+                        ])
+                        aria-pressed="{{ $active ? 'true' : 'false' }}"
+                    >
+                        {{ $label }}
+                        @if ($active)
+                            <span @class(['inline-flex transition-transform', 'rotate-180' => $sortDirection === 'asc'])>
+                                <x-line-icon name="chevron-down" :size="13" :stroke="2.4" />
+                            </span>
+                        @endif
+                    </button>
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+    {{-- ───────────────────────────  Trips  ─────────────────────────────── --}}
+    <section class="dv-section pt-8 md:pt-10" wire:loading.class="opacity-60" wire:target="search, status, sortBy, gotoPage, nextPage, previousPage">
+        @if ($bookings->isEmpty())
+            <div class="dv-panel dv-panel-shadow mx-auto max-w-[40rem] px-6 py-14 text-center sm:px-12">
+                <span class="mx-auto grid h-16 w-16 place-items-center rounded-full bg-cream text-clay shadow-[0_0_0_9px_rgba(216,95,60,0.08)]">
+                    <x-line-icon name="ticket" :size="28" />
+                </span>
+                @if (filled($search) || filled($status))
+                    <p class="mt-6 font-dm-serif text-[1.9rem] leading-tight text-forest">No bookings found</p>
+                    <p class="mx-auto mt-2 max-w-sm text-[13px] leading-relaxed text-muted">Try adjusting your search or filters.</p>
+                    <button type="button" class="dv-btn dv-btn-ghost mt-7" wire:click="$set('search', ''); $set('status', '')">
+                        Clear search and filters
+                    </button>
+                @else
+                    <p class="mt-6 font-dm-serif text-[1.9rem] leading-tight text-forest">No trips booked yet</p>
+                    <p class="mx-auto mt-2 max-w-sm text-[13px] leading-relaxed text-muted">
+                        When you book a stay or an experience, its ticket lands here — dates, guests and confirmation code included.
+                    </p>
+                    <div class="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+                        <a href="{{ route('stays.index') }}" class="dv-btn dv-btn-primary">Find a stay <x-line-icon name="arrow" :size="16" /></a>
+                        <a href="{{ route('experiences.index') }}" class="dv-btn dv-btn-ghost">Browse experiences</a>
+                    </div>
+                @endif
+            </div>
+        @else
+            <div class="space-y-14">
+                @foreach ($groups as $key => $group)
+                    <div wire:key="trip-group-{{ $key }}">
+                        <div class="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
+                            <div>
+                                <h2 class="font-dm-serif text-[clamp(1.6rem,2.6vw,2.3rem)] leading-tight text-forest">{{ $group['label'] }}</h2>
+                                <p class="mt-1 text-[13px] text-muted">{{ $group['line'] }}</p>
+                            </div>
+                            <span class="text-[11px] font-extrabold uppercase tracking-[0.12em] text-muted">
+                                {{ $group['trips']->count() }} {{ Str::plural('trip', $group['trips']->count()) }}
+                            </span>
+                        </div>
+
+                        <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                            @foreach ($group['trips'] as $trip)
+                                @php $booking = $trip['booking']; @endphp
+                                <article wire:key="trip-{{ $booking->id }}" @class([
+                                    'group relative flex flex-col overflow-hidden rounded-[1.2rem] border border-line bg-white shadow-[0_18px_50px_rgba(20,36,28,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_26px_70px_rgba(20,36,28,0.14)]',
+                                    'opacity-80 hover:opacity-100' => $trip['bucket'] === 'cancelled',
+                                ])>
+                                    <a href="{{ route('bookings-show', $booking) }}" class="flex flex-1 flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-forest">
+                                        <div class="relative h-52 overflow-hidden bg-sand">
+                                            <img
+                                                src="{{ $trip['image'] }}"
+                                                alt="{{ $trip['name'] }}"
+                                                loading="lazy"
+                                                @class([
+                                                    'h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]',
+                                                    'grayscale-[60%]' => $trip['bucket'] === 'cancelled',
+                                                ])
+                                            >
+                                            <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(10,20,16,0.55)] via-transparent to-transparent"></div>
+
+                                            <span class="absolute left-3.5 top-3.5 inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-extrabold {{ $trip['status_class'] }}">
+                                                {{ $trip['status_label'] }}
+                                            </span>
+
+                                            @if ($trip['bucket'] === 'upcoming' && $trip['countdown'])
+                                                <span class="absolute right-3.5 top-3.5 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/35 px-2.5 py-1 text-[10px] font-extrabold text-white backdrop-blur-md">
+                                                    <x-line-icon name="clock" :size="12" />
+                                                    {{ $trip['countdown'] === 1 ? 'Tomorrow' : 'In '.$trip['countdown'].' days' }}
+                                                </span>
                                             @endif
-                                        </svg>
-                                    </button>
-                                </th>
-                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    <button wire:click="sortBy('created_at')" class="flex items-center space-x-1">
-                                        <span>Booked On</span>
-                                        <svg class="h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                            @if ($sortField === 'created_at' && $sortDirection === 'asc')
-                                                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
-                                            @else
-                                                <path d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"/>
-                                            @endif
-                                        </svg>
-                                    </button>
-                                </th>
-                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    Actions
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach($bookings as $booking)
-                                <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="flex items-center">
-                                            <div class="flex-shrink-0 h-16 w-16">
-                                                <img class="h-16 w-16 rounded-lg object-cover" src="{{ $booking->bookable->cober_image_url ?? asset('images/placeholder.jpg') }}" alt="">
+
+                                            <p class="absolute bottom-3.5 left-4 right-4 truncate text-[10px] font-extrabold uppercase tracking-[0.12em] text-white/90">
+                                                {{ $trip['kind'] }}@if ($trip['place']) · {{ $trip['place'] }}@endif
+                                            </p>
+                                        </div>
+
+                                        <div class="flex-1 p-5">
+                                            <p class="font-dm-serif text-[1.4rem] leading-tight text-ink">{{ $trip['name'] }}</p>
+
+                                            <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-[12px]">
+                                                <div class="col-span-2 flex items-start gap-2">
+                                                    <span class="mt-0.5 text-clay"><x-line-icon name="calendar" :size="15" /></span>
+                                                    <div>
+                                                        <dt class="sr-only">Dates</dt>
+                                                        <dd class="font-bold text-ink">
+                                                            {{ \Carbon\Carbon::parse($booking->check_in_date)->format('M d, Y') }} –
+                                                            {{ \Carbon\Carbon::parse($booking->check_out_date)->format('M d, Y') }}
+                                                        </dd>
+                                                        <dd class="text-[11px] text-muted">
+                                                            {{ \Carbon\Carbon::parse($booking->check_in_date)->diffInDays(\Carbon\Carbon::parse($booking->check_out_date)) }} nights
+                                                        </dd>
+                                                    </div>
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-clay"><x-line-icon name="users" :size="15" /></span>
+                                                    <dt class="sr-only">Guests</dt>
+                                                    <dd class="font-semibold text-ink">{{ $trip['guests_label'] }}</dd>
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-clay"><x-line-icon name="bookmark" :size="15" /></span>
+                                                    <dt class="sr-only">Booked on</dt>
+                                                    <dd class="truncate text-muted">Booked {{ $booking->created_at->format('M d, Y') }}</dd>
+                                                </div>
+                                            </dl>
+                                        </div>
+
+                                        <div class="relative flex items-center justify-between gap-3 border-t border-dashed border-line bg-cream px-5 py-3.5">
+                                            {{-- Ticket notches --}}
+                                            <span class="absolute -left-2.5 -top-2.5 h-5 w-5 rounded-full border border-line bg-cream" aria-hidden="true"></span>
+                                            <span class="absolute -right-2.5 -top-2.5 h-5 w-5 rounded-full border border-line bg-cream" aria-hidden="true"></span>
+
+                                            <div class="min-w-0">
+                                                <p class="text-[9px] font-extrabold uppercase tracking-[0.12em] text-clay">Ref</p>
+                                                <p class="truncate font-mono text-[12px] font-bold text-forest">#{{ $booking->confirmation_code }}</p>
                                             </div>
-                                            <div class="ml-4">
-                                                <div class="text-base font-semibold text-gray-900 truncate max-w-xs">{{ $booking->bookable->name ?? 'Trip' }}</div>
-                                                <div class="text-sm text-gray-500 mt-1">Ref: #{{ $booking->confirmation_code }}</div>
+                                            <div class="text-right">
+                                                <p class="text-[9px] font-extrabold uppercase tracking-[0.12em] text-clay">Total</p>
+                                                <p class="text-[13px] font-extrabold text-forest">{{ $trip['total_label'] }}</p>
                                             </div>
+                                            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-forest text-white transition-transform duration-200 group-hover:translate-x-1">
+                                                <x-line-icon name="arrow" :size="16" />
+                                                <span class="sr-only">View details</span>
+                                            </span>
                                         </div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                        <div class="font-medium">
-                                            {{ \Carbon\Carbon::parse($booking->check_in_date)->format('M d, Y') }} -
-                                            {{ \Carbon\Carbon::parse($booking->check_out_date)->format('M d, Y') }}
-                                        </div>
-                                        <div class="text-xs text-gray-400 mt-1">
-                                            {{ \Carbon\Carbon::parse($booking->check_in_date)->diffInDays(\Carbon\Carbon::parse($booking->check_out_date)) }} nights
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        @php
-                                            $statusColors = [
-                                                'pending' => 'bg-yellow-100 text-yellow-800',
-                                                'confirmed' => 'bg-green-100 text-green-800',
-                                                'cancelled' => 'bg-red-100 text-red-800',
-                                                'completed' => 'bg-blue-100 text-blue-800',
-                                            ];
-                                        @endphp
-                                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusColors[$booking->status] ?? 'bg-gray-100 text-gray-800' }}">
-                                            {{ ucfirst($booking->status) }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {{ $booking->created_at->format('M d, Y') }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <a href="{{ route('bookings-show', $booking) }}" class="text-blue-600 hover:text-blue-900 transition duration-150 ease-in-out font-semibold">View Details</a>                                    </td>
-                                </tr>
+                                    </a>
+                                </article>
                             @endforeach
-                        </tbody>
-                    </table>
-                </div>
-                {{-- Pagination --}}
-                <div class="px-6 py-4">
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            @if ($bookings->hasPages())
+                <div class="mt-12 rounded-[1rem] border border-line bg-white px-4 py-3">
                     {{ $bookings->links() }}
                 </div>
             @endif
-        </div>
-    </div>
-</div>
+        @endif
+    </section>
 </div>

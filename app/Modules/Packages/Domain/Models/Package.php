@@ -2,6 +2,8 @@
 
 namespace App\Modules\Packages\Domain\Models;
 
+use App\Modules\Accommodation\Domain\Models\Concerns\HasScenes;
+
 use App\Modules\Agents\Domain\Models\Agent;
 use App\Modules\Availability\Domain\Models\Availability;
 use App\Modules\Booking\Domain\Models\Booking;
@@ -23,7 +25,7 @@ use Illuminate\Support\Carbon;
 
 class Package extends Model implements AvailabilityAware, Bookable, Pricable
 {
-    use HasFactory, HasImages, SoftDeletes;
+    use HasFactory, HasImages, HasScenes, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -55,7 +57,20 @@ class Package extends Model implements AvailabilityAware, Bookable, Pricable
         'available_from',
         'available_to',
         'meta_data',
+        'status',
+        'submitted_at',
+        'published_at',
+        'rejection_reason',
+        'setup_step',
+        'cover_video',
+        'markup_type',
+        'markup_value',
+        'min_guests',
+        'max_guests',
     ];
+
+    /** Lifecycle, like listings: built as a draft, reviewed, then live. */
+    public const STATUSES = ['draft', 'pending_review', 'published', 'rejected', 'suspended'];
 
     /**
      * The attributes that should be cast.
@@ -74,6 +89,11 @@ class Package extends Model implements AvailabilityAware, Bookable, Pricable
         'meta_data' => 'array',
         'is_featured' => 'boolean',
         'active' => 'boolean',
+        'submitted_at' => 'datetime',
+        'published_at' => 'datetime',
+        'markup_value' => 'float',
+        'min_guests' => 'integer',
+        'max_guests' => 'integer',
     ];
 
     /** Relationships */
@@ -81,6 +101,58 @@ class Package extends Model implements AvailabilityAware, Bookable, Pricable
     /**
      * A package belongs to a travel agent.
      */
+    /** The journey, day by day. */
+    public function components(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PackageComponent::class)->orderBy('day')->orderBy('sequence');
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->status === 'published' && $this->active;
+    }
+
+    /** Live packages guests can see and book. */
+    public function scopePublished($query)
+    {
+        return $query->where('status', 'published')->where('active', true);
+    }
+
+    /**
+     * Packages whose journey includes a listing. A hotel matches through any
+     * of its room types; villas, B&Bs and experiences match directly.
+     */
+    public function scopeIncluding($query, Model $listing)
+    {
+        return $query->whereHas('components', function ($components) use ($listing) {
+            if ($listing instanceof \App\Modules\Accommodation\Domain\Models\Hotel) {
+                $components->where('componentable_type', 'room_type')
+                    ->whereIn('componentable_id', \App\Modules\Accommodation\Domain\Models\RoomType::query()->where('hotel_id', $listing->getKey())->select('id'));
+            } else {
+                $components->where('componentable_type', $listing->getMorphClass())
+                    ->where('componentable_id', $listing->getKey());
+            }
+        });
+    }
+
+    /** Stored path or URL of the cover photo, as a URL (null when none). */
+    public function coverUrl(): ?string
+    {
+        return \App\Shared\Support\Media::url($this->cover_image);
+    }
+
+    /** The cover film as a URL, if the agent added one. */
+    public function coverFilmUrl(): ?string
+    {
+        return \App\Shared\Support\Media::url($this->cover_video);
+    }
+
+    /** Destination ids beyond the main one ("Zanzibar and the Serengeti"). */
+    public function extraDestinationIds(): array
+    {
+        return array_values(array_map('intval', (array) (($this->meta_data ?? [])['destinations'] ?? [])));
+    }
+
     public function agent(): BelongsTo
     {
         return $this->belongsTo(Agent::class);
@@ -157,7 +229,7 @@ class Package extends Model implements AvailabilityAware, Bookable, Pricable
      */
     public function getDescription(): string
     {
-        return $this->description;
+        return (string) ($this->short_description ?: $this->full_description);
     }
 
     /**
@@ -165,8 +237,7 @@ class Package extends Model implements AvailabilityAware, Bookable, Pricable
      */
     public function getImages(): array
     {
-        // For a package with a single `image_url` attribute
-        return $this->image_url ? [$this->image_url] : [];
+        return array_values(array_filter(array_merge([$this->cover_image], (array) ($this->gallery ?? []))));
     }
 
     /**
@@ -174,7 +245,8 @@ class Package extends Model implements AvailabilityAware, Bookable, Pricable
      */
     public function getBasePrice(): float
     {
-        return (float) $this->price;
+        // The cached "from" price of a live quote; see PackagePricing.
+        return (float) $this->base_price;
     }
 
     /**
@@ -223,7 +295,7 @@ class Package extends Model implements AvailabilityAware, Bookable, Pricable
      */
     public function getIncludedGuests(): int
     {
-        return $this->max_guests;
+        return (int) ($this->max_guests ?: 2);
     }
 
     /**
@@ -231,7 +303,7 @@ class Package extends Model implements AvailabilityAware, Bookable, Pricable
      */
     public function getCurrency(): string
     {
-        return $this->currency;
+        return $this->currency ?: 'USD';
     }
 
     /**
@@ -239,7 +311,7 @@ class Package extends Model implements AvailabilityAware, Bookable, Pricable
      */
     public function getDefaultMaxGuests(): int
     {
-        return $this->max_guests;
+        return (int) ($this->max_guests ?: 2);
     }
 
     public function destination(): BelongsTo
@@ -268,7 +340,7 @@ class Package extends Model implements AvailabilityAware, Bookable, Pricable
             // Add guest surcharges
             if ($guests > $this->max_guests) {
                 $extraGuests = $guests - $this->max_guests;
-                $dayPrice += $extraGuests * ($this->price * 0.1); // 10% surcharge per extra guest
+                $dayPrice += $extraGuests * ((float) $this->base_price * 0.1); // 10% surcharge per extra guest
             }
 
             $total += $dayPrice;
@@ -280,23 +352,12 @@ class Package extends Model implements AvailabilityAware, Bookable, Pricable
 
     public function getMainImageAttribute(): ?string
     {
-        logger()->info('Raw cover_image: '.$this->cover_image);
         if (! $this->cover_image) {
             return null;
         }
 
         // If already a full URL, return as-is
-        if (str_starts_with($this->cover_image, 'http')) {
-            logger()->info('Returning raw full URL');
-
-            return $this->cover_image;
-        }
-
-        // Otherwise, build the URL
-        $url = asset('storage/'.ltrim($this->cover_image, '/'));
-        logger()->info('Returning built URL: '.$url);
-
-        return $url;
+        return \App\Shared\Support\Media::url($this->cover_image);
     }
 
     public function getGalleryImagesAttribute(): array

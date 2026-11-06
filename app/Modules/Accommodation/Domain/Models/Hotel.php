@@ -2,6 +2,8 @@
 
 namespace App\Modules\Accommodation\Domain\Models;
 
+use App\Modules\Accommodation\Domain\Models\Concerns\HasScenes;
+
 use App\Modules\Availability\Domain\Models\Availability;
 use App\Modules\Booking\Domain\Models\Booking;
 use App\Modules\Catalog\Domain\Models\Amenity;
@@ -29,9 +31,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Hotel extends Model implements AvailabilityAware, Bookable, HasUnitCapacity, Pricable
 {
-    use HasFactory, HasImages, SoftDeletes, Concerns\SyncsCanonicalAccommodation;
+    use HasScenes, HasFactory, HasImages, SoftDeletes, Concerns\SyncsCanonicalAccommodation;
 
     protected $fillable = [
+        'cover_video',
+        'setup_step',
+        'currency',
         'provider_id',
         'name',
         'slug',
@@ -163,7 +168,7 @@ class Hotel extends Model implements AvailabilityAware, Bookable, HasUnitCapacit
      */
     public function getCurrency(): string
     {
-        return 'USD';
+        return $this->currency ?: 'KES';
     }
 
     /**
@@ -268,10 +273,12 @@ class Hotel extends Model implements AvailabilityAware, Bookable, HasUnitCapacit
 
         return collect($all)
             ->filter()
-            ->map(fn ($img) => $img
-                ? asset('storage/'.ltrim($img, '/')) // ✅ prepend only once
-                : null
-            )
+            ->map(fn ($img) => match (true) {
+                ! $img => null,
+                // Absolute URLs (CDN or seeded photography) are used as they are.
+                str_starts_with($img, 'http://'), str_starts_with($img, 'https://') => $img,
+                default => asset('storage/'.ltrim($img, '/')),
+            })
             ->toArray();
     }
 

@@ -69,6 +69,9 @@ class DestinationShow extends Component
         return view('livewire.destination.destination-show', [
             'accommodations' => $paginatedAccommodations,
             'activities' => $this->destination->activities()->paginate($this->perPage),
+            // Presentation only: packages are listed inline as cards instead of
+            // through the nested package search component.
+            'packages' => $this->destination->packages()->with('destination')->latest()->limit(6)->get(),
         ]);
     }
 }

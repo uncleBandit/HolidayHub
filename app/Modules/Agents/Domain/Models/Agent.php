@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -93,11 +94,15 @@ class Agent extends Model implements VerifiableProfile
     }
 
     /**
-     * Bookings managed by this agent.
+     * Package bookings of this agent's journeys: bookings whose bookable is
+     * one of the agent's packages (bookings has no agent_id column). The
+     * component bookings made with each host hang off these through
+     * package_booking_id.
      */
-    public function bookings(): HasMany
+    public function bookings(): HasManyThrough
     {
-        return $this->hasMany(Booking::class);
+        return $this->hasManyThrough(Booking::class, Package::class, 'agent_id', 'bookable_id')
+            ->where('bookings.bookable_type', (new Package)->getMorphClass());
     }
 
     /**

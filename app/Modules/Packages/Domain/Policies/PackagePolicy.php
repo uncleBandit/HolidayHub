@@ -5,89 +5,74 @@ namespace App\Modules\Packages\Domain\Policies;
 use App\Modules\Identity\Domain\Models\User;
 use App\Modules\Packages\Domain\Models\Package;
 
+/**
+ * Agents build and manage their own packages; admins (the `admin` role or
+ * anyone with admin panel access) can see and moderate every package. Guests
+ * see and book live packages only.
+ */
 class PackagePolicy
 {
-    /**
-     * Determine whether the user can view any packages.
-     */
-    public function viewAny(User $user): bool
-    {
-        // All users (agents and guests) can browse active packages
-        return $user->hasRole(['admin', 'agent', 'guest']);
-    }
-
-    /**
-     * Determine whether the user can view a specific package.
-     */
-    public function view(?User $user, Package $package): bool
+    public function viewAny(?User $user): bool
     {
         return true;
     }
 
-    /**
-     * Determine whether the user can create packages.
-     */
+    /** Live packages are public; drafts only to their agent and admins. */
+    public function view(?User $user, Package $package): bool
+    {
+        if ($package->isPublished()) {
+            return true;
+        }
+
+        return $user !== null && ($this->isAdmin($user) || $this->owns($user, $package));
+    }
+
     public function create(User $user): bool
     {
-        // Only agents or admins can create packages
-        return $user->hasRole(['agent', 'admin']);
+        return $this->isAdmin($user) || ($user->hasRole('agent') && $user->agent !== null);
     }
 
-    /**
-     * Determine whether the user can update the package.
-     */
     public function update(User $user, Package $package): bool
     {
-        if ($user->hasRole('admin')) {
-            return true;
-        }
-
-        if ($user->hasRole('agent') && $user->agent) {
-            // Agents can update their own packages
-            return $package->agent_id === $user->agent->id;
-        }
-
-        return false;
+        return $this->isAdmin($user) || $this->owns($user, $package);
     }
 
-    /**
-     * Determine whether the user can delete the package.
-     */
     public function delete(User $user, Package $package): bool
     {
-        if ($user->hasRole('admin')) {
-            return true;
-        }
-
-        if ($user->hasRole('agent') && $user->agent) {
-            return $package->agent_id === $user->agent->id;
-        }
-
-        return false;
+        return $this->update($user, $package);
     }
 
-    /**
-     * Determine whether the user can restore the package.
-     */
     public function restore(User $user, Package $package): bool
     {
-        return $this->delete($user, $package);
+        return $this->update($user, $package);
     }
 
-    /**
-     * Determine whether the user can permanently delete the package.
-     */
     public function forceDelete(User $user, Package $package): bool
     {
-        return $this->delete($user, $package);
+        return $this->isAdmin($user);
     }
 
-    /**
-     * Determine if a guest can book the package.
-     */
+    /** Admins moderate: approve, reject, suspend. */
+    public function moderate(User $user, Package $package): bool
+    {
+        return $this->isAdmin($user);
+    }
+
+    /** Anyone signed in with a guest profile can book a live package. */
     public function book(User $user, Package $package): bool
     {
-        // Only guests can book, and only if package is active
-        return $user->hasRole('guest') && $package->active;
+        return $package->isPublished() && $user->guest !== null;
+    }
+
+    private function isAdmin(User $user): bool
+    {
+        return $user->hasRole('admin') || $user->can('admin.panel.access');
+    }
+
+    private function owns(User $user, Package $package): bool
+    {
+        return $user->hasRole('agent')
+            && $user->agent !== null
+            && (int) $package->agent_id === (int) $user->agent->id;
     }
 }

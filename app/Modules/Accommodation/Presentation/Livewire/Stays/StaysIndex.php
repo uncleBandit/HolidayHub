@@ -290,12 +290,41 @@ class StaysIndex extends Component
             'isReels' => $this->view === 'reels',
             'hero' => (array) config('stays.clips.'.config('stays.hero'), []),
             'feedTabs' => $this->feedTabs(),
+            'collections' => $this->view === 'grid' ? $this->collections() : [],
         ])->layoutData(['reels' => $this->view === 'reels']);
     }
 
     /**
      * The feed's own tab row, mapped onto stay types.
      */
+    /**
+     * One tile per stay type for the collections row: how many are published
+     * and the best-rated photograph to stand for them.
+     */
+    private function collections(): array
+    {
+        return Cache::remember('stays.collections', 300, function () {
+            $stays = Accommodation::published()
+                ->with(['bookable', 'destination'])
+                ->orderByDesc('avg_rating')
+                ->get();
+
+            return collect(self::BOOKABLES)->map(function (array $bookable, string $type) use ($stays) {
+                $ofType = $stays->where('bookable_type', $type);
+                $cover = $ofType->first();
+
+                return [
+                    'type' => $type,
+                    'label' => self::TYPES[$type] ?? $bookable['label'],
+                    'count' => $ofType->count(),
+                    'image' => $cover ? $this->resolveImage($cover->bookable, $cover, $this->clipFor($type, $cover->id)) : null,
+                    'from' => $ofType->map(fn (Accommodation $stay) => $this->priceFor($stay, $stay->bookable))->filter()->min(),
+                    'currency' => \App\Shared\Support\Currencies::symbol($cover?->bookable?->currency ?? null),
+                ];
+            })->values()->all();
+        });
+    }
+
     private function feedTabs(): array
     {
         return collect((array) config('stays.feed_tabs', []))
@@ -336,12 +365,13 @@ class StaysIndex extends Component
             'rating' => $rating,
             'reviews' => $reviews,
             'price' => $this->priceFor($stay, $bookable),
-            'currency' => $stay->destination?->currency_symbol ?: 'KSh',
+            'currency' => \App\Shared\Support\Currencies::symbol($bookable?->currency ?? null),
             'guests' => (int) ($bookable?->max_guests ?? 0),
             'image' => $this->resolveImage($bookable, $stay, $clip),
             'alt' => $name,
-            'video' => $clip['video'] ?? null,
-            'poster' => $clip['poster'] ?? null,
+            // A stay's own film always wins over the house footage.
+            'video' => \App\Shared\Support\Media::url($bookable?->cover_video ?? null) ?? ($clip['video'] ?? null),
+            'poster' => filled($bookable?->cover_video ?? null) ? $this->resolveImage($bookable, $stay, null) : ($clip['poster'] ?? null),
             'clip_title' => $clip['title'] ?? null,
             'featured' => (bool) ($bookable?->is_featured ?? $stay->is_featured),
             'url' => $this->urlFor($stay, $bookable),

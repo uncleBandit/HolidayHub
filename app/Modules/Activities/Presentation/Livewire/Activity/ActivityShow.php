@@ -41,6 +41,7 @@ class ActivityShow extends Component
                 'itinerary',
                 'requirements',
                 'languages',
+                'scenes',
                 'mediaPosts' => fn ($query) => $query->publiclyPublished()
                     ->latest('published_at')
                     ->limit(6)

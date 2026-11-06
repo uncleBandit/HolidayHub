@@ -15,6 +15,19 @@ class Room extends Model
 {
     use HasFactory;
 
+    protected static function booted(): void
+    {
+        static::creating(function (Room $room): void {
+            if ($room->room_number !== null || $room->hotel_id === null) {
+                return;
+            }
+
+            $room->room_number = ((int) static::query()
+                ->where('hotel_id', $room->hotel_id)
+                ->max('room_number')) + 1;
+        });
+    }
+
     protected $fillable = [
         'hotel_id',
         'room_type_id',

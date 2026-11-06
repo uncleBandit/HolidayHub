@@ -29,6 +29,10 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  */
 class PlatformOverview extends StatsOverviewWidget
 {
+    protected static ?int $sort = 5;
+
+    protected ?string $heading = 'Needs attention';
+
     /**
      * @return array<int, Stat>
      */

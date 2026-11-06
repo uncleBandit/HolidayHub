@@ -23,9 +23,9 @@ use Livewire\Component;
 class HomeLanding extends Component
 {
     /**
-     * The landing page renders inside the site's shared layout.
+     * The landing page renders inside the discovery layout shared by the site.
      */
-    #[Layout('layouts.app')]
+    #[Layout('layouts.discovery')]
 
     /**
      * Filter chips for the stays grid.
@@ -175,7 +175,29 @@ class HomeLanding extends Component
             'stays' => $this->stays(),
             'categories' => self::CATEGORIES,
             'journalImage' => self::JOURNAL_IMAGE,
+            'reels' => $this->reels(),
         ]);
+    }
+
+    /**
+     * House footage for the "stories in motion" strip.
+     */
+    private function reels(): array
+    {
+        $clips = collect(config('stays.clips', []))->values();
+
+        return collect([
+            4 => ['kicker' => 'Resorts by the sea', 'title' => 'Your slow weekend starts here'],
+            8 => ['kicker' => 'Private villas', 'title' => 'Pool days, garden nights'],
+            0 => ['kicker' => 'Boutique hotels', 'title' => 'Wake up somewhere new'],
+        ])
+            ->filter(fn ($copy, $index) => $clips->has($index))
+            ->map(fn ($copy, $index) => $copy + [
+                'video' => $clips[$index]['video'],
+                'poster' => $clips[$index]['poster'],
+            ])
+            ->values()
+            ->all();
     }
 
     /**
@@ -299,7 +321,7 @@ class HomeLanding extends Component
             'badge' => ($accommodation?->is_featured ?? false) ? 'Guest favorite' : ($rating >= 4.8 ? 'Exceptional stay' : 'Rare find'),
             'rating' => $rating > 0 ? number_format($rating, 2) : null,
             'reviews' => $reviews > 0 ? $reviews.' reviews' : 'New listing',
-            'price' => $accommodation?->avg_price_per_night ? '$'.number_format((float) $accommodation->avg_price_per_night, 0) : null,
+            'price' => $accommodation?->avg_price_per_night ? 'KSh '.number_format((float) $accommodation->avg_price_per_night, 0) : null,
             'price_suffix' => $accommodation?->avg_price_per_night ? '/ night' : '',
             'image' => $image ?? self::FALLBACK_STAYS[abs($item->id ?? 0) % count(self::FALLBACK_STAYS)],
             'media_count' => count($images) ?: (count($gallery) ?: 1),
@@ -340,7 +362,7 @@ class HomeLanding extends Component
         $gallery = array_values(array_filter((array) ($item->gallery ?? [])));
 
         if ($gallery !== []) {
-            return $this->storageUrl($gallery[0]);
+            return Str::startsWith($gallery[0], ['http://', 'https://', '/']) ? $gallery[0] : $this->storageUrl($gallery[0]);
         }
 
         return asset('images/welcome-screen.jpg');

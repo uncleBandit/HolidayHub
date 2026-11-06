@@ -67,11 +67,27 @@ class CalendarComponent extends Component
         $this->bookableId = $bookable->id;
         $this->bookable = $bookable;
 
+        // Listings that set their own minimum stay (villas) use it instead of the default.
+        if (filled($bookable->min_nights ?? null)) {
+            $this->minStay = max(1, (int) $bookable->min_nights);
+            $this->maxStay = max($this->maxStay, $this->minStay);
+        }
+
         // Initialize and load the availability data just once.
         $this->loadAvailability();
 
-        // Set the calendar to the current month and load its data.
+        // Open on the current month, unless it has no bookable nights left (the
+        // last days of a month), in which case the next month is more useful.
         $this->currentMonth = $this->currentMonth ?? Carbon::now()->startOfMonth();
+
+        $openThisMonth = collect($this->availability)
+            ->filter(fn (array $day, string $date) => $day['available'] && Carbon::parse($date)->isSameMonth($this->currentMonth) && ! Carbon::parse($date)->isPast())
+            ->count();
+
+        if ($openThisMonth < $this->minStay) {
+            $this->currentMonth = $this->currentMonth->copy()->addMonth()->startOfMonth();
+        }
+
         $this->loadCalendarData();
     }
 
@@ -167,7 +183,7 @@ class CalendarComponent extends Component
             'checkout' => $this->checkout,
         ]);
 
-        session()->flash('success', "Booking request for {$nights} nights submitted! Total: \${$total}");
+        session()->flash('success', "Booking request for {$nights} nights submitted! Total: KSh ".number_format($total));
     }
 
     public function loadCalendarData(): void
@@ -241,7 +257,12 @@ class CalendarComponent extends Component
 
         // Dispatch the event after the state has been updated
         if ($this->checkin && $this->checkout) {
-            $this->dispatch('staySelected', checkin: $this->checkin, checkout: $this->checkout);
+            // Sum the same nightly rates book() charges, so anything showing an
+            // estimate (the stay page's booking card) agrees with checkout.
+            $total = collect(CarbonPeriod::create($this->checkinDate, $this->checkoutDate->copy()->subDay()))
+                ->sum(fn (Carbon $night) => (float) ($this->availability[$night->toDateString()]['price'] ?? 0));
+
+            $this->dispatch('staySelected', checkin: $this->checkin, checkout: $this->checkout, total: $total);
         }
     }
 

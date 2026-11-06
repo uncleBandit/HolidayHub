@@ -18,6 +18,6 @@ class MediaServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        Gate::policy(App\Modules\Media\Domain\Models\Image::class, ImahePolicy::class);
+        Gate::policy(\App\Modules\Media\Domain\Models\Image::class, ImahePolicy::class);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Modules\Accommodation\Domain\Models;
 
+use App\Modules\Accommodation\Domain\Models\Concerns\HasScenes;
+
 use App\Modules\Availability\Domain\Models\Availability;
 use App\Modules\Booking\Domain\Models\Booking;
 use App\Modules\Catalog\Domain\Models\Amenity;
@@ -29,11 +31,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class BedAndBreakfast extends Model implements AvailabilityAware, Bookable, Pricable
 {
-    use HasFactory, HasImages, SoftDeletes, Concerns\SyncsCanonicalAccommodation;
+    use HasScenes, HasFactory, HasImages, SoftDeletes, Concerns\SyncsCanonicalAccommodation;
 
     protected $table = 'bed_and_breakfasts';
 
     protected $fillable = [
+        'cover_video',
+        'setup_step',
+        'currency',
+        'breakfast_details',
         'provider_id',
         'name',
         'slug',
@@ -206,7 +212,7 @@ class BedAndBreakfast extends Model implements AvailabilityAware, Bookable, Pric
 
     public function getCurrency(): string
     {
-        return 'USD';
+        return $this->currency ?: 'KES';
     }
 
     public function getDefaultMaxGuests(): int

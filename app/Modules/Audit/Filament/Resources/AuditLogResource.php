@@ -23,7 +23,7 @@ class AuditLogResource extends Resource
 
     protected static ?int $navigationSort = 90;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Governance';
+    protected static string|\UnitEnum|null $navigationGroup = 'System';
 
     public static function table(Table $table): Table
     {

@@ -64,6 +64,7 @@ class HotelShow extends Component
             'images',
             'amenities',
             'roomTypes.rooms',
+            'roomTypes.amenities',
             'reviews.guest',
         ]);
 

@@ -1,201 +1,236 @@
-<div>
-    <div class="max-w-8xl mx-auto p-4 md:p-10 font-sans text-gray-800">
+{{-- A package as guests see it: film-first hero, the journey reel, the
+     itinerary day by day (each part links to its listing), what's included,
+     and a booking card that quotes the whole journey live. --}}
+@php
+    use App\Shared\Support\Currencies;
+    use App\Shared\Support\Media;
 
-    {{-- Hero Section: Image, Title, Price --}}
-    <section class="relative h-[70vh] md:h-[85vh] rounded-3xl overflow-hidden shadow-2xl group">
-        <img src="{{ $package->main_image ?? 'https://source.unsplash.com/random/1200x800/?vacation,destination' }}"
-             alt="{{ $package->name }}"
-             class="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105" />
-        <div class="absolute inset-0 bg-gradient-to-t from-gray-900/90 to-transparent flex items-end">
-            <div class="p-6 md:p-12 text-white w-full">
-                <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div class="space-y-2">
-                        <p class="text-sm md:text-lg font-light tracking-wide opacity-80">{{ $package->destination?->name }}</p>
-                        <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-none drop-shadow-lg">{{ $package->name }}</h1>
-                        <div class="flex flex-wrap items-center gap-4 text-sm font-semibold mt-2">
-                            <span class="bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">{{ $package->duration_label }}</span>
-                            <span class="flex items-center gap-1 text-yellow-400">
-                                <i class="fas fa-star text-base"></i> {{ number_format($package->avg_rating, 1) }}
-                            </span>
-                            <span class="text-gray-200 opacity-70">({{ $package->reviews->count() }} reviews)</span>
-                        </div>
-                    </div>
-                    <div class="md:text-right">
-                        <p class="text-xl md:text-3xl font-light opacity-80">From</p>
-                        <p class="text-3xl md:text-5xl font-extrabold text-emerald-300 drop-shadow-md">
-                            ${{ number_format($package->base_price, 2) }}
-                        </p>
-                    </div>
-                </div>
-            </div>
+    $images = collect([$p->cover_image])->concat((array) ($p->gallery ?? []))->filter()->values()->all();
+    $code = $p->getCurrency();
+    $days = max(1, (int) $p->duration_days);
+    $nights = (int) $p->components->where('kind', 'stay')->sum(fn ($c) => max(1, (int) $c->nights));
+    $listings = $p->components->filter->isListing()->count();
+    $agency = $p->agent?->agency_name ?: trim(($p->agent?->first_name ?? '').' '.($p->agent?->last_name ?? ''));
+    $from = (float) $p->base_price;
+    $icons = ['stay' => 'bed', 'experience' => 'compass', 'transfer' => 'arrow', 'free' => 'leaf', 'note' => 'bookmark'];
+    $fmt = fn ($amount) => Currencies::format($amount, $code, (float) $amount >= 1000 ? 0 : 2);
+@endphp
+
+<div class="pb-24 lg:pb-0">
+    @if ($preview)
+        <div class="bg-[#F6EEDD] px-4 py-2.5 text-center text-[12.5px] font-bold text-[#6B5230]">
+            Preview · this journey is {{ str_replace('_', ' ', $p->status) }} and guests can’t see or book it yet.
         </div>
-    </section>
+    @endif
 
-    {{-- Main Content and Booking Widget Section --}}
-    <section class="grid grid-cols-1 lg:grid-cols-3 gap-12 mt-12">
+    <x-stay-detail.gallery :images="$images" :video="$p->cover_video" :name="$p->name" kind="villa" :back-url="route('dashboard')" />
 
-        {{-- Left Column: Details and Gallery --}}
-        <div class="lg:col-span-2 space-y-12">
+    <div class="mx-auto max-w-[1250px] px-4 sm:px-6 lg:px-8">
+        <x-stay-detail.heading
+            :name="$p->name"
+            :kind="'A '.$days.'-day journey'.($agency ? ' curated by '.$agency : '')"
+            :verified="(bool) $p->agent?->isVerified()"
+            :rating="(float) $p->avg_rating"
+            :reviews="(int) $p->reviews_count"
+            :location="$destinations->pluck('name')->implode(' · ')"
+            :facts="[
+                ['value' => $days, 'label' => \Illuminate\Support\Str::plural('Day', $days)],
+                ['value' => $nights, 'label' => \Illuminate\Support\Str::plural('Night', $nights).' of stays'],
+                ['value' => $listings, 'label' => 'Places to stay & do'],
+            ]"
+        />
 
-            {{-- Package Tabs --}}
-            <div x-data="{ activeTab: @entangle('activeTab') }" class="space-y-6">
-                <div class="flex flex-wrap gap-4 border-b border-gray-200 pb-2 overflow-x-auto no-scrollbar">
-                    <button @click="activeTab = 'overview'"
-                            :class="{ 'border-indigo-600 text-indigo-600 font-bold': activeTab === 'overview', 'border-transparent text-gray-500 hover:text-gray-900': activeTab !== 'overview' }"
-                            class="pb-2 border-b-2 transition-colors duration-200">Overview</button>
-                    <button @click="activeTab = 'gallery'"
-                            :class="{ 'border-indigo-600 text-indigo-600 font-bold': activeTab === 'gallery', 'border-transparent text-gray-500 hover:text-gray-900': activeTab !== 'gallery' }"
-                            class="pb-2 border-b-2 transition-colors duration-200">Gallery</button>
-                    <button @click="activeTab = 'reviews'"
-                            :class="{ 'border-indigo-600 text-indigo-600 font-bold': activeTab === 'reviews', 'border-transparent text-gray-500 hover:text-gray-900': activeTab !== 'reviews' }"
-                            class="pb-2 border-b-2 transition-colors duration-200">Reviews</button>
-                </div>
+        <div class="lg:grid lg:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.8fr)] lg:gap-14">
+            <div class="min-w-0">
+                {{-- The story --}}
+                <x-stay-detail.section id="overview" eyebrow="The journey" :title="$p->short_description">
+                    @if (filled($p->full_description))
+                        <p class="dv-body whitespace-pre-line">{{ $p->full_description }}</p>
+                    @endif
+                    @if ($destinations->isNotEmpty())
+                        <div class="mt-6 flex flex-wrap gap-2">
+                            @foreach ($destinations as $destination)
+                                <a href="{{ route('destination.show', $destination) }}" class="inline-flex items-center gap-1.5 rounded-full bg-sand/70 px-3 py-1.5 text-[12px] font-bold text-forest hover:bg-sand"><x-line-icon name="map" :size="13" /> {{ $destination->name }}</a>
+                            @endforeach
+                        </div>
+                    @endif
+                </x-stay-detail.section>
 
-                {{-- Tab Content --}}
-                <div x-show="activeTab === 'overview'" x-cloak>
-                    <div class="prose max-w-none text-gray-700 leading-relaxed">
-                        <h2 class="text-3xl font-extrabold mb-4">About This Trip</h2>
-                        <p class="mb-6">{{ $package->full_description }}</p>
+                {{-- The journey reel --}}
+                @if ($p->scenes->isNotEmpty())
+                    <section id="reel" class="scroll-mt-[150px] border-b border-line py-12 md:py-14">
+                        <x-stay-detail.reel-walk
+                            :scenes="$p->scenes"
+                            :name="$p->name"
+                            eyebrow="The journey reel"
+                            heading="Travel it before you book"
+                            noun="stop"
+                            cta="Play the journey"
+                            class="!py-0"
+                        />
+                    </section>
+                @endif
 
-                        <h3 class="text-2xl font-bold mb-3">Key Features</h3>
-                        <ul class="grid grid-cols-1 sm:grid-cols-2 gap-4 list-none pl-0">
-                            @forelse($package->features as $feature)
-                                <li class="flex items-center gap-3 bg-gray-50 p-4 rounded-xl shadow-sm">
-                                    <i class="fas fa-check-circle text-emerald-500 text-xl"></i>
-                                    <span class="font-medium text-gray-800">{{ $feature->name }}</span>
-                                </li>
-                            @empty
-                                <p class="text-gray-500">No features listed.</p>
-                            @endforelse
-                        </ul>
-                    </div>
-                </div>
-
-                <div x-show="activeTab === 'gallery'" x-cloak>
-                    <h2 class="text-3xl font-extrabold mb-4">Gallery</h2>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        @foreach($package->gallery as $url)
-                            <img wire:click="showGallery('{{ $url }}')"
-                                src="{{ asset('storage/' . $url) }}"
-                                alt="Gallery image"
-                                class="rounded-xl shadow-lg object-cover h-40 w-full cursor-pointer transition-transform duration-300 hover:scale-105" />
-                        @endforeach
-
-                    </div>
-                </div>
-
-                <div x-show="activeTab === 'reviews'" x-cloak>
-                    <h2 class="text-3xl font-extrabold mb-6">Guest Reviews ({{ $reviews->total() }})</h2>
-                    <div class="space-y-6">
-                        @forelse($reviews as $review)
-                            <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
-                                <div class="flex items-start gap-4 mb-4">
-                                    <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-lg font-bold text-gray-600">
-                                        {{ strtoupper(substr($review->user?->name ?? 'A', 0, 1)) }}
-                                    </div>
-                                    <div class="flex-1">
-                                        <div class="font-bold text-lg text-gray-900">{{ $review->user?->name ?? 'Anonymous' }}</div>
-                                        <div class="text-sm text-gray-500">{{ $review->created_at->format('M d, Y') }}</div>
-                                    </div>
-                                    <div class="flex-shrink-0 text-yellow-500 text-xl">
-                                        @for ($i = 1; $i <= 5; $i++)
-                                            <i class="{{ $i <= $review->rating ? 'fas fa-star' : 'far fa-star' }}"></i>
-                                        @endfor
+                {{-- Day by day --}}
+                <x-stay-detail.section id="itinerary" eyebrow="Day by day" title="The itinerary">
+                    <ol class="relative space-y-8 before:absolute before:bottom-4 before:left-[1.2rem] before:top-4 before:w-px before:bg-line">
+                        @foreach ($itinerary as $day)
+                            <li class="relative flex gap-4 sm:gap-5" wire:key="it-day-{{ $day['day'] }}">
+                                <span class="relative z-10 grid h-[2.4rem] w-[2.4rem] flex-none place-items-center rounded-full bg-forest font-dm-serif text-[1.05rem] text-white">{{ $day['day'] }}</span>
+                                <div class="min-w-0 flex-1 pt-1">
+                                    <p class="text-[11px] font-extrabold uppercase tracking-[0.14em] text-clay">
+                                        Day {{ $day['day'] }}@if ($quote) · {{ \Carbon\Carbon::parse($quote['start'])->addDays($day['day'] - 1)->format('D j M') }}@endif
+                                    </p>
+                                    <div class="mt-3 space-y-3">
+                                        @forelse ($day['parts'] as $part)
+                                            @if ($part['url'])
+                                                <a href="{{ $part['url'] }}" class="group flex gap-4 overflow-hidden rounded-[1.1rem] border border-line bg-white p-3 transition-shadow hover:shadow-[0_20px_44px_-24px_rgba(20,36,28,0.45)]">
+                                                    <img src="{{ $part['image'] }}" alt="{{ $part['title'] }}" class="h-24 w-28 flex-none rounded-[0.8rem] object-cover sm:h-28 sm:w-36" loading="lazy">
+                                                    <div class="min-w-0 flex-1 py-0.5">
+                                                        <p class="text-[10px] font-extrabold uppercase tracking-[0.12em] text-clay">{{ $part['label'] }}@if ($part['place']) · <span class="text-muted">{{ $part['place'] }}</span>@endif</p>
+                                                        <p class="mt-0.5 font-dm-serif text-[1.25rem] leading-tight text-ink group-hover:text-forest">{{ $part['title'] }}</p>
+                                                        <p class="mt-0.5 text-[12px] font-bold text-forest">
+                                                            {{ collect([$part['detail'], $part['nights'] ? $part['nights'].' '.\Illuminate\Support\Str::plural('night', $part['nights']) : null, $part['minutes'] ? ($part['minutes'] >= 60 ? rtrim(rtrim(number_format($part['minutes'] / 60, 1), '0'), '.').' hours' : $part['minutes'].' minutes') : null])->filter()->implode(' · ') }}
+                                                        </p>
+                                                        @if ($part['text'])<p class="mt-1 line-clamp-2 text-[12.5px] text-muted">{{ $part['text'] }}</p>@endif
+                                                        <span class="mt-1.5 inline-flex items-center gap-1 text-[11px] font-extrabold text-clay">See the {{ \Illuminate\Support\Str::lower($part['label']) }} <x-line-icon name="arrow-up-right" :size="12" /></span>
+                                                    </div>
+                                                </a>
+                                            @else
+                                                <div class="flex items-start gap-3 rounded-[1rem] bg-cream/70 px-4 py-3">
+                                                    <span class="grid h-9 w-9 flex-none place-items-center rounded-full bg-white text-clay"><x-line-icon :name="$icons[$part['kind']] ?? 'bookmark'" :size="15" /></span>
+                                                    <div class="min-w-0">
+                                                        <p class="text-[13.5px] font-extrabold text-ink">{{ $part['title'] }}</p>
+                                                        @if ($part['text'])<p class="text-[12.5px] text-muted">{{ $part['text'] }}</p>@endif
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        @empty
+                                            <p class="text-[13px] text-muted">A day at your own pace.</p>
+                                        @endforelse
                                     </div>
                                 </div>
-                                <p class="text-gray-700 leading-relaxed">{{ $review->comment }}</p>
-                            </div>
-                        @empty
-                            <p class="text-gray-500 text-center py-12 italic">No reviews yet. Be the first to share your experience!</p>
-                        @endforelse
-                    </div>
-                    @if($reviews->hasPages())
-                        <div class="mt-8">
-                            {{ $reviews->links() }}
+                            </li>
+                        @endforeach
+                    </ol>
+                </x-stay-detail.section>
+
+                {{-- What's included --}}
+                <x-stay-detail.section id="included" eyebrow="What’s covered" title="Included, and not">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="dv-panel p-6">
+                            <h3 class="text-[12px] font-extrabold uppercase tracking-[0.1em] text-forest">Included</h3>
+                            <ul class="mt-4 space-y-3">
+                                @forelse ($included['in'] as $item)
+                                    <li class="flex items-start gap-3 text-[14px] text-ink"><span class="mt-0.5 text-forest-light"><x-line-icon name="check" :size="16" :stroke="2.4" /></span>{{ $item }}</li>
+                                @empty
+                                    <li class="text-[13px] text-muted">Ask the agent for details.</li>
+                                @endforelse
+                            </ul>
                         </div>
-                    @endif
-                </div>
-            </div>
-
-            {{-- Wishlist and Agent Info --}}
-            <div class="flex flex-col md:flex-row items-center justify-between p-6 bg-white rounded-2xl shadow-md border-t-4 border-indigo-600">
-                <div class="flex items-center gap-4">
-                    <div class="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
-                        <img src="{{ $package->agent?->profile_photo_url ?? 'https://www.gravatar.com/avatar/?d=mp' }}" alt="{{ $package->agent?->name }}" class="w-full h-full object-cover">
+                        <div class="dv-panel p-6">
+                            <h3 class="text-[12px] font-extrabold uppercase tracking-[0.1em] text-clay">Not included</h3>
+                            <ul class="mt-4 space-y-3">
+                                @forelse ($included['out'] as $item)
+                                    <li class="flex items-start gap-3 text-[14px] text-ink"><span class="mt-0.5 text-clay"><x-line-icon name="close" :size="16" :stroke="2.4" /></span>{{ $item }}</li>
+                                @empty
+                                    <li class="text-[13px] text-muted">Flights and anything not listed as included.</li>
+                                @endforelse
+                            </ul>
+                        </div>
                     </div>
-                    <div>
-                        <p class="font-bold text-lg text-gray-900">{{ $package->agent?->name ?? 'HolidayHub Agent' }}</p>
-                        <p class="text-sm text-gray-500">Authorized Agent</p>
-                    </div>
-                </div>
-                <button wire:click="toggleWishlist" class="mt-4 md:mt-0 md:ml-4 bg-gray-100 p-3 rounded-full text-2xl text-gray-500 transition-colors duration-200 hover:bg-red-100 hover:text-red-500" title="Add to Wishlist">
-                    @if($isWishlisted)
-                        <i class="fas fa-heart text-red-500 animate-pulse"></i>
-                    @else
-                        <i class="far fa-heart"></i>
-                    @endif
-                </button>
-            </div>
-        </div>
+                </x-stay-detail.section>
 
-        {{-- Right Column: Booking Widget (Sticky) --}}
-        <aside class="lg:col-span-1">
-            <div class="sticky top-10 bg-white p-8 rounded-3xl shadow-2xl space-y-8">
-                <h2 class="text-3xl font-extrabold text-gray-900">Book This Trip</h2>
-
-                @if($package)
-                    <div wire:loading.flex wire:target="selectPackage" class="flex items-center justify-center p-8">
-                        <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span class="text-lg text-gray-500">Loading calendar...</span>
-                    </div>
-
-                    <div wire:loading.remove wire:target="selectPackage">
-                        <livewire:calendar.calendar-component :bookable="$package" />
-                        <livewire:forms.booking-form :bookable="$package" />
-                    </div>
+                {{-- The agent --}}
+                @if ($p->agent)
+                    <x-stay-detail.section id="agent" eyebrow="Your agent" title="Who put it together" last>
+                        <div class="flex items-start gap-4 rounded-[1.1rem] border border-line bg-white p-5">
+                            <span class="grid h-14 w-14 flex-none place-items-center rounded-full bg-clay font-dm-serif text-[1.2rem] text-white">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($agency ?: 'HH', 0, 2)) }}</span>
+                            <div class="min-w-0">
+                                <p class="flex items-center gap-2 text-[15px] font-extrabold text-ink">{{ $agency }}
+                                    @if ($p->agent->isVerified())<span class="inline-flex items-center gap-1 rounded-full bg-forest/10 px-2 py-0.5 text-[10px] font-extrabold text-forest"><x-line-icon name="check" :size="10" /> Verified agent</span>@endif
+                                </p>
+                                <p class="text-[12px] text-muted">{{ collect([$p->agent->city, $p->agent->country, $p->agent->specialization])->filter()->implode(' · ') }}</p>
+                                @if ($p->agent->bio)<p class="mt-2 text-[13px] leading-relaxed text-ink">{{ $p->agent->bio }}</p>@endif
+                                <p class="mt-2 text-[12px] text-muted">Every stay and experience is booked directly with its host on HolidayHub; your agent stays your one point of contact for the journey.</p>
+                            </div>
+                        </div>
+                    </x-stay-detail.section>
                 @endif
             </div>
-        </aside>
-    </section>
 
-    {{-- Full-Screen Gallery Modal --}}
-    <div x-data="{ open: @entangle('isGalleryOpen'), activeImage: @entangle('activeImageId'), images: @js($package->images) }"
-         x-show="open"
-         class="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-95 p-4"
-         x-cloak x-transition.opacity>
-        <div class="relative w-full max-w-7xl">
-            {{-- Close Button --}}
-            <button @click="open = false"
-                    class="absolute top-4 right-4 text-white text-3xl p-2 z-10 opacity-70 hover:opacity-100 transition-opacity rounded-full bg-gray-900/50 hover:bg-gray-900/80">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
+            {{-- ─────────────────────────────  Booking card  ────────────────────── --}}
+            <div class="pb-12 lg:self-start lg:pb-16 lg:pt-12">
+                <aside id="book" class="scroll-mt-28 lg:sticky lg:top-[112px]">
+                    <div class="dv-panel dv-panel-shadow overflow-hidden">
+                        <div class="p-6 pb-4">
+                            <p class="font-dm-serif text-[1.8rem] leading-none text-ink">
+                                @if ($quote && $quote['total'] > 0)
+                                    {{ $fmt($quote['per_person']) }} <small class="font-sans text-[12px] text-muted">/ person</small>
+                                @elseif ($from > 0)
+                                    <span class="font-sans text-[12px] font-bold text-muted">From</span> {{ $fmt($from) }} <small class="font-sans text-[12px] text-muted">/ person</small>
+                                @else
+                                    {{ $days }} days
+                                @endif
+                            </p>
+                            <p class="mt-1 text-[11.5px] text-muted">Live prices of every stay and experience for your dates, in {{ $code }}.</p>
 
-            {{-- Image Carousel --}}
-            <img :src="images[activeImage]?.url"
-                 alt="Full-screen gallery image"
-                 class="w-full h-auto max-h-[90vh] object-contain rounded-lg">
+                            <div class="mt-5 overflow-hidden rounded-[0.8rem] border border-line">
+                                <label class="block border-b border-line px-4 py-3 focus-within:bg-cream/60">
+                                    <span class="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.1em] text-ink"><x-line-icon name="calendar" :size="13" /> Start date</span>
+                                    <input type="date" wire:model.live="startDate" min="{{ today()->addDay()->toDateString() }}" class="mt-1 w-full border-0 bg-transparent p-0 text-[14px] font-bold text-ink focus:ring-0">
+                                </label>
+                                <div class="flex items-center justify-between px-4 py-3">
+                                    <span>
+                                        <span class="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.1em] text-ink"><x-line-icon name="users" :size="13" /> Guests</span>
+                                        <span class="text-[11px] text-muted">{{ (int) $p->min_guests }}–{{ (int) $p->max_guests }} per booking</span>
+                                    </span>
+                                    <span class="flex items-center gap-2">
+                                        <button type="button" wire:click="setGuests({{ $guests - 1 }})" @disabled($guests <= max(1, (int) $p->min_guests)) class="grid h-8 w-8 place-items-center rounded-full border border-line text-[16px] font-extrabold text-ink hover:border-forest disabled:opacity-40" aria-label="Fewer guests">−</button>
+                                        <b class="w-6 text-center text-[15px] text-ink">{{ $guests }}</b>
+                                        <button type="button" wire:click="setGuests({{ $guests + 1 }})" @disabled($guests >= (int) $p->max_guests) class="grid h-8 w-8 place-items-center rounded-full border border-line text-[16px] font-extrabold text-ink hover:border-forest disabled:opacity-40" aria-label="More guests">+</button>
+                                    </span>
+                                </div>
+                            </div>
 
-            {{-- Navigation Buttons --}}
-            <button @click="activeImage = (activeImage > 0) ? activeImage - 1 : images.length - 1"
-                    aria-label="Previous Image"
-                    class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-5xl opacity-70 hover:opacity-100 transition rounded-full p-2 bg-gray-900/50 hover:bg-gray-900/80">
-                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-            </button>
-            <button @click="activeImage = (activeImage < images.length - 1) ? activeImage + 1 : 0"
-                    aria-label="Next Image"
-                    class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-5xl opacity-70 hover:opacity-100 transition rounded-full p-2 bg-gray-900/50 hover:bg-gray-900/80">
-                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-            </button>
+                            @if ($departures)
+                                <div class="mt-3 flex flex-wrap items-center gap-1.5 text-[11px] text-muted">
+                                    Next dates with everything free:
+                                    @foreach ($departures as $departure)
+                                        <button type="button" wire:click="pickDate('{{ $departure['date'] }}')" @class(['rounded-full px-2.5 py-1 font-extrabold', 'bg-forest text-white' => $startDate === $departure['date'], 'bg-cream text-forest hover:bg-sand' => $startDate !== $departure['date']])>{{ \Carbon\Carbon::parse($departure['date'])->format('D j M') }}</button>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
 
-            {{-- Image Counter --}}
-            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black bg-opacity-50 px-4 py-1 rounded-full text-sm">
-                <span x-text="images.findIndex(img => img.id === activeImage) + 1"></span> / <span x-text="images.length"></span>
+                        <div wire:loading.class="opacity-60" wire:target="startDate,setGuests,pickDate">
+                            @if ($quote)
+                                @include('packages::partials.quote-table', ['quote' => $quote, 'agentView' => false])
+                            @endif
+                        </div>
+
+                        <div class="p-6 pt-4">
+                            @error('booking')<p role="alert" class="auth-alert auth-alert-error mb-3">{{ $message }}</p>@enderror
+                            @error('startDate')<p class="auth-error mb-2">{{ $message }}</p>@enderror
+                            @error('guests')<p class="auth-error mb-2">{{ $message }}</p>@enderror
+                            <button type="button" wire:click="book" @disabled($preview || ! $quote || ! $quote['available']) wire:loading.attr="disabled" wire:target="book" class="dv-btn dv-btn-primary w-full !min-h-[3.3rem] !text-[13px] disabled:cursor-not-allowed disabled:!bg-muted/50">
+                                <span wire:loading.remove wire:target="book">{{ $quote && $quote['available'] ? 'Book the journey · '.$fmt($quote['total']) : 'Choose another date' }}</span>
+                                <span wire:loading wire:target="book">Booking every stay and experience…</span>
+                            </button>
+                            <p class="mt-3 text-center text-[11px] text-muted">One booking, one payment. If any part isn’t free, nothing is booked.</p>
+                        </div>
+                    </div>
+                </aside>
             </div>
         </div>
     </div>
 
-</div>
+    {{-- ─────────────────────────────  Mobile book bar  ─────────────────── --}}
+    <div class="fixed inset-x-0 bottom-[4.8rem] z-40 flex items-center justify-between gap-3 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur-xl md:bottom-0 lg:hidden" data-no-reveal>
+        <div class="min-w-0">
+            <span class="text-[11px] text-muted">{{ $days }} days · {{ $guests }} {{ \Illuminate\Support\Str::plural('guest', $guests) }}</span>
+            <p class="font-dm-serif text-[1.15rem] leading-tight text-ink">{{ $quote && $quote['total'] > 0 ? $fmt($quote['total']) : ($from > 0 ? 'From '.$fmt($from).' pp' : '') }}</p>
+        </div>
+        <a href="#book" class="dv-btn dv-btn-primary flex-none">Book the journey</a>
+    </div>
 </div>

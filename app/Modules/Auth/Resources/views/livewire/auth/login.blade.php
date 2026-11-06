@@ -44,6 +44,14 @@ new #[Layout('layouts.auth')] class extends Component
             ]);
         }
 
+        if (Auth::user()?->isSuspended()) {
+            Auth::guard('web')->logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'This account has been suspended. Contact support if you think this is a mistake.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
         Session::regenerate();
 

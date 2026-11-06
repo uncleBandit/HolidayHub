@@ -18,6 +18,6 @@ class ReviewsServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        Gate::policy(App\Modules\Reviews\Domain\Models\Review::class, ReviewPolicy::class);
+        Gate::policy(\App\Modules\Reviews\Domain\Models\Review::class, ReviewPolicy::class);
     }
 }

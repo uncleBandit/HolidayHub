@@ -70,6 +70,7 @@ trait SyncsCanonicalAccommodation
             'avg_price_per_night',
             'price_per_night',
             'cover_image',
+            'cover_video',
             'gallery',
         ])) {
             $attributes['status'] = AccommodationStatus::Draft;

@@ -2,6 +2,8 @@
 
 namespace App\Modules\Accommodation\Domain\Models;
 
+use App\Modules\Accommodation\Domain\Models\Concerns\HasScenes;
+
 use App\Modules\Availability\Domain\Models\Availability;
 use App\Modules\Booking\Domain\Models\Booking;
 use App\Modules\Catalog\Domain\Models\Amenity;
@@ -26,7 +28,7 @@ use Illuminate\Support\Facades\Storage;
 
 class Villa extends Model implements AvailabilityAware, Bookable, Pricable
 {
-    use HasFactory, Concerns\SyncsCanonicalAccommodation;
+    use HasScenes, HasFactory, Concerns\SyncsCanonicalAccommodation;
 
     protected $table = 'villas';
 
@@ -39,7 +41,28 @@ class Villa extends Model implements AvailabilityAware, Bookable, Pricable
         'name', 'slug', 'description', 'avg_price_per_night', 'max_guests', 'bedrooms', 'bathrooms',
         'address', 'city', 'country', 'latitude', 'longitude', 'gallery', 'policies',
         'amenities', 'destination_id', 'provider_id', 'is_active', 'is_verified', 'is_featured', 'has_private_pool',
+        'cover_image', 'cover_video', 'setup_step', 'currency', 'size_sqm', 'min_nights', 'meta_data',
     ];
+
+    /**
+     * Staff a villa can include, kept in meta_data['staff']. Shown to guests
+     * as "What makes it special"; label => guest-facing line.
+     */
+    public const STAFF = [
+        'chef' => ['Private chef', 'Meals cooked in the villa'],
+        'housekeeper' => ['Housekeeper', 'Daily housekeeping'],
+        'butler' => ['Butler', 'On hand throughout your stay'],
+        'driver' => ['Driver', 'Airport runs and day trips'],
+        'nanny' => ['Nanny', 'Childcare on request'],
+        'security' => ['Security', 'Guarded day and night'],
+        'gardener' => ['Gardener & pool care', 'Grounds kept immaculate'],
+    ];
+
+    /** @return array<int, string> the staff keys this villa includes */
+    public function staffKeys(): array
+    {
+        return array_values(array_intersect(array_keys(self::STAFF), (array) (($this->meta_data ?? [])['staff'] ?? [])));
+    }
 
     protected $casts = [
         'gallery' => 'array',
@@ -51,6 +74,9 @@ class Villa extends Model implements AvailabilityAware, Bookable, Pricable
         'is_verified' => 'boolean',
         'is_featured' => 'boolean',
         'has_private_pool' => 'boolean',
+        'size_sqm' => 'integer',
+        'min_nights' => 'integer',
+        'setup_step' => 'integer',
         'meta_data' => 'array',
     ];
 
@@ -225,7 +251,7 @@ class Villa extends Model implements AvailabilityAware, Bookable, Pricable
      */
     public function getCurrency(): string
     {
-        return 'USD';
+        return $this->currency ?: 'KES';
     }
 
     /**

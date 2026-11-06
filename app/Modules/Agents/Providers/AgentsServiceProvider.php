@@ -18,6 +18,6 @@ class AgentsServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        Gate::policy(App\Modules\Agents\Domain\Models\Agent::class, AgentPolicy::class);
+        Gate::policy(\App\Modules\Agents\Domain\Models\Agent::class, AgentPolicy::class);
     }
 }

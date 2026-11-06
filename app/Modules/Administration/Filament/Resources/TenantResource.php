@@ -44,7 +44,7 @@ class TenantResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Platform';
+    protected static string|\UnitEnum|null $navigationGroup = 'People';
 
     protected static ?string $modelLabel = 'tenant';
 

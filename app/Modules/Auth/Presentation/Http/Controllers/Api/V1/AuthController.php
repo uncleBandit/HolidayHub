@@ -55,6 +55,13 @@ class AuthController extends Controller
             ]);
         }
 
+        if ($user->isSuspended()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'This account has been suspended.',
+            ], 403);
+        }
+
         // Optional: check email verification
         if (method_exists($user, 'hasVerifiedEmail') && ! $user->hasVerifiedEmail()) {
             return response()->json([

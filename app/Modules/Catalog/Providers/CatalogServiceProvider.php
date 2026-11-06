@@ -20,8 +20,8 @@ class CatalogServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        Gate::policy(App\Modules\Catalog\Domain\Models\Amenity::class, AmenityPolicy::class);
-        Gate::policy(App\Modules\Catalog\Domain\Models\Flight::class, FlightPolicy::class);
-        Gate::policy(App\Modules\Catalog\Domain\Models\Offer::class, OfferPolicy::class);
+        Gate::policy(\App\Modules\Catalog\Domain\Models\Amenity::class, AmenityPolicy::class);
+        Gate::policy(\App\Modules\Catalog\Domain\Models\Flight::class, FlightPolicy::class);
+        Gate::policy(\App\Modules\Catalog\Domain\Models\Offer::class, OfferPolicy::class);
     }
 }

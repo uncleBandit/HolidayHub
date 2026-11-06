@@ -10,7 +10,7 @@ use App\Modules\Activities\Presentation\Livewire\Activity\ActivityShow;
 use App\Modules\Activities\Presentation\Livewire\Activity\Activities;
 use App\Modules\Activities\Presentation\Livewire\Activity\ExperiencesIndex;
 use App\Modules\Agents\Presentation\Livewire\Agent\AgentDashboard;
-use App\Modules\Agents\Presentation\Livewire\Agent\AgentPackages;
+use App\Modules\Agents\Presentation\Livewire\Agent\AgentApply;
 use App\Modules\Booking\Presentation\Livewire\Booking\BookingConfirmation;
 use App\Modules\Booking\Presentation\Livewire\Booking\BookingIndex;
 use App\Modules\Booking\Presentation\Livewire\Booking\BookingShow;
@@ -20,7 +20,7 @@ use App\Modules\Destinations\Presentation\Livewire\Discover;
 use App\Modules\Destinations\Presentation\Livewire\Home\HomeLanding;
 use App\Modules\Destinations\Presentation\Livewire\Search\SearchBar;
 use App\Modules\Identity\Presentation\Http\Controllers\Api\V1\ProfileController;
-use App\Modules\Identity\Presentation\Livewire\Dashboard\DashboardPage;
+use App\Modules\Identity\Presentation\Livewire\ForYou\ForYouPage;
 use App\Modules\Identity\Presentation\Livewire\UserProfile;
 use App\Modules\Packages\Presentation\Livewire\Package\PackageCreate;
 use App\Modules\Packages\Presentation\Livewire\Package\PackageShow;
@@ -66,29 +66,41 @@ Route::get('/activities', fn () => redirect()->route('experiences.index'))->name
 
 // Authenticated user pages
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Generic dashboard (for all users)
-    Route::get('/dashboard', DashboardPage::class)->name('dashboard');
+    // The personal "For you" feed travellers land on after signing in. It keeps
+    // the `dashboard` route name the auth flows redirect to.
+    Route::get('/for-you', ForYouPage::class)->name('dashboard');
+    Route::redirect('/dashboard', '/for-you');
     Route::get('/search', SearchBar::class)->name('search.results');
 
     // Profile routes
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    // The profile screen lives in the UserProfile component; the API controller
+    // only handles the JSON update/delete endpoints below.
+    Route::redirect('/profile', '/userprofile')->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/userprofile', UserProfile::class)->name('userprofile');
 
     // Agent routes
+    // Any signed-in user can apply; the studio and builder check the agent role themselves.
     Route::prefix('agent')->name('agent.')->group(function () {
+        Route::get('/apply', AgentApply::class)->name('apply');
         Route::get('/dashboard', AgentDashboard::class)->name('dashboard');
-        Route::get('/packages', AgentPackages::class)->name('packages');
+        Route::get('/packages', fn () => redirect()->to(route('agent.dashboard').'#packages'))->name('packages');
         Route::get('/packages/create', PackageCreate::class)->name('packages.create');
+        Route::get('/packages/{package:slug}/manage', PackageCreate::class)->name('packages.manage');
     });
 
     // Provider routes
     Route::middleware('role:provider')->prefix('provider')->name('provider.')->group(function () {
         Route::get('/dashboard', ProviderDashboard::class)->name('dashboard');
         Route::get('/hotel/create', HotelCreate::class)->name('hotel-create');
+        Route::get('/hotel/{hotel}/manage', HotelCreate::class)->name('hotel-manage');
         Route::get('/villa/create', \App\Modules\Accommodation\Presentation\Livewire\Villa\VillaCreate::class)->name('villa-create');
+        Route::get('/villa/{villa}/manage', \App\Modules\Accommodation\Presentation\Livewire\Villa\VillaCreate::class)->name('villa-manage');
         Route::get('/bed-and-breakfast/create', \App\Modules\Accommodation\Presentation\Livewire\BedAndBreakfast\BedAndBreakfastCreate::class)->name('bedandbreakfast-create');
+        Route::get('/bed-and-breakfast/{bnb}/manage', \App\Modules\Accommodation\Presentation\Livewire\BedAndBreakfast\BedAndBreakfastCreate::class)->name('bedandbreakfast-manage');
+        Route::get('/experience/create', \App\Modules\Activities\Presentation\Livewire\Activity\ActivityCreate::class)->name('activity-create');
+        Route::get('/experience/{activity:slug}/manage', \App\Modules\Activities\Presentation\Livewire\Activity\ActivityCreate::class)->name('activity-manage');
 
     });
 

@@ -19,7 +19,7 @@ class PackagesServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        Gate::policy(App\Modules\Packages\Domain\Models\Package::class, PackagePolicy::class);
-        Gate::policy(App\Modules\Packages\Domain\Models\PackageFeature::class, PackageFeaturePolicy::class);
+        Gate::policy(\App\Modules\Packages\Domain\Models\Package::class, PackagePolicy::class);
+        Gate::policy(\App\Modules\Packages\Domain\Models\PackageFeature::class, PackageFeaturePolicy::class);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Modules\Activities\Domain\Models;
 
+use App\Modules\Accommodation\Domain\Models\Concerns\HasScenes;
 use App\Modules\Activities\Domain\Enums\ActivityStatus;
 use App\Modules\Activities\Domain\Enums\ActivityVerificationStatus;
 use App\Modules\Availability\Domain\Models\Availability;
@@ -30,9 +31,11 @@ use Illuminate\Support\Str;
 
 class Activity extends Model implements AvailabilityAware, Bookable, Pricable
 {
-    use HasFactory, SoftDeletes;
+    use HasScenes, HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'cover_video',
+        'setup_step',
         'hotel_id',
         'provider_id',
         'destination_id',

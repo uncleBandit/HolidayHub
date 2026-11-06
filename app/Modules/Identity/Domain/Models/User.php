@@ -52,7 +52,17 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'suspended_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Suspended accounts cannot sign in or use the API; see
+     * {@see \App\Modules\Identity\Presentation\Http\Middleware\EnsureAccountIsActive}.
+     */
+    public function isSuspended(): bool
+    {
+        return $this->suspended_at !== null;
     }
 
     /**
@@ -113,6 +123,6 @@ class User extends Authenticatable implements FilamentUser
      */
     public function canAccessPanel(\Filament\Panel $panel): bool
     {
-        return $this->can('admin.panel.access');
+        return ! $this->isSuspended() && $this->can('admin.panel.access');
     }
 }

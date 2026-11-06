@@ -3,12 +3,16 @@
 namespace App\Modules\Booking\Presentation\Livewire\Forms;
 
 use App\Modules\Booking\Application\Services\BookingManager;
+use App\Modules\Payments\Infrastructure\Gateways\NullPaymentGateway;
+use App\Modules\Payments\Domain\Contracts\PaymentGateway;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -78,6 +82,10 @@ class BookingForm extends Component
         $this->checkOut = $bookingData['checkout'];
         $this->pricePreview = $bookingData['total'];
 
+        // Start from the signed-in traveller rather than empty fields.
+        $this->data['name'] ??= Auth::user()?->name;
+        $this->data['email'] ??= Auth::user()?->email;
+
         $this->showModal = true;
 
         Log::info('BookingForm openBookingModal called', $this->bookingData);
@@ -92,7 +100,8 @@ class BookingForm extends Component
 
     /** @var string|null Success confirmation */
     protected array $rules = [
-        'bookableType' => 'required|string|in:hotel,villa,package,flight,activity,bed_and_breakfast',
+        // Hotels are booked by room type, which the calendar sends as room_type.
+        'bookableType' => 'required|string|in:hotel,room_type,villa,package,flight,activity,bed_and_breakfast',
         'bookableId' => 'required|integer|min:1',
         'roomId' => 'nullable|integer|min:1',
         'checkIn' => 'required|date|after_or_equal:today',
@@ -266,6 +275,63 @@ class BookingForm extends Component
      * }
      * }
      */
+    /**
+     * What the checkout shows about the stay. Bookables differ in naming
+     * (max_guests vs capacity, cover_image vs thumbnail), so it is resolved
+     * here once instead of guessed at in the view.
+     */
+    #[Computed]
+    public function summary(): ?array
+    {
+        $model = $this->bookableModel;
+
+        if ($model === null || ! $this->checkIn || ! $this->checkOut) {
+            return null;
+        }
+
+        $nights = max(1, Carbon::parse($this->checkIn)->diffInDays(Carbon::parse($this->checkOut)));
+        $total = (float) $this->pricePreview;
+
+        return [
+            'name' => $model->name ?? $model->title ?? 'Your stay',
+            'type' => Str::headline(str_replace('_', ' ', (string) $this->bookableType)),
+            'place' => collect([$model->city ?? null, $model->country ?? null])->filter()->implode(', '),
+            'image' => $this->imageFor($model),
+            'max_guests' => (int) ($model->max_guests ?? $model->capacity ?? 0) ?: null,
+            'bedrooms' => (int) ($model->bedrooms ?? 0) ?: null,
+            'nights' => $nights,
+            'nightly' => $total > 0 ? $total / $nights : 0,
+            'total' => $total,
+            'currency' => \App\Shared\Support\Currencies::symbol(method_exists($model, 'getCurrency') ? $model->getCurrency() : 'KES'),
+        ];
+    }
+
+    /**
+     * Test mode confirms bookings without charging anything; say so plainly.
+     */
+    #[Computed]
+    public function testMode(): bool
+    {
+        return app(PaymentGateway::class) instanceof NullPaymentGateway;
+    }
+
+    private function imageFor(Model $model): string
+    {
+        $candidates = [
+            $model->cover_image ?? null,
+            $model->thumbnail ?? null,
+            ((array) ($model->gallery ?? []))[0] ?? null,
+        ];
+
+        foreach ($candidates as $image) {
+            if (is_string($image) && filled($image) && ! Str::contains($image, ['placeholder', 'placehold', 'picsum'])) {
+                return Str::startsWith($image, ['http://', 'https://', '/']) ? $image : asset('storage/'.ltrim($image, '/'));
+            }
+        }
+
+        return 'https://images.unsplash.com/photo-1651860282131-e3257674ccd1?auto=format&fit=crop&w=800&q=80';
+    }
+
     public function render()
     {
         return view('livewire.forms.booking-form');

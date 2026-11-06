@@ -53,9 +53,10 @@ class VillaShow extends Component
         $this->villa = $villa->load([
 
             'amenities',
-            'reviews.user',
+            'reviews.guest',
             'provider',
             'seasonalRates',
+            'scenes',
         ]);
 
         if (Auth::check()) {
@@ -214,7 +215,7 @@ class VillaShow extends Component
             'villa' => $this->villa,
             'reviews' => Review::where('reviewable_type', Villa::class)
                 ->where('reviewable_id', $this->villa->id)
-                ->with('user')
+                ->with('guest')
                 ->latest()
                 ->paginate($this->perPage),
         ]);

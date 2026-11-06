@@ -26,9 +26,6 @@ class RoomFactory extends Factory
             'room_type_id' => fn (array $attributes) => RoomType::factory()
                 ->create(['hotel_id' => $attributes['hotel_id']])
                 ->id,
-            'room_number' => fn (array $attributes) => ((int) Room::query()
-                ->where('hotel_id', $attributes['hotel_id'])
-                ->max('room_number')) + 1,
             'name' => $this->faker->unique()->words(2, true).' Room',
             'description' => $this->faker->optional()->paragraph(),
             'capacity' => $this->faker->numberBetween(1, 6),

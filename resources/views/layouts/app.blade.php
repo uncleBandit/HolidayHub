@@ -20,7 +20,6 @@
             <nav class="hidden h-full items-center gap-9 md:flex" aria-label="Main navigation">
                 @php
                     $nav = [
-                        ['label' => 'Discover', 'route' => 'welcome'],
                         ['label' => 'Destinations', 'route' => 'destination.index'],
                         ['label' => 'Stays', 'route' => 'stays.index'],
                         ['label' => 'Experiences', 'route' => 'experiences.index'],
@@ -82,7 +81,7 @@
                                 {{ Auth::user()->name }}
                             </p>
 
-                            <a href="{{ route('dashboard') }}" class="block px-4 py-2 text-sm text-ink transition-colors hover:bg-paper">Dashboard</a>
+                            <a href="{{ route('dashboard') }}" class="block px-4 py-2 text-sm text-ink transition-colors hover:bg-paper">For you</a>
                             <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-ink transition-colors hover:bg-paper">Profile</a>
 
                             <form method="POST" action="{{ route('logout') }}">
@@ -135,7 +134,7 @@
 
             <div class="mt-5 flex flex-col gap-2">
                 @auth
-                    <a href="{{ route('dashboard') }}" class="rounded-full border border-line px-5 py-3 text-center text-sm font-semibold text-ink">Dashboard</a>
+                    <a href="{{ route('dashboard') }}" class="rounded-full border border-line px-5 py-3 text-center text-sm font-semibold text-ink">For you</a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="w-full rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white">Log out</button>

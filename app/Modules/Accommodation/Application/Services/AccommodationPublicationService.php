@@ -196,6 +196,46 @@ class AccommodationPublicationService
         });
     }
 
+    /**
+     * Put a suspended listing back in front of guests.
+     *
+     * The listing was already approved before it was suspended, so it returns
+     * straight to published without a fresh review.
+     */
+    public function reinstate(Accommodation $accommodation, int $reviewerId, ?string $reason = null): Accommodation
+    {
+        return DB::transaction(function () use ($accommodation, $reviewerId, $reason): Accommodation {
+            $locked = Accommodation::query()->lockForUpdate()->findOrFail($accommodation->id);
+
+            if ($locked->status !== AccommodationStatus::Suspended) {
+                throw ValidationException::withMessages([
+                    'publication' => 'Only suspended listings can be reinstated.',
+                ]);
+            }
+
+            $locked->update([
+                'status' => AccommodationStatus::Published,
+                'verification_status' => VerificationStatus::Approved,
+                'published_at' => $locked->published_at ?? now(),
+                'suspended_at' => null,
+                'suspension_reason' => null,
+                'reviewed_by' => $reviewerId,
+            ]);
+            $locked->verificationHistory()->create([
+                'reviewer_id' => $reviewerId,
+                'status' => AccommodationStatus::Published->value,
+                'reason' => $reason ?: 'Listing reinstated.',
+            ]);
+
+            $property = $locked->bookable;
+            if ($property) {
+                $property->forceFill(['is_active' => true, 'is_verified' => true])->save();
+            }
+
+            return $locked->refresh();
+        });
+    }
+
     private function ensurePendingReview(Accommodation $accommodation): void
     {
         if ($accommodation->status !== AccommodationStatus::PendingReview

@@ -88,7 +88,10 @@ class BookingManager
                 'guests_adults' => $guests,
                 'guests_children' => 0,                 // adjust if needed
                 'total_amount' => $totalPrice,
-                'currency' => $guest->preferred_currency ?? 'USD',
+                // The total is calculated from the listing's own prices and
+                // nothing converts it, so it is recorded in the listing's
+                // currency whatever the guest prefers to see.
+                'currency' => method_exists($bookable, 'getCurrency') ? ($bookable->getCurrency() ?: 'KES') : 'KES',
                 'status' => 'pending',
                 'idempotency_key' => $idempotencyKey,
                 'confirmation_code' => strtoupper(Str::random(10)), // unique booking ref
@@ -140,6 +143,49 @@ class BookingManager
             $this->paymentGateway->refund($booking);
 
             event(new BookingCancelled($booking));
+        });
+    }
+
+    /**
+     * Cancel a booking on the platform's authority (admin console).
+     *
+     * Unlike cancel(), this is not limited to the guest's own bookings and does
+     * not apply the guest-facing PolicyEngine cut-offs: an operator cancelling
+     * is the override. It releases activity-session capacity exactly as
+     * cancel() does, and a package booking takes its component bookings with
+     * it, so no provider is left holding a booking for a cancelled trip.
+     *
+     * Money is not moved here; refunds are recorded separately.
+     *
+     * @return list<int> ids of every booking cancelled, parent first
+     */
+    public function cancelAsOperator(Booking $booking, string $reason): array
+    {
+        return DB::transaction(function () use ($booking, $reason): array {
+            $targets = collect([$booking])
+                ->merge(Booking::where('package_booking_id', $booking->id)->get())
+                ->filter(fn (Booking $b) => $b->status !== 'cancelled');
+
+            foreach ($targets as $target) {
+                $session = $target->activitySession()->lockForUpdate()->first();
+                if ($session) {
+                    $participants = $target->guests_adults + $target->guests_children;
+                    $released = $session->newQuery()
+                        ->whereKey($session->id)
+                        ->where('booked_capacity', '>=', $participants)
+                        ->decrement('booked_capacity', $participants);
+
+                    if ($released !== 1) {
+                        throw new RuntimeException('Activity session capacity is inconsistent with the booking being cancelled.');
+                    }
+                }
+
+                $target->update(['status' => 'cancelled', 'cancelled_at' => now()]);
+
+                event(new BookingCancelled($target, $reason));
+            }
+
+            return $targets->pluck('id')->values()->all();
         });
     }
 

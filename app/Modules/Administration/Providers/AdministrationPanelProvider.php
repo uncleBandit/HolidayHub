@@ -5,13 +5,16 @@ namespace App\Modules\Administration\Providers;
 use App\Modules\Administration\Filament\Pages\Dashboard;
 use App\Modules\Administration\Filament\Resources\BookingOperationsResource;
 use App\Modules\Audit\Filament\Resources\AuditLogResource;
+use Filament\Actions\Action;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
@@ -41,8 +44,34 @@ class AdministrationPanelProvider extends PanelProvider
             ->login()
             ->profile()
             ->brandName(config('app.name').' Admin')
+            // The site's palette and type, so the panel reads as part of
+            // HolidayHub: forest for actions, clay for warnings.
+            ->brandLogo(fn () => view('administration::admin.brand'))
+            ->brandLogoHeight('1.9rem')
+            ->favicon(asset('favicon.svg'))
+            ->font('DM Sans')
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::hex('#16392F'),
+                'warning' => Color::hex('#D85F3C'),
+                'danger' => Color::Rose,
+                'success' => Color::Emerald,
+                'info' => Color::Sky,
+                'gray' => Color::Stone,
+            ])
+            ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('administration::admin.head'))
+            ->sidebarCollapsibleOnDesktop()
+            ->navigationGroups([
+                NavigationGroup::make('Marketplace'),
+                NavigationGroup::make('Bookings & money'),
+                NavigationGroup::make('People'),
+                NavigationGroup::make('Content & catalog'),
+                NavigationGroup::make('System')->collapsed(),
+            ])
+            ->userMenuItems([
+                Action::make('site')
+                    ->label('View the site')
+                    ->icon('heroicon-o-globe-alt')
+                    ->url(fn () => route('welcome')),
             ])
             ->discoverResources(
                 in: $this->discoverPath('Resources'),
@@ -62,6 +91,11 @@ class AdministrationPanelProvider extends PanelProvider
             ->pages([
                 Dashboard::class,
             ])
+            // Other pages (e.g. Revenue & payouts) are discovered like resources.
+            ->discoverPages(
+                in: $this->discoverPath('Pages'),
+                for: 'App\\Modules\\Administration\\Filament\\Pages',
+            )
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

@@ -3,7 +3,6 @@
 namespace App\Modules\Destinations\Providers;
 
 use App\Modules\Destinations\Domain\Policies\DestinationPolicy;
-use App\Modules\Destinations\Domain\Policies\DestinationReviewPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -19,7 +18,6 @@ class DestinationsServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        Gate::policy(App\Modules\Destinations\Domain\Models\Destination::class, DestinationPolicy::class);
-        Gate::policy(App\Modules\Destinations\Domain\Models\Destination::class, DestinationReviewPolicy::class);
+        Gate::policy(\App\Modules\Destinations\Domain\Models\Destination::class, DestinationPolicy::class);
     }
 }

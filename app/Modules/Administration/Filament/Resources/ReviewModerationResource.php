@@ -29,7 +29,7 @@ class ReviewModerationResource extends Resource
 
     protected static ?int $navigationSort = 50;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Marketplace';
+    protected static string|\UnitEnum|null $navigationGroup = 'Content & catalog';
 
     public static function canViewAny(): bool
     {

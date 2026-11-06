@@ -1,223 +1,184 @@
-<div>
-<div class="bg-gray-50 min-h-screen font-sans antialiased">
-    {{-- Main Image Carousel Section --}}
-    <div x-data="{ activeSlide: 0, images: @js($villa->gallery_urls), totalImages: @js(count($villa->gallery_urls)) }"
-         class="relative w-full h-[60vh] md:h-[80vh] overflow-hidden rounded-b-3xl shadow-2xl">
+@php
+    $currency = \App\Shared\Support\Currencies::symbol($villa->getCurrency());
+    $minNights = max(1, (int) $villa->min_nights);
+    $staff = collect($villa->staffKeys())->map(fn ($key) => \App\Modules\Accommodation\Domain\Models\Villa::STAFF[$key]);
+    $seasons = $villa->seasonalRates->where('active', true)->filter(fn ($rate) => \Carbon\Carbon::parse($rate->end_date)->gte(today()))->sortBy('start_date')->values();
+    $price = (float) $villa->getBasePrice();
+    $place = collect([$villa->city, $villa->country])->filter()->implode(', ');
+    $rating = (float) $villa->avg_rating;
+    $images = array_merge([$villa->cover_image], (array) ($villa->gallery ?? []));
+    $specs = collect([
+        $villa->bedrooms ? ['icon' => 'bed', 'value' => $villa->bedrooms.' '.\Illuminate\Support\Str::plural('bedroom', $villa->bedrooms), 'sub' => 'Private rooms'] : null,
+        $villa->bathrooms ? ['icon' => 'waves', 'value' => $villa->bathrooms.' '.\Illuminate\Support\Str::plural('bathroom', $villa->bathrooms), 'sub' => 'Ensuite comfort'] : null,
+        $villa->max_guests ? ['icon' => 'users', 'value' => 'Up to '.$villa->max_guests.' guests', 'sub' => 'The whole villa'] : null,
+        $villa->size_sqm ? ['icon' => 'grid', 'value' => number_format((int) $villa->size_sqm).' m²', 'sub' => 'Of living space'] : null,
+        $villa->has_private_pool ? ['icon' => 'waves', 'value' => 'Private pool', 'sub' => 'Just for your group'] : null,
+    ])->filter()->values();
+@endphp
 
-        {{-- Image Carousel Slides --}}
-        <template x-for="(image, index) in images" :key="index">
-            <img :src="image"
-                 x-show="activeSlide === index"
-                 x-transition:enter="transition ease-out duration-500"
-                 x-transition:enter-start="opacity-0 transform scale-105"
-                 x-transition:enter-end="opacity-100 transform scale-100"
-                 class="absolute inset-0 w-full h-full object-cover"
-                 :alt="'Image ' + (index + 1)">
-        </template>
+<div class="pb-24 lg:pb-0">
+    <x-stay-detail.gallery
+        :images="$images"
+        :video="$villa->cover_video"
+        :name="$villa->name"
+        kind="villa"
+        :wishlisted="$isWishlisted"
+    />
 
-        {{-- Image Transition Overlay --}}
-        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+    <div class="mx-auto max-w-[1250px] px-4 sm:px-6 lg:px-8">
+        <x-stay-detail.heading
+            :name="$villa->name"
+            kind="Private villa"
+            :host="$villa->provider?->company_name"
+            :verified="(bool) $villa->is_verified"
+            :rating="$rating"
+            :reviews="$villa->reviews_count"
+            :location="$place ?: $villa->address"
+            :facts="[
+                ['value' => $rating > 0 ? number_format($rating, 1) : 'New', 'label' => 'Guest rating', 'star' => $rating > 0],
+                ['value' => $villa->max_guests ?: '—', 'label' => 'Max guests'],
+                ['value' => $minNights.' '.\Illuminate\Support\Str::plural('night', $minNights), 'label' => 'Minimum stay'],
+            ]"
+        />
 
-        {{-- Carousel Navigation Dots --}}
-        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-            <template x-for="(image, index) in images" :key="index">
-                <button @click="activeSlide = index"
-                        :class="{'bg-white': activeSlide === index, 'bg-white/50': activeSlide !== index}"
-                        class="h-2 w-2 rounded-full transition-colors duration-300"></button>
-            </template>
-        </div>
+        {{-- The reel walk: the host's walk through the house, from the gate to the view. --}}
+        <x-stay-detail.reel-walk :scenes="$villa->scenes" :name="$villa->name" class="mt-10 border-b border-line !pb-12" />
 
-        {{-- Content Overlay --}}
-        <div class="absolute inset-x-0 bottom-0 p-8 md:p-12 text-white z-20">
-            <h1 class="text-4xl md:text-6xl font-extrabold leading-tight drop-shadow-lg">
-                {{ $villa->name }}
-            </h1>
-            <p class="text-xl md:text-2xl mt-2 font-medium drop-shadow-sm">
-                {{ $villa->city }}, {{ $villa->country }}
-            </p>
-            <div class="flex items-center mt-4 text-sm md:text-base font-semibold">
-                <i class="fas fa-star text-yellow-400 mr-2"></i>
-                <span>{{ number_format($villa->avg_rating, 1) }} ({{ $villa->reviews_count }} reviews)</span>
-            </div>
-        </div>
+        <x-stay-detail.tabs
+            :tabs="[
+                'overview' => 'Overview',
+                'availability' => 'Availability',
+                'amenities' => 'Amenities',
+                'reviews' => 'Reviews ('.$reviews->total().')',
+                'location' => 'Location',
+            ]"
+            :active="$activeTab"
+            wire-tab
+        />
 
-        {{-- Action Buttons --}}
-        <div class="absolute top-8 right-8 flex items-center gap-4 z-20">
-            <button wire:click="toggleWishlist"
-                    class="p-3 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition shadow-lg">
-                <i class="{{ $isWishlisted ? 'fas text-rose-500' : 'far text-white' }} fa-heart text-xl"></i>
-            </button>
-            <button wire:click="showGallery(0)"
-                    class="px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-full font-semibold hover:bg-white/30 transition shadow-lg hidden md:block">
-                <i class="fas fa-camera mr-2"></i>
-                View All Photos
-            </button>
-        </div>
-    </div>
-
-    {{-- Gallery Thumbnail Preview --}}
-    <div class="max-w-7xl mx-auto px-6 mt-8 md:mt-12 -translate-y-16 relative z-10 hidden md:block">
-        <div class="flex gap-4 overflow-x-auto custom-scrollbar">
-            @foreach($villa->gallery_urls as $index => $url)
-                <img wire:click="showGallery({{ $index }})"
-                     src="{{ $url }}"
-                     alt="Gallery image {{ $index + 1 }}"
-                     class="w-28 h-28 object-cover rounded-xl shadow-lg hover:scale-105 hover:shadow-xl cursor-pointer transition-transform duration-300">
-            @endforeach
-        </div>
-    </div>
-
-    {{-- Main Content Container --}}
-    <div class="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-16 lg:mt-0 mt-8">
-
-        {{-- Main Details Section --}}
-        <div class="lg:col-span-2 space-y-12">
-
-            {{-- Villa Stats --}}
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
-                {{-- ... (stats section is unchanged as it's already well-designed) ... --}}
-                <div class="flex flex-col items-center p-4 bg-white rounded-xl shadow-sm border border-gray-100">
-                    <i class="fas fa-bed text-2xl text-indigo-600 mb-2"></i>
-                    <p class="font-semibold text-sm text-gray-700">Bedrooms</p>
-                    <p class="text-lg font-bold text-gray-900 mt-1">{{ $villa->bedrooms }}</p>
-                </div>
-                <div class="flex flex-col items-center p-4 bg-white rounded-xl shadow-sm border border-gray-100">
-                    <i class="fas fa-users text-2xl text-indigo-600 mb-2"></i>
-                    <p class="font-semibold text-sm text-gray-700">Guests</p>
-                    <p class="text-lg font-bold text-gray-900 mt-1">{{ $villa->max_guests }}</p>
-                </div>
-                <div class="flex flex-col items-center p-4 bg-white rounded-xl shadow-sm border border-gray-100">
-                    <i class="fas fa-bath text-2xl text-indigo-600 mb-2"></i>
-                    <p class="font-semibold text-sm text-gray-700">Bathrooms</p>
-                    <p class="text-lg font-bold text-gray-900 mt-1">{{ $villa->bathrooms }}</p>
-                </div>
-                <div class="flex flex-col items-center p-4 bg-white rounded-xl shadow-sm border border-gray-100">
-                    <i class="fas fa-ruler-combined text-2xl text-indigo-600 mb-2"></i>
-                    <p class="font-semibold text-sm text-gray-700">Size</p>
-                    <p class="text-lg font-bold text-gray-900 mt-1">1,200 sqft</p>
-                </div>
-            </div>
-
-            {{-- Tabs Section --}}
-            <div class="border-b border-gray-200">
-                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                    {{-- ... (tabs are unchanged) ... --}}
-                    <button wire:click="switchTab('overview')"
-                            class="{{ $activeTab === 'overview' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200">
-                        Overview
-                    </button>
-                    <button wire:click="switchTab('amenities')"
-                            class="{{ $activeTab === 'amenities' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200">
-                        Amenities
-                    </button>
-                    <button wire:click="switchTab('reviews')"
-                            class="{{ $activeTab === 'reviews' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200">
-                        Reviews ({{ $villa->reviews->count() }})
-                    </button>
-                </nav>
-            </div>
-
-            {{-- Tab Content --}}
-            <div class="py-6">
-                {{-- ... (tab content is unchanged) ... --}}
-                @if($activeTab === 'overview')
-                    <h2 class="text-2xl font-bold mb-4 text-gray-800">About this Villa</h2>
-                    <p class="text-gray-600 leading-relaxed text-lg">{{ $villa->description }}</p>
-                @elseif($activeTab === 'amenities')
-                    <h2 class="text-2xl font-bold mb-4 text-gray-800">What this place offers</h2>
-                    <ul class="grid grid-cols-2 md:grid-cols-3 gap-6 text-gray-700">
-                        @foreach($villa->amenities as $amenity)
-                            <li class="flex items-center gap-3">
-                                <i class="{{ $amenity->icon ?? 'fas fa-check-circle' }} text-green-500 text-xl"></i>
-                                <span class="font-medium">{{ $amenity->name }}</span>
-                            </li>
-                        @endforeach
-                    </ul>
-                @elseif($activeTab === 'reviews')
-                    <h2 class="text-2xl font-bold mb-6 text-gray-800">Guest Reviews</h2>
-                    <div class="space-y-6">
-                        @forelse($reviews as $review)
-                            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-                                <div class="flex items-center gap-4">
-                                    <div class="flex-shrink-0 w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-xl border border-gray-300">
-                                        {{ substr($review->user->name, 0, 1) }}
-                                    </div>
-                                    <div>
-                                        <h4 class="font-semibold text-lg text-gray-800">{{ $review->user->name }}</h4>
-                                        <p class="text-sm text-gray-500">
-                                            Reviewed on {{ $review->created_at->format('M d, Y') }}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-1 text-yellow-500 mt-3">
-                                    @for ($i = 0; $i < $review->rating; $i++)
-                                        <i class="fas fa-star text-base"></i>
-                                    @endfor
-                                </div>
-                                <p class="text-gray-700 mt-3 leading-relaxed">"{{ $review->comment }}"</p>
-                            </div>
-                        @empty
-                            <p class="text-gray-500 text-center py-10">No reviews yet. Be the first to leave one!</p>
-                        @endforelse
+        <div class="lg:grid lg:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.8fr)] lg:gap-14">
+            <div class="min-w-0">
+                {{-- About --}}
+                <x-stay-detail.section id="overview">
+                    <div class="grid gap-6 md:grid-cols-[0.9fr_1.1fr] md:gap-10">
+                        <div>
+                            <p class="dv-eyebrow">About this villa</p>
+                            <h2 class="dv-title">{{ $place ? 'A place of your own in '.$villa->city : 'A place of your own' }}</h2>
+                        </div>
+                        <p class="dv-body whitespace-pre-line">{{ $villa->description ?: 'The host is still writing about this villa. The details below cover what you can expect.' }}</p>
                     </div>
-                @endif
+
+                    @if ($specs->isNotEmpty())
+                        <div @class(['mt-10 grid grid-cols-2 gap-x-4 gap-y-6 border-y border-line py-6', 'sm:grid-cols-3' => $specs->count() === 3, 'sm:grid-cols-4' => $specs->count() >= 4])>
+                            @foreach ($specs as $spec)
+                                <div class="flex items-center gap-3">
+                                    <x-line-icon :name="$spec['icon']" :size="22" class="text-clay" />
+                                    <p class="flex flex-col text-[13px]"><b class="text-ink">{{ $spec['value'] }}</b><span class="mt-0.5 text-[11.5px] text-muted">{{ $spec['sub'] }}</span></p>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    @if ($staff->isNotEmpty())
+                        <div class="mt-8">
+                            <p class="dv-eyebrow">What makes it special</p>
+                            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                @foreach ($staff as [$label, $line])
+                                    <div class="flex items-center gap-3 rounded-[0.9rem] bg-sand/60 px-4 py-3">
+                                        <x-line-icon name="check" :size="18" class="text-clay" />
+                                        <p class="text-[12.5px] leading-snug text-muted"><b class="block text-ink">{{ $label }}</b>{{ $line }}</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if ($seasons->isNotEmpty())
+                        <div class="mt-8 rounded-[1rem] border border-line p-5">
+                            <p class="font-dm-serif text-[1.25rem] text-forest">Seasonal rates</p>
+                            <ul class="mt-2 divide-y divide-line text-[13px]">
+                                @foreach ($seasons as $season)
+                                    <li class="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                                        <span><b class="text-ink">{{ $season->description ?: 'Seasonal rate' }}</b> <span class="text-muted">· {{ \Carbon\Carbon::parse($season->start_date)->format('j M') }} – {{ \Carbon\Carbon::parse($season->end_date)->format('j M Y') }}</span></span>
+                                        <span class="font-dm-serif text-[1.1rem] text-forest">{{ $currency }} {{ number_format((float) $season->rate) }} <small class="font-sans text-[11px] font-semibold text-muted">/ night</small></span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    @if ($rating >= 4.7)
+                        <div class="mt-6 flex items-center gap-4 rounded-[0.9rem] bg-sand/60 px-5 py-4">
+                            <x-line-icon name="star" :size="24" filled class="text-clay" />
+                            <p class="text-[12.5px] leading-snug text-muted"><b class="block text-ink">A guest favourite</b>One of the most loved stays{{ $villa->city ? ' in '.$villa->city : '' }}, based on ratings and verified reviews.</p>
+                        </div>
+                    @endif
+                </x-stay-detail.section>
+
+                {{-- Availability --}}
+                <x-stay-detail.section id="availability" eyebrow="Plan your dates" title="Availability">
+                    <livewire:calendar.calendar-component :bookable="$villa" />
+                </x-stay-detail.section>
+
+                {{-- Amenities --}}
+                <x-stay-detail.section id="amenities" eyebrow="What this place offers" title="Everything within reach">
+                    <x-stay-detail.amenities :amenities="$villa->amenities" />
+                </x-stay-detail.section>
+
+                {{-- Reviews --}}
+                <x-stay-detail.section id="reviews" eyebrow="Guest stories" title="What guests are saying">
+                    @if ($reviews->isNotEmpty())
+                        <div class="grid gap-4 md:grid-cols-2">
+                            @foreach ($reviews as $review)
+                                <x-stay-detail.review :review="$review" wire:key="review-{{ $review->id }}" />
+                            @endforeach
+                        </div>
+                        @if ($reviews->hasPages())
+                            <div class="mt-6 flex items-center justify-center gap-3">
+                                <button type="button" wire:click="previousPage" @disabled($reviews->onFirstPage()) class="dv-btn dv-btn-ghost disabled:opacity-40">
+                                    <x-line-icon name="chevron" :size="15" class="rotate-180" /> Newer
+                                </button>
+                                <span class="text-[12px] text-muted">Page {{ $reviews->currentPage() }} of {{ $reviews->lastPage() }}</span>
+                                <button type="button" wire:click="nextPage" @disabled(! $reviews->hasMorePages()) class="dv-btn dv-btn-ghost disabled:opacity-40">
+                                    Older <x-line-icon name="chevron" :size="15" />
+                                </button>
+                            </div>
+                        @endif
+                    @else
+                        <x-stay-detail.reviews-empty />
+                    @endif
+                </x-stay-detail.section>
+
+                {{-- Agent journeys that include this stay (renders nothing when there are none). --}}
+                @include('packages::partials.journeys-rail', ['journeysFor' => $villa, 'journeysTitle' => 'Journeys that include '.$villa->name, 'journeysClass' => 'scroll-mt-[150px] border-b border-line py-12 md:py-14'])
+
+                {{-- Location --}}
+                <x-stay-detail.section id="location" eyebrow="The neighbourhood" title="Where you'll stay" last>
+                    <x-stay-detail.location
+                        :address="$villa->address"
+                        :city="$villa->city"
+                        :country="$villa->country"
+                        :latitude="$villa->latitude"
+                        :longitude="$villa->longitude"
+                        :policies="$villa->policies"
+                    />
+                </x-stay-detail.section>
             </div>
 
-        </div>
-
-        {{-- Booking Form (Sticky on Desktop) --}}
-        <div class="lg:col-span-1" id="booking-form">
-            <div class="lg:sticky lg:top-16 bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 space-y-6">
-                <h3 class="text-2xl font-bold text-gray-800 text-center">
-                    <span class="text-4xl font-extrabold">${{ number_format($villa->base_price, 0) }}</span> / night
-                </h3>
-
-                {{-- Calendar availability (shared across bookables) --}}
-                <livewire:calendar.calendar-component :bookable="$villa" />
-
-                <hr class="border-gray-200">
-
-                {{-- Booking form (shared Livewire form) --}}
-                <livewire:forms.booking-form :villa="$villa" />
+            <div class="pb-12 lg:self-start lg:pb-16 lg:pt-12">
+                <x-stay-detail.booking-card
+                    :price="$price"
+                    :currency="$currency"
+                    :rating="$rating"
+                    :reviews="$villa->reviews_count"
+                    :guests-label="$villa->max_guests ? 'Up to '.$villa->max_guests.' guests' : null"
+                    :note="$minNights > 1 ? 'Minimum stay of '.$minNights.' nights' : null"
+                    :cancellation="$villa->policies['cancellation'] ?? null"
+                />
             </div>
         </div>
-
     </div>
-</div>
 
-{{-- Full-screen Gallery Modal --}}
-@if($isGalleryOpen)
-    <div x-data="{ open: @entangle('isGalleryOpen') }" x-show="open"
-         class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-95">
-        <div class="relative w-full h-full flex items-center justify-center p-8">
-            {{-- Close Button --}}
-            <button wire:click="closeGallery"
-                    class="absolute top-8 right-8 text-white text-3xl z-50 hover:text-gray-300 transition">
-                <i class="fas fa-times-circle"></i>
-            </button>
-
-            {{-- Image & Navigation Controls --}}
-            <div class="flex items-center space-x-4 w-full h-full">
-                {{-- Previous Image Button --}}
-                <button wire:click="previousImage"
-                        class="text-white text-5xl opacity-50 hover:opacity-100 transition">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-
-                {{-- Full-size Image --}}
-                <div class="flex-grow flex items-center justify-center h-full">
-                    <img src="{{ $villa->gallery_urls[$activeImageId] ?? $villa->main_image_url }}"
-                         class="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl"
-                         alt="Full-size gallery image">
-                </div>
-
-                {{-- Next Image Button --}}
-                <button wire:click="nextImage"
-                        class="text-white text-5xl opacity-50 hover:opacity-100 transition">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-@endif
+    {{-- Shared booking modal, opened by the calendar's book() action. --}}
+    <livewire:forms.booking-form :villa="$villa" />
 </div>

@@ -31,7 +31,11 @@
         <env name="DB_CONNECTION" value="pgsql"/>
         <env name="DB_HOST" value="127.0.0.1"/>
         <env name="DB_PORT" value="5432"/>
-        <env name="DB_DATABASE" value="holidayhub_test"/>
+        <!-- Forced in both places: inside Docker DB_DATABASE is a real environment
+             variable, and Laravel reads $_SERVER first, so without these the
+             test suite's RefreshDatabase would wipe the development database. -->
+        <env name="DB_DATABASE" value="holidayhub_test" force="true"/>
+        <server name="DB_DATABASE" value="holidayhub_test" force="true"/>
         <env name="DB_USERNAME" value="holidayhub"/>
         <env name="DB_PASSWORD" value="holidayhub"/>
         <env name="MAIL_MAILER" value="array"/>

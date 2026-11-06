@@ -42,6 +42,44 @@ class RoomType extends Model implements AvailabilityAware, Bookable, HasUnitCapa
         'beds',
         'hero_image_url',
         'gallery_images', // Stored as a JSON array of image URLs
+        'size_sqm',
+        'view',
+        'bed_configuration',
+        'max_adults',
+        'max_children',
+        'breakfast_included',
+        'refundable',
+        'smoking_allowed',
+        'accessible',
+    ];
+
+    /**
+     * Views a room can look onto, keyed as stored.
+     */
+    public const VIEWS = [
+        'ocean' => 'Ocean view',
+        'beach' => 'Beachfront',
+        'pool' => 'Pool view',
+        'garden' => 'Garden view',
+        'city' => 'City view',
+        'mountain' => 'Mountain view',
+        'savannah' => 'Savannah view',
+        'courtyard' => 'Courtyard view',
+        'none' => 'No particular view',
+    ];
+
+    /**
+     * Bed types, keyed as stored in bed_configuration.
+     */
+    public const BED_TYPES = [
+        'king' => 'King bed',
+        'queen' => 'Queen bed',
+        'double' => 'Double bed',
+        'twin' => 'Twin bed',
+        'single' => 'Single bed',
+        'sofa' => 'Sofa bed',
+        'bunk' => 'Bunk bed',
+        'cot' => 'Baby cot',
     ];
 
     /**
@@ -54,7 +92,32 @@ class RoomType extends Model implements AvailabilityAware, Bookable, HasUnitCapa
         'capacity' => 'integer',
         'beds' => 'integer',
         'gallery_images' => 'array',
+        'size_sqm' => 'integer',
+        'bed_configuration' => 'array',
+        'max_adults' => 'integer',
+        'max_children' => 'integer',
+        'breakfast_included' => 'boolean',
+        'refundable' => 'boolean',
+        'smoking_allowed' => 'boolean',
+        'accessible' => 'boolean',
     ];
+
+    /**
+     * "1 King bed · 1 Sofa bed", for cards and summaries.
+     */
+    public function bedSummary(): ?string
+    {
+        $beds = collect($this->bed_configuration ?? [])
+            ->filter(fn ($bed) => ($bed['count'] ?? 0) > 0 && isset(self::BED_TYPES[$bed['type'] ?? '']))
+            ->map(fn ($bed) => $bed['count'].' '.\Illuminate\Support\Str::plural(self::BED_TYPES[$bed['type']], (int) $bed['count']));
+
+        return $beds->isEmpty() ? null : $beds->implode(' · ');
+    }
+
+    public function viewLabel(): ?string
+    {
+        return $this->view && $this->view !== 'none' ? (self::VIEWS[$this->view] ?? null) : null;
+    }
 
     /**
      * A RoomType belongs to a Hotel.
@@ -110,7 +173,14 @@ class RoomType extends Model implements AvailabilityAware, Bookable, HasUnitCapa
      */
     public function getHeroImageUrlAttribute(): string
     {
-        return $this->attributes['hero_image_url'] ?? asset('storage/roomtypes/default-hero.jpg');
+        if (filled($this->attributes['hero_image_url'] ?? null)) {
+            return $this->attributes['hero_image_url'];
+        }
+
+        // Otherwise the first photo the host uploaded (films can't be posters).
+        $photo = collect($this->gallery_images ?? [])->first(fn ($path) => is_string($path) && ! \App\Shared\Support\Media::isVideo($path));
+
+        return \App\Shared\Support\Media::url($photo) ?? asset('storage/roomtypes/default-hero.jpg');
     }
 
     /**
@@ -260,7 +330,8 @@ class RoomType extends Model implements AvailabilityAware, Bookable, HasUnitCapa
      */
     public function getCurrency(): string
     {
-        return $this->currency ?? 'USD';
+        // Room types price in their hotel's currency; listings began in shillings.
+        return $this->currency ?: 'KES';
     }
 
     /**

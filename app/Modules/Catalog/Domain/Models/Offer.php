@@ -84,6 +84,17 @@ class Offer extends Model
         return $this->morphTo();
     }
 
+    /** The listing this offer applies to (offerable_type / offerable_id). */
+    public function offerable()
+    {
+        return $this->morphTo();
+    }
+
+    public function provider()
+    {
+        return $this->belongsTo(\App\Modules\Providers\Domain\Models\Provider::class);
+    }
+
     /**
      * Scopes
      */

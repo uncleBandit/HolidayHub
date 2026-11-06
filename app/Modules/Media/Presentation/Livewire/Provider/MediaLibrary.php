@@ -20,7 +20,10 @@ use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use RuntimeException;
 use Throwable;
+use Livewire\Attributes\Layout;
 
+// Provider and agent workspaces keep the sidebar layout.
+#[Layout('components.layouts.app')]
 class MediaLibrary extends Component
 {
     use WithFileUploads, WithPagination;

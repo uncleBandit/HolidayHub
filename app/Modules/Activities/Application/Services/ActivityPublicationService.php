@@ -90,6 +90,41 @@ class ActivityPublicationService
         return $this->recordDecision($activity, ActivityStatus::Suspended, ActivityVerificationStatus::Suspended, $reviewerId, $reason);
     }
 
+    /**
+     * Put a suspended activity back in front of guests.
+     *
+     * It was approved before it was suspended, so it returns straight to
+     * published without a fresh review.
+     */
+    public function reinstate(Activity $activity, int $reviewerId, ?string $reason = null): Activity
+    {
+        if ($activity->status !== ActivityStatus::Suspended) {
+            throw new LogicException('Only suspended activities can be reinstated.');
+        }
+
+        return DB::transaction(function () use ($activity, $reviewerId, $reason): Activity {
+            $now = now();
+            $activity->forceFill([
+                'status' => ActivityStatus::Published,
+                'verification_status' => ActivityVerificationStatus::Approved,
+                'reviewed_by' => $reviewerId,
+                'verified_at' => $now,
+                'published_at' => $activity->published_at ?? $now,
+                'suspension_reason' => null,
+                'is_active' => true,
+            ])->save();
+
+            $activity->verificationHistory()->create([
+                'reviewer_id' => $reviewerId,
+                'status' => ActivityVerificationStatus::Approved->value,
+                'reviewed_at' => $now,
+                'notes' => $reason ?: 'Activity reinstated.',
+            ]);
+
+            return $activity->refresh();
+        });
+    }
+
     public function archive(Activity $activity): Activity
     {
         return DB::transaction(function () use ($activity): Activity {

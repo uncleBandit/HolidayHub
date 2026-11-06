@@ -18,6 +18,6 @@ class BookingServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        Gate::policy(App\Modules\Booking\Domain\Models\Booking::class, BookingPolicy::class);
+        Gate::policy(\App\Modules\Booking\Domain\Models\Booking::class, BookingPolicy::class);
     }
 }

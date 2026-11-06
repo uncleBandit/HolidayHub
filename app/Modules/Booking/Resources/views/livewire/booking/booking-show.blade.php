@@ -1,147 +1,243 @@
+@php
+    use App\Modules\Booking\Presentation\Support\TripPresenter;
+
+    $trip = TripPresenter::make($booking, 1800);
+    $thumb = TripPresenter::image($booking->bookable, (string) $booking->bookable_type, 600);
+    $checkIn = \Carbon\Carbon::parse($booking->check_in_date);
+    $checkOut = \Carbon\Carbon::parse($booking->check_out_date);
+    $money = fn ($value) => $trip['currency'].' '.number_format((float) $value, 2);
+
+    $subtotal = $trip['per_night'] > 0 && $trip['nights'] > 0 ? $trip['per_night'] * $trip['nights'] : null;
+    $basePrice = $booking->getAttribute('base_price');
+    $taxAmount = $booking->getAttribute('tax_amount');
+    $discount = (float) $booking->getAttribute('discount_amount');
+    $extras = $subtotal !== null && $basePrice === null && $taxAmount === null ? round($trip['total'] - $subtotal + $discount, 2) : null;
+@endphp
+
 <div>
-   <div class="bg-gray-100 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-4xl mx-auto">
-        {{-- Success/Error Messages --}}
-        @if (session()->has('message'))
-            <div class="bg-green-100 border border-green-200 text-green-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
-                <span class="block sm:inline">{{ session('message') }}</span>
+    {{-- ─────────────────────────────  Hero  ───────────────────────────── --}}
+    <section class="dv-hero !min-h-[24rem] md:!min-h-[30rem]">
+        <img src="{{ $trip['image'] }}" alt="{{ $booking->bookable->name ?? 'Bookable' }} image">
+        <div class="dv-hero-shade" aria-hidden="true"></div>
+
+        <div class="dv-hero-copy !max-w-[52rem] self-end !pb-12 md:!pb-16">
+            <div class="dv-magic-in flex flex-wrap items-center gap-3" style="--i: 0">
+                <a href="{{ route('bookings') }}" class="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-black/30 px-3 py-1.5 text-[11px] font-bold text-white backdrop-blur-md transition-colors hover:bg-black/45">
+                    <span class="rotate-180"><x-line-icon name="arrow" :size="14" /></span> My trips
+                </a>
+                <span class="inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-extrabold {{ $trip['status_class'] }}">
+                    {{ ucfirst($booking->status) }}
+                </span>
             </div>
-        @endif
 
-        {{-- Booking Details Card --}}
-        <div class="bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all duration-300 hover:shadow-3xl">
+            <p class="dv-eyebrow-light dv-magic-in mt-6" style="--i: 1">Booking details · {{ ucfirst($booking->bookable->bookable_type ?? $trip['kind']) }}</p>
+            <h1 class="dv-magic-in mt-3 font-dm-serif text-[clamp(2.3rem,5.4vw,4.6rem)] leading-[0.98] tracking-[-0.03em]" style="--i: 2">
+                {{ $booking->bookable->name ?? 'N/A' }}
+            </h1>
+            <p class="dv-magic-in mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-white/80" style="--i: 3">
+                @if ($trip['place'])
+                    <span class="inline-flex items-center gap-1.5"><x-line-icon name="map" :size="15" /> {{ $trip['place'] }}</span>
+                @endif
+                <span class="inline-flex items-center gap-1.5">
+                    <x-line-icon name="ticket" :size="15" /> Reference: <span class="font-mono font-bold text-white">{{ $booking->confirmation_code }}</span>
+                </span>
+            </p>
+        </div>
+    </section>
 
-            {{-- Header --}}
-            <div class="p-8 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Booking Details</h1>
-                        <p class="mt-2 text-sm text-gray-500">Reference: <span class="font-mono text-gray-700">{{ $booking->confirmation_code }}</span></p>
+    {{-- ───────────────────────────  Details  ──────────────────────────── --}}
+    <section class="dv-section pt-10 md:pt-14">
+        <div class="mx-auto grid max-w-[1100px] gap-10 lg:grid-cols-[1.3fr_0.8fr] lg:gap-16">
+            <div class="min-w-0">
+                @if (session()->has('message'))
+                    <div class="mb-6 flex items-start gap-3 rounded-[1rem] border border-forest/20 bg-[#E3EFE7] px-4 py-3 text-[13px] font-semibold text-forest" role="alert">
+                        <x-line-icon name="check" :size="18" :stroke="2.4" />
+                        <span>{{ session('message') }}</span>
                     </div>
-                    <div class="flex-shrink-0">
-                        @php
-                            $statusColors = [
-                                'pending' => 'bg-yellow-100 text-yellow-800',
-                                'confirmed' => 'bg-green-100 text-green-800',
-                                'cancelled' => 'bg-red-100 text-red-800',
-                            ];
-                        @endphp
-                        <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold {{ $statusColors[$booking->status] ?? 'bg-gray-100 text-gray-800' }}">
-                            {{ ucfirst($booking->status) }}
-                        </span>
+                @endif
+
+                {{-- Ticket --}}
+                <div class="overflow-hidden rounded-[1.1rem] border border-line bg-white shadow-[0_20px_60px_rgba(20,36,28,0.1)]">
+                    <div class="grid grid-cols-[5.5rem_1fr] items-center gap-4 p-4 sm:grid-cols-[7rem_1fr]">
+                        <img src="{{ $thumb }}" alt="" class="h-[5.2rem] w-full rounded-[0.7rem] object-cover sm:h-[6rem]">
+                        <div class="min-w-0">
+                            <p class="text-[10px] font-extrabold uppercase tracking-[0.1em] text-clay">{{ $trip['dates'] }}</p>
+                            <p class="mt-1 truncate font-dm-serif text-[1.35rem] leading-tight text-ink">{{ $booking->bookable->name ?? 'N/A' }}</p>
+                            <p class="mt-0.5 truncate text-[12px] text-muted">{{ $trip['kind'] }}@if ($trip['place']) · {{ $trip['place'] }}@endif</p>
+                        </div>
+                    </div>
+                    <div class="relative grid grid-cols-2 gap-y-4 border-t border-dashed border-line bg-cream px-5 py-4 sm:grid-cols-4">
+                        <span class="absolute -left-2.5 -top-2.5 h-5 w-5 rounded-full border border-line bg-cream" aria-hidden="true"></span>
+                        <span class="absolute -right-2.5 -top-2.5 h-5 w-5 rounded-full border border-line bg-cream" aria-hidden="true"></span>
+                        <div>
+                            <p class="text-[9px] font-extrabold uppercase tracking-[0.12em] text-clay">Check-in</p>
+                            <p class="mt-1 text-[13px] font-extrabold text-ink">{{ $checkIn->format('M d, Y') }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[9px] font-extrabold uppercase tracking-[0.12em] text-clay">Check-out</p>
+                            <p class="mt-1 text-[13px] font-extrabold text-ink">{{ $checkOut->format('M d, Y') }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[9px] font-extrabold uppercase tracking-[0.12em] text-clay">Guests</p>
+                            <p class="mt-1 text-[13px] font-extrabold text-ink">{{ $trip['guests_label'] }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[9px] font-extrabold uppercase tracking-[0.12em] text-clay">Booking ID</p>
+                            <p class="mt-1 truncate font-mono text-[13px] font-extrabold text-ink">{{ $booking->confirmation_code }}</p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {{-- Main Content Section --}}
-            <div class="p-6 md:p-8 grid md:grid-cols-2 gap-8">
-                {{-- Trip Summary --}}
-                <div class="space-y-6">
-                    <div>
-                        <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ $booking->bookable->name ?? 'N/A' }}</h2>
-                        <p class="text-sm text-gray-500">{{ ucfirst($booking->bookable->bookable_type) }}</p>
-                    </div>
-
-                    {{-- Image & Dates --}}
-                    <div class="relative">
-                        <img src="{{ $booking->bookable->cover_image_url ?? asset('images/placeholder.jpg') }}" alt="{{ $booking->bookable->name ?? 'Bookable' }} image" class="w-full h-48 object-cover rounded-2xl shadow-md">
-                        <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-gray-900 via-transparent to-transparent rounded-b-2xl">
-                            <div class="flex justify-between items-end text-white font-semibold">
-                                <div>
-                                    <p class="text-sm">Check-in</p>
-                                    <p class="text-lg">{{ \Carbon\Carbon::parse($booking->check_in_date)->format('M d, Y') }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm">Check-out</p>
-                                    <p class="text-lg">{{ \Carbon\Carbon::parse($booking->check_out_date)->format('M d, Y') }}</p>
-                                </div>
-                            </div>
+                {{-- 1. Dates --}}
+                <div class="mt-10 border-t border-line py-7">
+                    <div class="flex items-center gap-3">
+                        <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-forest text-[11px] font-extrabold text-white">1</span>
+                        <div>
+                            <h2 class="font-dm-serif text-[1.45rem] leading-tight text-ink">Your dates</h2>
+                            <p class="text-[11px] text-muted">{{ $trip['nights'] }} {{ Str::plural('night', $trip['nights']) }}@if ($trip['countdown']) · starts {{ $trip['countdown'] === 1 ? 'tomorrow' : 'in '.$trip['countdown'].' days' }}@endif</p>
                         </div>
                     </div>
-
-                    {{-- Guest Information --}}
-                    <div>
-                        <h3 class="font-semibold text-lg text-gray-700 mb-2">Travelers</h3>
-                        <div class="flex items-center space-x-4 text-gray-600">
-                            <span class="flex items-center">
-                                <svg class="h-5 w-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" />
-                                </svg>
-                                <span>{{ $booking->guests_adults ?? 'N/A' }} Adults</span>
-                            </span>
-                            <span class="flex items-center">
-                                <svg class="h-5 w-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M10 2a4 4 0 00-4 4v2a4 4 0 008 0V6a4 4 0 00-4-4zm-3 8a3 3 0 016 0v2a3 3 0 01-6 0v-2z" />
-                                </svg>
-                                <span>{{ $booking->guests_children ?? 'N/A' }} Children</span>
-                            </span>
+                    <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                        <div class="rounded-[0.9rem] border border-line bg-surface p-4">
+                            <p class="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.1em] text-forest"><x-line-icon name="calendar" :size="14" /> Check-in</p>
+                            <p class="mt-2 font-dm-serif text-[1.25rem] text-ink">{{ $checkIn->format('D, M d, Y') }}</p>
+                            @if ($trip['check_in_time'])<p class="mt-0.5 text-[12px] text-muted">From {{ $trip['check_in_time'] }}</p>@endif
                         </div>
+                        <div class="rounded-[0.9rem] border border-line bg-surface p-4">
+                            <p class="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.1em] text-forest"><x-line-icon name="calendar" :size="14" /> Check-out</p>
+                            <p class="mt-2 font-dm-serif text-[1.25rem] text-ink">{{ $checkOut->format('D, M d, Y') }}</p>
+                            @if ($trip['check_out_time'])<p class="mt-0.5 text-[12px] text-muted">By {{ $trip['check_out_time'] }}</p>@endif
+                        </div>
+                    </div>
+                </div>
+
+                {{-- 2. Travellers --}}
+                <div class="border-t border-line py-7">
+                    <div class="flex items-center gap-3">
+                        <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-forest text-[11px] font-extrabold text-white">2</span>
+                        <div>
+                            <h2 class="font-dm-serif text-[1.45rem] leading-tight text-ink">Travelers</h2>
+                            <p class="text-[11px] text-muted">Who is coming along</p>
+                        </div>
+                    </div>
+                    <div class="mt-5 flex flex-wrap gap-3">
+                        <span class="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2.5 text-[13px] font-bold text-ink">
+                            <span class="text-clay"><x-line-icon name="user" :size="16" /></span>
+                            {{ $booking->guests_adults ?? 'N/A' }} Adults
+                        </span>
+                        <span class="inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-2.5 text-[13px] font-bold text-ink">
+                            <span class="text-clay"><x-line-icon name="users" :size="16" /></span>
+                            {{ $booking->guests_children ?? 'N/A' }} Children
+                        </span>
                     </div>
 
                     {{-- Offer Details (if applicable) --}}
                     @if ($booking->offer)
-                        <div class="p-4 bg-green-50 rounded-lg border border-dashed border-green-200">
-                            <div class="flex items-center space-x-3 text-green-700">
-                                <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.707-10.293a1 1 0 00-1.414-1.414L7 9.586V7a1 1 0 10-2 0v4a1 1 0 001 1h4a1 1 0 100-2H7.414l2.293-2.293z" clip-rule="evenodd" />
-                                </svg>
-                                <p class="font-semibold">{{ $booking->offer->name ?? 'Special Offer' }}</p>
+                        <div class="mt-5 flex items-start gap-3 rounded-[0.9rem] border border-dashed border-clay/40 bg-[#FBEDE7] p-4">
+                            <span class="mt-0.5 text-clay"><x-line-icon name="ticket" :size="20" /></span>
+                            <div>
+                                <p class="text-[13px] font-extrabold text-clay-dark">{{ $booking->offer->name ?? 'Special Offer' }}</p>
+                                <p class="mt-1 text-[12px] leading-relaxed text-[#8C4A33]">{{ $booking->offer->description ?? 'You received a special discount on this booking!' }}</p>
                             </div>
-                            <p class="mt-1 text-sm text-green-600">{{ $booking->offer->description ?? 'You received a special discount on this booking!' }}</p>
                         </div>
                     @endif
                 </div>
 
-                {{-- Pricing & Actions --}}
-                <div class="space-y-6 md:border-l md:border-gray-200 md:pl-8">
-                    <div class="text-right">
-                        <p class="text-sm font-medium text-gray-500">Booking Total</p>
-                        <p class="mt-1 text-4xl font-extrabold text-blue-600 tracking-tight">${{ number_format($booking->total_price, 2) }}</p>
-                    </div>
-
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center text-gray-700">
-                            <span class="font-medium">Subtotal</span>
-                            <span class="text-sm">${{ number_format($booking->base_price, 2) }}</span>
-                        </div>
-                        <div class="flex justify-between items-center text-gray-700">
-                            <span class="font-medium">Taxes & Fees</span>
-                            <span class="text-sm">${{ number_format($booking->tax_amount, 2) }}</span>
-                        </div>
-                        @if ($booking->discount_amount > 0)
-                            <div class="flex justify-between items-center text-green-600">
-                                <span class="font-medium">Discount</span>
-                                <span class="text-sm">- ${{ number_format($booking->discount_amount, 2) }}</span>
-                            </div>
-                        @endif
-                        <div class="border-t border-gray-200 pt-4 flex justify-between items-center font-bold text-gray-900">
-                            <span>Total</span>
-                            <span>${{ number_format($booking->final_price, 2) }}</span>
+                {{-- 3. Good to know --}}
+                <div class="border-t border-line py-7">
+                    <div class="flex items-center gap-3">
+                        <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-forest text-[11px] font-extrabold text-white">3</span>
+                        <div>
+                            <h2 class="font-dm-serif text-[1.45rem] leading-tight text-ink">Good to know</h2>
+                            <p class="text-[11px] text-muted">Cancellation and arrival</p>
                         </div>
                     </div>
-
-                    <div class="space-y-4 pt-6">
-                        {{-- Rebook Button --}}
-                        <button
-                            wire:click="rebook"
-                            class="w-full flex justify-center py-3 px-6 border border-transparent rounded-full shadow-lg text-lg font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out transform hover:-translate-y-0.5"
-                        >
-                            Rebook This Trip
-                        </button>
-
-                        {{-- Other Actions --}}
-                        <button class="w-full flex justify-center py-3 px-6 border border-gray-300 rounded-full shadow-sm text-lg font-semibold text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
-                            Download Invoice
-                        </button>
-                    </div>
-
-                    {{-- Legal/Cancellation Info (Optional) --}}
-                    <div class="text-xs text-gray-400 text-center pt-4">
-                        Please check the cancellation policy for your booking provider.
+                    <div class="mt-5 flex items-start gap-3 rounded-[0.9rem] bg-sand/60 p-4 text-[13px] leading-relaxed text-ink">
+                        <span class="mt-0.5 text-forest"><x-line-icon name="leaf" :size="18" /></span>
+                        <div>
+                            <p class="font-semibold">{{ $trip['policy'] ?: 'Cancellation terms are set by the provider of this booking.' }}</p>
+                            @if ($trip['check_in_time'] || $trip['check_out_time'])
+                                <p class="mt-1 text-[12px] text-muted">
+                                    @if ($trip['check_in_time'])Check-in from {{ $trip['check_in_time'] }}.@endif
+                                    @if ($trip['check_out_time']) Check-out by {{ $trip['check_out_time'] }}.@endif
+                                </p>
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {{-- ─────────────────────────  Summary  ───────────────────────── --}}
+            <aside class="lg:sticky lg:top-[110px] lg:self-start">
+                <div class="dv-panel dv-panel-shadow !bg-surface p-5">
+                    <div class="grid grid-cols-[5.5rem_1fr] items-center gap-3">
+                        <img src="{{ $thumb }}" alt="" class="h-[5.5rem] w-full rounded-[0.7rem] object-cover">
+                        <div class="min-w-0">
+                            <p class="text-[10px] font-semibold text-muted">{{ ucfirst($booking->bookable->bookable_type ?? $trip['kind']) }}</p>
+                            <p class="mt-0.5 font-dm-serif text-[1.15rem] leading-tight text-ink">{{ $booking->bookable->name ?? 'N/A' }}</p>
+                            @if ($trip['place'])
+                                <p class="mt-1 flex items-center gap-1 text-[11px] text-muted"><span class="text-clay"><x-line-icon name="map" :size="12" /></span> {{ $trip['place'] }}</p>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="mt-5 space-y-3 border-y border-line py-4 text-[12px]">
+                        @if ($subtotal !== null)
+                            <p class="flex justify-between gap-3 text-muted">
+                                <span>{{ $money($trip['per_night']) }} × {{ $trip['nights'] }} {{ Str::plural('night', $trip['nights']) }}</span>
+                                <span class="font-semibold text-ink">{{ $money($subtotal) }}</span>
+                            </p>
+                        @endif
+                        @if ($basePrice !== null)
+                            <p class="flex justify-between gap-3 text-muted"><span>Subtotal</span><span class="font-semibold text-ink">{{ $money($basePrice) }}</span></p>
+                        @endif
+                        @if ($taxAmount !== null)
+                            <p class="flex justify-between gap-3 text-muted"><span>Taxes &amp; Fees</span><span class="font-semibold text-ink">{{ $money($taxAmount) }}</span></p>
+                        @elseif ($extras !== null && $extras > 0)
+                            <p class="flex justify-between gap-3 text-muted"><span>Taxes, fees &amp; extras</span><span class="font-semibold text-ink">{{ $money($extras) }}</span></p>
+                        @endif
+                        @if ($discount > 0)
+                            <p class="flex justify-between gap-3 font-semibold text-forest"><span>Discount</span><span>− {{ $money($discount) }}</span></p>
+                        @endif
+                        @if ($subtotal === null && $basePrice === null && $taxAmount === null && $discount <= 0)
+                            <p class="text-muted">Price breakdown isn’t available for this booking.</p>
+                        @endif
+                    </div>
+
+                    <div class="flex items-end justify-between gap-3 pt-4">
+                        <div>
+                            <p class="text-[10px] font-extrabold uppercase tracking-[0.12em] text-clay">Booking Total</p>
+                            @if ($booking->payment_status)
+                                <p class="mt-1 text-[11px] text-muted">Payment {{ str_replace('_', ' ', $booking->payment_status) }}</p>
+                            @endif
+                        </div>
+                        <p class="font-dm-serif text-[1.9rem] leading-none text-forest">{{ $money($trip['total']) }}</p>
+                    </div>
+
+                    <div class="mt-6 space-y-3">
+                        {{-- Rebook Button --}}
+                        <button type="button" wire:click="rebook" wire:loading.attr="disabled" class="dv-btn dv-btn-primary w-full">
+                            Rebook This Trip <x-line-icon name="arrow" :size="16" />
+                        </button>
+
+                        {{-- Other Actions --}}
+                        <button type="button" class="dv-btn dv-btn-ghost w-full">
+                            Download Invoice
+                        </button>
+
+                        @if ($trip['url'])
+                            <a href="{{ $trip['url'] }}" class="flex items-center justify-center gap-1.5 pt-1 text-[12px] font-bold text-forest underline-offset-4 hover:underline">
+                                View the {{ strtolower($trip['kind']) === 'b&b' ? 'B&B' : strtolower($trip['kind']) }} <x-line-icon name="arrow-up-right" :size="14" />
+                            </a>
+                        @endif
+                    </div>
+
+                    <p class="mt-5 flex items-start justify-center gap-1.5 text-center text-[11px] leading-relaxed text-muted">
+                        <span class="mt-0.5 text-clay"><x-line-icon name="check" :size="13" :stroke="2.4" /></span>
+                        Please check the cancellation policy for your booking provider.
+                    </p>
+                </div>
+            </aside>
         </div>
-    </div>
-</div>
+    </section>
 </div>

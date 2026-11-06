@@ -18,6 +18,6 @@ class WishlistServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        Gate::policy(App\Modules\Wishlist\Domain\Models\Wishlist::class, WishlistPolicy::class);
+        Gate::policy(\App\Modules\Wishlist\Domain\Models\Wishlist::class, WishlistPolicy::class);
     }
 }

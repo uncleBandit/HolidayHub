@@ -33,6 +33,8 @@ class Booking extends Model
         'idempotency_key',
         'cancelled_at',
         'activity_session_id',
+        'package_booking_id',
+        'agent_commission',
     ];
 
     protected $casts = [
@@ -42,7 +44,20 @@ class Booking extends Model
         'total_amount' => 'float',
         'special_requests' => 'array',
         'cancelled_at' => 'datetime',
+        'agent_commission' => 'float',
     ];
+
+    /** The package booking this listing booking belongs to, if any. */
+    public function packageBooking()
+    {
+        return $this->belongsTo(self::class, 'package_booking_id');
+    }
+
+    /** For a package booking: the bookings it made with each provider. */
+    public function componentBookings()
+    {
+        return $this->hasMany(self::class, 'package_booking_id');
+    }
 
     public function bookable()
     {

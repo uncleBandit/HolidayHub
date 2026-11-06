@@ -18,11 +18,14 @@
         <nav class="dv-links" aria-label="Main navigation">
             @php
                 $nav = [
-                    ['label' => 'Discover', 'route' => 'welcome'],
                     ['label' => 'Destinations', 'route' => 'destination.index'],
                     ['label' => 'Stays', 'route' => 'stays.index'],
                     ['label' => 'Experiences', 'route' => 'experiences.index'],
                 ];
+
+                if (auth()->check()) {
+                    array_unshift($nav, ['label' => 'For you', 'route' => 'dashboard']);
+                }
             @endphp
 
             @foreach ($nav as $item)
@@ -51,9 +54,49 @@
             </button>
 
             @auth
-                <a href="{{ route('dashboard') }}" class="dv-avatar" aria-label="Dashboard">
-                    {{ strtoupper(substr(Auth::user()->name, 0, 1)).substr(Auth::user()->name, 1, 1) }}
-                </a>
+                <div x-data="{ open: false }" class="relative" x-on:keydown.escape.window="open = false">
+                    <button
+                        type="button"
+                        x-on:click="open = ! open"
+                        x-on:click.outside="open = false"
+                        class="dv-avatar transition-transform duration-200 hover:scale-105"
+                        aria-label="Open account menu"
+                        :aria-expanded="open"
+                    >{{ strtoupper(substr(Auth::user()->name, 0, 1)).substr(Auth::user()->name, 1, 1) }}</button>
+
+                    <div
+                        x-show="open"
+                        x-cloak
+                        x-transition.origin.top.right
+                        class="absolute right-0 mt-3 w-60 overflow-hidden rounded-[1rem] border border-line bg-white py-2 text-ink shadow-[0_20px_60px_rgba(20,36,28,0.16)]"
+                    >
+                        <p class="truncate px-4 pb-2 pt-1 text-[11px] font-extrabold uppercase tracking-[0.1em] text-muted">{{ Auth::user()->name }}</p>
+                        @php
+                            $accountLinks = [['For you', 'star', route('dashboard')], ['My bookings', 'ticket', route('bookings')], ['Profile & security', 'user', route('profile.edit')]];
+
+                            if (Auth::user()->hasRole('provider')) {
+                                array_unshift($accountLinks, ['Host studio', 'grid', route('provider.dashboard')]);
+                            }
+                            if (Auth::user()->hasRole('agent')) {
+                                array_unshift($accountLinks, ['Agent studio', 'compass', route('agent.dashboard')]);
+                            }
+                            if (Auth::user()->can('admin.panel.access')) {
+                                array_unshift($accountLinks, ['Admin panel', 'sliders', url('/admin')]);
+                            }
+                        @endphp
+                        @foreach ($accountLinks as [$label, $icon, $url])
+                            <a href="{{ $url }}" class="flex items-center gap-3 px-4 py-2.5 text-[13px] font-semibold transition-colors hover:bg-cream">
+                                <span class="text-clay"><x-line-icon :name="$icon" :size="17" /></span> {{ $label }}
+                            </a>
+                        @endforeach
+                        <form method="POST" action="{{ route('logout') }}" class="mt-1 border-t border-line pt-1">
+                            @csrf
+                            <button type="submit" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-semibold transition-colors hover:bg-cream">
+                                <span class="text-muted"><x-line-icon name="arrow-up-right" :size="17" /></span> Log out
+                            </button>
+                        </form>
+                    </div>
+                </div>
             @else
                 <a href="{{ route('login') }}" class="dv-avatar" aria-label="Log in">HH</a>
             @endauth
@@ -97,7 +140,9 @@
             ['label' => 'Home', 'icon' => 'home', 'route' => 'welcome', 'active' => 'welcome'],
             ['label' => 'Explore', 'icon' => 'compass', 'route' => 'destination.index', 'active' => 'destination.index'],
             ['label' => 'Stays', 'icon' => 'bed', 'route' => 'stays.index', 'active' => 'stays.index'],
-            ['label' => 'Profile', 'icon' => 'user', 'route' => auth()->check() ? 'dashboard' : 'login', 'active' => 'dashboard'],
+            auth()->check()
+                ? ['label' => 'For you', 'icon' => 'star', 'route' => 'dashboard', 'active' => 'dashboard']
+                : ['label' => 'Sign in', 'icon' => 'user', 'route' => 'login', 'active' => 'login'],
         ];
     @endphp
 

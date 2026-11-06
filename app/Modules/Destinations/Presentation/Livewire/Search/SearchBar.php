@@ -26,6 +26,9 @@ class SearchBar extends Component
 
     public int $highlightIndex = 0;
 
+    /** Presentation only: true when rendered as the full /search page rather than the header dropdown. */
+    public bool $asPage = false;
+
     public function updatedQuery(): void
     {
         Log::info("Search query: {$this->query}");
@@ -39,7 +42,7 @@ class SearchBar extends Component
             $this->results['hotels'] = Hotel::published()->whereHas('accommodation', fn ($query) => $query->where('name', 'like', "%{$this->query}%"))
                 ->limit(5)->get()->toArray();
 
-            $this->results['packages'] = Package::where('title', 'like', "%{$this->query}%")
+            $this->results['packages'] = Package::where('name', 'like', "%{$this->query}%")
                 ->limit(5)->get()->toArray();
 
             $this->results['villas'] = Villa::published()->whereHas('accommodation', fn ($query) => $query->where('name', 'like', "%{$this->query}%"))
@@ -69,6 +72,7 @@ class SearchBar extends Component
 
     public function mount(): void
     {
+        $this->asPage = request()->routeIs('search.results');
         $this->resetResults();
     }
 

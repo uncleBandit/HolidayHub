@@ -1,173 +1,252 @@
-<div>
-<div class="bg-gray-50 font-inter text-gray-800 antialiased">
-    <!-- Tailwind CSS CDN for styling -->
+@php
+    $currency = \App\Shared\Support\Currencies::symbol($hotel->getCurrency());
+    $roomTypes = $hotel->roomTypes->sortBy('price_per_night')->values();
+    $fromPrice = $selectedRoomType?->price_per_night
+        ?: ($roomTypes->min('price_per_night') ?: $hotel->avg_price_per_night);
+    $place = collect([$hotel->city, $hotel->country])->filter()->implode(', ');
+    $stars = (int) $hotel->stars;
+    $kind = $stars > 0 ? $stars.'-star hotel' : 'Hotel';
+    $roomFallback = 'https://images.unsplash.com/photo-1574236170880-fbbca132d83d?auto=format&fit=crop&w=1400&q=84';
+    $roomImage = function ($roomType) use ($roomFallback) {
+        $url = (string) $roomType->hero_image_url;
 
-    <div class="container mx-auto px-4 lg:px-8 py-12 space-y-12">
+        return \Illuminate\Support\Str::startsWith($url, ['http://', 'https://'])
+            && ! \Illuminate\Support\Str::contains($url, ['placeholder', 'placehold', 'picsum', 'source.unsplash', 'default-hero'])
+            ? $url
+            : $roomFallback;
+    };
+    $rating = (float) $hotel->avg_rating;
+@endphp
 
-        <!-- Hero Image & Gallery -->
-        <div x-data="{ open: false, activeImage: 0, images: @js($hotel->all_images) }">
+<div class="pb-24 lg:pb-0">
+    <x-stay-detail.gallery
+        :images="$hotel->all_images"
+        :video="$hotel->cover_video"
+        :name="$hotel->name"
+        kind="hotel"
+        :wishlisted="$isWishlisted"
+    />
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 rounded-3xl overflow-hidden shadow-2xl transform transition-transform duration-500 hover:scale-[1.005]">
-                <!-- Main Hero Image -->
-                <div @click="open = true; activeImage = 0" class="col-span-1 md:col-span-2 lg:col-span-3 cursor-pointer relative h-96 lg:h-[550px]">
-                    <img src="{{ $hotel->all_images[0] ?? 'fallback.jpg' }}" alt="{{ $hotel->name }} Hero Image" class="w-full h-full object-cover transition-opacity duration-300 ease-in-out hover:opacity-90"/>
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
-                    <div class="absolute bottom-6 left-6 text-white z-10">
-                        <h1 class="text-4xl lg:text-5xl font-extrabold">{{ $hotel->name }}</h1>
-                        <p class="text-xl font-light opacity-80">{{ $hotel->location }}</p>
-                    </div>
-                </div>
+    <div class="mx-auto max-w-[1250px] px-4 sm:px-6 lg:px-8">
+        <x-stay-detail.heading
+            :name="$hotel->name"
+            :kind="$kind"
+            :host="$hotel->provider?->company_name"
+            :verified="(bool) $hotel->is_verified"
+            :rating="$rating"
+            :reviews="$hotel->reviews_count"
+            :location="$place ?: $hotel->address"
+            :facts="[
+                ['value' => $rating > 0 ? number_format($rating, 1) : 'New', 'label' => 'Guest rating', 'star' => $rating > 0],
+                ['value' => number_format((int) $hotel->reviews_count), 'label' => 'Verified reviews'],
+                ['value' => $roomTypes->count(), 'label' => \Illuminate\Support\Str::plural('Room type', $roomTypes->count())],
+            ]"
+        />
 
-                <!-- Small Image Gallery -->
-                <div class="hidden lg:grid grid-cols-1 gap-4 p-2 bg-white">
-                    {{-- Display the second image from the array --}}
-                    @if(isset($hotel->all_images[1]))
-                        <img src="{{ $hotel->all_images[1] }}" class="w-full h-full object-cover rounded-xl cursor-pointer transition-transform duration-300 hover:scale-105" @click="open = true; activeImage = 1" />
-                    @endif
+        <x-stay-detail.tabs :tabs="[
+            'overview' => 'Overview',
+            'rooms' => 'Rooms',
+            'availability' => 'Availability',
+            'amenities' => 'Amenities',
+            'reviews' => 'Reviews',
+            'location' => 'Location',
+        ]" />
 
-                    {{-- Show a button for more photos if there are more than two total images --}}
-                    @if(count($hotel->all_images) > 2)
-                        <button @click="open = true" class="w-full h-full bg-gray-100 rounded-xl flex items-center justify-center text-gray-500 font-semibold transition-colors duration-300 hover:bg-gray-200">
-                            <span class="text-center">+{{ count($hotel->all_images) - 2 }}<br>Photos</span>
-                        </button>
-                    @endif
-                </div>
-            </div>
-
-            <!-- Full-screen gallery modal -->
-            <template x-if="open">
-                <div class="fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center p-4">
-                    <div class="relative w-full max-w-7xl h-full max-h-[90vh]">
-                        <button @click="open = false" aria-label="Close" class="absolute top-4 right-4 text-white text-3xl p-2 z-10 opacity-70 hover:opacity-100 transition-opacity rounded-full bg-gray-900/50 hover:bg-gray-900/80">
-                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
-                        <img :src="images[activeImage]" class="w-full h-full object-contain" alt="Gallery Image" />
-                        <button @click="activeImage = (activeImage > 0) ? activeImage - 1 : images.length - 1" aria-label="Previous Image" class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-5xl opacity-70 hover:opacity-100 transition rounded-full p-2 bg-gray-900/50 hover:bg-gray-900/80">
-                            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                        </button>
-                        <button @click="activeImage = (activeImage < images.length - 1) ? activeImage + 1 : 0" aria-label="Next Image" class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-5xl opacity-70 hover:opacity-100 transition rounded-full p-2 bg-gray-900/50 hover:bg-gray-900/80">
-                            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        </button>
-                        <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black bg-opacity-50 px-4 py-1 rounded-full text-sm">
-                            <span x-text="activeImage + 1"></span> / <span x-text="images.length"></span>
+        <div class="lg:grid lg:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.8fr)] lg:gap-14">
+            <div class="min-w-0">
+                {{-- About --}}
+                <x-stay-detail.section id="overview">
+                    <div class="grid gap-6 md:grid-cols-[0.9fr_1.1fr] md:gap-10">
+                        <div>
+                            <p class="dv-eyebrow">The stay</p>
+                            <h2 class="dv-title">{{ $place ? 'Your base in '.$hotel->city : 'Make yourself at home' }}</h2>
                         </div>
-                    </div>
-                </div>
-            </template>
-        </div>
-
-        <!-- Main Content Section -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
-
-            <!-- Left Column: Details, Amenities, Rooms, Reviews -->
-            <div class="lg:col-span-2 space-y-12">
-                <!-- Hotel Details & Ratings -->
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
-                    <div>
-                        <h2 class="text-3xl lg:text-4xl font-extrabold text-gray-900">{{ $hotel->name }}</h2>
-                        <p class="text-xl text-gray-500">{{ $hotel->location }}</p>
-                    </div>
-                    <div class="flex flex-col items-end mt-4 md:mt-0">
-                        <div class="flex items-center space-x-2">
-                            <x-star-rating :rating="$hotel->stars" />
-                            <span class="text-xl font-bold text-gray-800">{{ number_format($hotel->avg_rating, 1) }}</span>
-                        </div>
-                        <p class="text-sm text-gray-400 mt-1">({{ $reviews->count() }} reviews)</p>
-                    </div>
-                </div>
-
-                <hr class="border-gray-200">
-
-                <!-- Amenities -->
-                <div>
-                    <h3 class="text-2xl font-bold text-gray-900 mb-6">Signature Amenities</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        @foreach ($hotel->amenities as $amenity)
-                            <div class="flex items-center space-x-4 p-4 rounded-xl bg-white border border-gray-200 shadow-sm transition-all duration-300 hover:bg-blue-50 hover:border-blue-300 hover:shadow-md">
-                                <div class="p-2 rounded-full bg-blue-100 text-blue-600">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
+                        <div>
+                            <p class="dv-body whitespace-pre-line">{{ $hotel->description ?: 'The hotel is still writing its story. Browse the rooms below to see what each one offers.' }}</p>
+                            @if ($stars > 0)
+                                <div class="mt-6 flex items-center gap-4 rounded-[0.9rem] bg-sand/60 px-5 py-4">
+                                    <span class="flex shrink-0 gap-0.5 text-clay" aria-label="{{ $stars }} star hotel">
+                                        @for ($i = 0; $i < $stars; $i++)
+                                            <x-line-icon name="star" :size="15" filled />
+                                        @endfor
+                                    </span>
+                                    <p class="text-[12.5px] leading-snug text-muted"><b class="block text-ink">{{ $stars }}-star hospitality</b>{{ $rating >= 4.7 ? 'One of the best-rated stays around, based on verified guest reviews.' : 'Rated by the official hotel classification.' }}</p>
                                 </div>
-                                <span class="text-gray-800 font-medium text-lg">{{ $amenity->name }}</span>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-
-                <hr class="border-gray-200">
-
-                <!-- Room Types -->
-                <div>
-                    <h3 class="text-2xl font-bold text-gray-900 mb-6">Room Types</h3>
-                    <p class="text-gray-600 mb-6">Select a room type to check availability and book.</p>
-                    <div class="grid md:grid-cols-2 gap-6">
-                        @foreach($hotel->roomTypes as $roomType)
-                            <div wire:click="selectRoomType({{ $roomType->id }})" class="p-4 border-2 rounded-xl transition-all duration-300 transform hover:scale-[1.02] cursor-pointer shadow-sm {{ $selectedRoomType && $selectedRoomType->id === $roomType->id ? 'border-blue-500 ring-4 ring-blue-500/30' : 'border-gray-200' }}">
-                                <img src="{{ $roomType->hero_image_url ?? 'https://source.unsplash.com/random/600x400/?hotel,room' }}" alt="{{ $roomType->name }}" class="w-full h-48 object-cover rounded-lg mb-4" />
-                                <div class="flex justify-between items-center mb-2">
-                                    <h4 class="text-xl font-semibold text-gray-900">{{ $roomType->name }}</h4>
-                                    <span class="text-lg font-bold text-blue-600">${{ number_format($roomType->price_per_night, 2) }}</span>
-                                </div>
-                                <p class="text-gray-500 text-sm mb-4">{{ $roomType->guests }} guests · {{ $roomType->beds }} beds</p>
-                                <p class="text-sm text-gray-600 line-clamp-3">{{ $roomType->description }}</p>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Column: Dynamic Calendar & Booking Form (Sticky) -->
-            <div class="lg:col-span-1">
-                <div class="sticky top-8 bg-white p-6 rounded-3xl shadow-xl border border-gray-100">
-                    <h3 class="text-xl font-bold text-gray-900 mb-4">Check Availability</h3>
-                    @if($selectedRoomType)
-                        <!-- Loading State for the Calendar -->
-                        <div wire:loading.flex wire:target="selectRoomType" class="flex items-center justify-center p-8">
-                            <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span class="text-lg text-gray-500">Loading calendar...</span>
+                            @endif
                         </div>
-                        <!-- Livewire Component -->
+                    </div>
+                </x-stay-detail.section>
+
+                {{-- Rooms --}}
+                <x-stay-detail.section id="rooms" eyebrow="Stay a while" title="Rooms made for slowing down">
+                    <p class="-mt-3 mb-6 text-[13px] text-muted">Select a room type to check its availability and book.</p>
+
+                    <div class="flex flex-col gap-5">
+                        @forelse ($roomTypes as $roomType)
+                            @php $isSelected = $selectedRoomType && $selectedRoomType->id === $roomType->id; @endphp
+                            <article
+                                wire:key="room-type-{{ $roomType->id }}"
+                                @class([
+                                    'grid overflow-hidden rounded-[1.3rem] bg-sand/50 transition-shadow duration-300 sm:grid-cols-[1.1fr_1fr]',
+                                    'ring-2 ring-clay shadow-[0_20px_60px_rgba(20,36,28,0.12)]' => $isSelected,
+                                ])
+                            >
+                                <div class="relative h-56 overflow-hidden sm:h-auto sm:min-h-[19rem]">
+                                    @php $roomFilm = collect($roomType->gallery_images ?? [])->first(fn ($path) => \App\Shared\Support\Media::isVideo($path)); @endphp
+                                    @if ($roomFilm)
+                                        <video src="{{ \App\Shared\Support\Media::url($roomFilm) }}" poster="{{ $roomImage($roomType) }}" class="absolute inset-0 h-full w-full object-cover" muted loop playsinline preload="none" data-autoplay aria-label="{{ $roomType->name }} walk-through"></video>
+                                        <span class="pointer-events-none absolute bottom-3 left-3 z-10 inline-flex items-center gap-1 rounded-full bg-black/45 px-2.5 py-1 text-[10px] font-extrabold text-white backdrop-blur-md"><x-line-icon name="play" :size="10" filled /> Room walk-through</span>
+                                    @else
+                                        <img src="{{ $roomImage($roomType) }}" alt="{{ $roomType->name }}" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
+                                    @endif
+                                    @if ($loop->first && $roomTypes->count() > 1)
+                                        <span class="dv-foryou-reason"><x-line-icon name="star" :size="12" filled /> Best value</span>
+                                    @endif
+                                </div>
+                                <div class="flex flex-col justify-center p-6 sm:p-8">
+                                    @if ($isSelected)
+                                        <p class="flex items-center gap-1.5 text-[11px] font-extrabold text-clay"><x-line-icon name="check" :size="14" :stroke="2.6" /> Selected room</p>
+                                    @endif
+                                    <h3 class="mt-1 font-dm-serif text-[1.7rem] leading-tight text-forest">{{ $roomType->name }}</h3>
+                                    <p class="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[12px] text-muted">
+                                        @if ($roomType->size_sqm)
+                                            <span class="inline-flex items-center gap-1"><x-line-icon name="grid" :size="14" /> {{ $roomType->size_sqm }} m²</span>
+                                        @endif
+                                        @if ($roomType->viewLabel())
+                                            <span class="inline-flex items-center gap-1"><x-line-icon name="waves" :size="14" /> {{ $roomType->viewLabel() }}</span>
+                                        @endif
+                                        <span class="inline-flex items-center gap-1"><x-line-icon name="bed" :size="14" /> {{ $roomType->bedSummary() ?? $roomType->beds.' '.\Illuminate\Support\Str::plural('bed', $roomType->beds) }}</span>
+                                        @if ($roomType->capacity)
+                                            <span class="inline-flex items-center gap-1"><x-line-icon name="users" :size="14" />
+                                                Sleeps {{ $roomType->capacity }}@if ($roomType->max_children) ({{ $roomType->max_adults }} adults, {{ $roomType->max_children }} {{ \Illuminate\Support\Str::plural('child', $roomType->max_children) }})@endif
+                                            </span>
+                                        @endif
+                                    </p>
+                                    <div class="mt-3 flex flex-wrap gap-1.5">
+                                        @if ($roomType->breakfast_included)
+                                            <span class="rounded-full bg-forest/10 px-2.5 py-1 text-[10.5px] font-extrabold text-forest">Breakfast included</span>
+                                        @endif
+                                        <span @class(['rounded-full px-2.5 py-1 text-[10.5px] font-extrabold', 'bg-forest/10 text-forest' => $roomType->refundable, 'bg-line text-muted' => ! $roomType->refundable])>{{ $roomType->refundable ? 'Free cancellation' : 'Non-refundable' }}</span>
+                                        @if ($roomType->accessible)
+                                            <span class="rounded-full bg-[#F6EEDD] px-2.5 py-1 text-[10.5px] font-extrabold text-[#8A6A3A]">Accessible</span>
+                                        @endif
+                                        @foreach ($roomType->amenities->take(4) as $amenity)
+                                            <span class="rounded-full border border-line px-2.5 py-1 text-[10.5px] font-bold text-muted">{{ $amenity->name }}</span>
+                                        @endforeach
+                                        @if ($roomType->amenities->count() > 4)
+                                            <span class="rounded-full border border-line px-2.5 py-1 text-[10.5px] font-bold text-muted">+{{ $roomType->amenities->count() - 4 }} more</span>
+                                        @endif
+                                    </div>
+                                    @if (filled($roomType->description))
+                                        <p class="mt-3 line-clamp-3 text-[13px] leading-relaxed text-muted">{{ $roomType->description }}</p>
+                                    @endif
+                                    <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
+                                        <p class="font-dm-serif text-[1.3rem] text-forest">{{ $currency }} {{ number_format((float) $roomType->price_per_night) }} <small class="font-sans text-[11px] font-semibold text-muted">/ night</small></p>
+                                        <button
+                                            type="button"
+                                            wire:click="selectRoomType({{ $roomType->id }})"
+                                            x-on:click="$nextTick(() => setTimeout(() => document.getElementById('availability')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350))"
+                                            @class(['dv-btn', 'dv-btn-primary' => ! $isSelected, 'dv-btn-ghost' => $isSelected])
+                                        >
+                                            <span wire:loading.remove wire:target="selectRoomType({{ $roomType->id }})">{{ $isSelected ? 'See dates' : 'Select room' }}</span>
+                                            <span wire:loading wire:target="selectRoomType({{ $roomType->id }})">Loading…</span>
+                                            <x-line-icon name="arrow" :size="16" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+                        @empty
+                            <div class="rounded-[1.2rem] border border-dashed border-line bg-surface px-6 py-10 text-center">
+                                <x-line-icon name="bed" :size="24" class="mx-auto text-clay" />
+                                <p class="mt-3 font-dm-serif text-[1.35rem] text-forest">Rooms are on their way</p>
+                                <p class="mt-1 text-[13px] text-muted">This hotel hasn't listed its room types yet. Save it and check back soon.</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </x-stay-detail.section>
+
+                {{-- Availability --}}
+                <x-stay-detail.section id="availability" eyebrow="Plan your dates" :title="$selectedRoomType ? 'Availability · '.$selectedRoomType->name : 'Availability'">
+                    @if ($selectedRoomType)
+                        <div wire:loading.flex wire:target="selectRoomType" class="items-center justify-center gap-3 rounded-[1.2rem] border border-line bg-surface p-10 text-[13px] text-muted">
+                            <span class="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-clay"></span>
+                            Loading calendar…
+                        </div>
                         <div wire:loading.remove wire:target="selectRoomType">
-                            @livewire('calendar.calendar-component', ['bookable' => $selectedRoomType])
-
+                            @livewire('calendar.calendar-component', ['bookable' => $selectedRoomType], key('calendar-room-type-'.$selectedRoomType->id))
                         </div>
-
-
                     @else
-                        <div class="p-6 text-center">
-                            <p class="text-gray-500 text-lg">Select a room type to see the availability calendar.</p>
+                        <div class="flex flex-col items-center rounded-[1.2rem] border border-dashed border-line bg-surface px-6 py-12 text-center">
+                            <span class="grid h-12 w-12 place-items-center rounded-full bg-sand/70 text-clay"><x-line-icon name="calendar" :size="20" /></span>
+                            <p class="mt-4 font-dm-serif text-[1.4rem] text-forest">Choose a room first</p>
+                            <p class="mt-1 max-w-sm text-[13px] text-muted">Select a room type to see the availability calendar and nightly prices.</p>
+                            @if ($roomTypes->isNotEmpty())
+                                <button type="button" class="dv-btn dv-btn-ghost mt-5" x-on:click="document.getElementById('rooms')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">See rooms</button>
+                            @endif
                         </div>
                     @endif
-                </div>
-            </div>
-        </div>
+                </x-stay-detail.section>
 
-        <hr class="border-gray-200">
+                {{-- Amenities --}}
+                <x-stay-detail.section id="amenities" eyebrow="On the property" title="Everything within reach">
+                    <x-stay-detail.amenities :amenities="$hotel->amenities" />
+                </x-stay-detail.section>
 
-        <!-- Guest Reviews -->
-        <div wire:init="loadReviews" class="mt-8">
-            <h3 class="text-2xl font-bold text-gray-900 mb-6">Guest Reviews</h3>
-            <div class="space-y-6">
-                @forelse($reviews as $review)
-                    <div class="border-l-4 border-blue-500 p-6 rounded-lg shadow-sm bg-gray-50">
-                        <p class="text-gray-700 italic text-lg leading-relaxed">“{{ $review->content }}”</p>
-                        <div class="flex items-center justify-between mt-4">
-                            <p class="text-sm font-semibold text-gray-600">- {{ $review->guest->first_name ?? 'Anonymous' }}</p>
-                            <x-star-rating :rating="$review->rating" />
+                {{-- Reviews --}}
+                <x-stay-detail.section id="reviews" eyebrow="Guest stories" title="What guests are saying" wire:init="loadReviews">
+                    @if ($reviews->isNotEmpty())
+                        <div class="grid gap-4 md:grid-cols-2">
+                            @foreach ($reviews as $review)
+                                <x-stay-detail.review :review="$review" wire:key="review-{{ $review->id }}" />
+                            @endforeach
                         </div>
-                    </div>
-                @empty
-                    <p class="text-gray-500 italic text-center">No reviews yet. Be the first to leave one!</p>
-                @endforelse
+                        @if ($hasMoreReviews && $reviews->count() >= 5)
+                            <div class="mt-6 flex justify-center">
+                                <button type="button" wire:click="loadReviews" class="dv-btn dv-btn-ghost">
+                                    <span wire:loading.remove wire:target="loadReviews">More reviews</span>
+                                    <span wire:loading wire:target="loadReviews">Loading…</span>
+                                </button>
+                            </div>
+                        @endif
+                    @else
+                        <x-stay-detail.reviews-empty />
+                    @endif
+                </x-stay-detail.section>
+
+                {{-- Agent journeys that include this stay (renders nothing when there are none). --}}
+                @include('packages::partials.journeys-rail', ['journeysFor' => $hotel, 'journeysTitle' => 'Journeys that include '.$hotel->name, 'journeysClass' => 'scroll-mt-[150px] border-b border-line py-12 md:py-14'])
+
+                {{-- Location --}}
+                <x-stay-detail.section id="location" eyebrow="The neighbourhood" title="Where you'll stay" last>
+                    <x-stay-detail.location
+                        :address="$hotel->address"
+                        :city="$hotel->city"
+                        :country="$hotel->country"
+                        :latitude="$hotel->latitude"
+                        :longitude="$hotel->longitude"
+                        :policies="$hotel->policies"
+                    />
+                </x-stay-detail.section>
+            </div>
+
+            <div class="pb-12 lg:self-start lg:pb-16 lg:pt-12">
+                <x-stay-detail.booking-card
+                    wire:key="hotel-booking-{{ $selectedRoomType?->id ?? 'none' }}"
+                    :price="$fromPrice"
+                    :currency="$currency"
+                    :from="! $selectedRoomType"
+                    :rating="$rating"
+                    :reviews="$hotel->reviews_count"
+                    :target="$selectedRoomType ? 'availability' : 'rooms'"
+                    :ready="(bool) $selectedRoomType"
+                    :pending-label="$selectedRoomType ? 'Check availability' : 'Choose a room'"
+                    :guests-label="$selectedRoomType?->capacity ? 'Up to '.$selectedRoomType->capacity.' guests' : null"
+                    :note="$selectedRoomType ? 'Room: '.$selectedRoomType->name : null"
+                    :cancellation="$hotel->policies['cancellation'] ?? null"
+                />
             </div>
         </div>
-
     </div>
-</div>
-<livewire:forms.booking-form />
 
+    <livewire:forms.booking-form />
 </div>

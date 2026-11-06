@@ -39,6 +39,8 @@ class BedAndBreakfastShow extends Component
         abort_unless($bnb->accommodation?->isPublished() || $isOwner || $user?->isPlatformAdmin(), 404);
 
         $this->bnb = $bnb->load([
+            'provider',
+            'scenes',
             'amenities',
             'features',
             'offers',

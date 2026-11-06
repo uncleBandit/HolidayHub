@@ -1,167 +1,228 @@
-<div>
-    {{-- The first layer is the single root element. --}}
+@php
+    $currency = \App\Shared\Support\Currencies::symbol($bnb->getCurrency());
+    $price = (float) $bnb->price_per_night;
+    $place = collect([$bnb->city, $bnb->country])->filter()->implode(', ');
+    $rating = (float) $bnb->avg_rating;
+    $images = array_merge([$bnb->cover_image], (array) ($bnb->gallery ?? []));
+    $policies = (array) ($bnb->policies ?? []);
+    $welcome = trim((string) ($policies['host_welcome'] ?? ''));
+    $houseRules = \Illuminate\Support\Arr::except($policies, ['host_welcome']);
+    $breakfast = trim((string) $bnb->breakfast_details);
+    $seasons = $bnb->seasonalRates
+        ->filter(fn ($rate) => $rate->active && \Carbon\Carbon::parse($rate->end_date)->endOfDay()->isFuture())
+        ->sortBy('start_date')
+        ->values();
+    $specs = collect([
+        $bnb->rooms ? ['icon' => 'bed', 'value' => $bnb->rooms.' '.\Illuminate\Support\Str::plural('room', $bnb->rooms), 'sub' => 'Guest rooms'] : null,
+        $bnb->max_guests ? ['icon' => 'users', 'value' => 'Up to '.$bnb->max_guests.' guests', 'sub' => 'Per booking'] : null,
+        $bnb->has_breakfast ? ['icon' => 'utensils', 'value' => 'Breakfast included', 'sub' => 'Made every morning'] : ['icon' => 'utensils', 'value' => 'Room only', 'sub' => 'Breakfast not included'],
+    ])->filter()->values();
+    $tabs = array_filter([
+        'overview' => 'Overview',
+        'breakfast' => $bnb->has_breakfast ? 'Breakfast' : null,
+        'availability' => 'Availability',
+        'amenities' => 'Amenities',
+        'reviews' => 'Reviews',
+        'location' => 'Location',
+    ]);
+@endphp
 
-    <div>
-        <div class="bg-gray-100 min-h-screen font-sans antialiased">
-            {{-- Hero Section with Parallax Effect --}}
-            <div class="relative w-full h-[80vh] overflow-hidden">
-                {{-- Background Image with subtle parallax motion --}}
-                <div class="absolute inset-0 bg-cover bg-center bg-fixed"
-                     style="background-image: url('{{ !empty($bnb->cover_image_url)
-                        ? $bnb->cover_image_url
-                        : (!empty($bnb->gallery_urls[0])
-                            ? $bnb->gallery_urls[0]
-                            : 'https://www.pinterest.com/pin/31173422417827597/') }}');">
-                    <div class="absolute inset-0 bg-black opacity-40"></div>
-                </div>
+<div class="pb-24 lg:pb-0">
+    <x-stay-detail.gallery
+        :images="$images"
+        :video="$bnb->cover_video"
+        :name="$bnb->name"
+        kind="bnb"
+        :wishlisted="$isWishlisted"
+    />
 
-                {{-- Hero Content --}}
-                <div class="relative z-10 flex flex-col items-center justify-center h-full text-white text-center p-6">
-                    <h1 class="text-6xl md:text-8xl font-serif font-extrabold leading-tight tracking-tight drop-shadow-lg animate-fade-in-down">
-                        {{ $bnb->name }}
-                    </h1>
-                    <p class="mt-4 text-xl md:text-2xl font-light uppercase tracking-widest text-shadow-md animate-fade-in-up">
-                        A getaway in {{ $bnb->city }}, {{ $bnb->country }}
-                    </p>
-                    <div class="mt-8 flex items-center justify-center space-x-8 text-xl animate-fade-in-up delay-200">
-                        <span class="font-bold text-3xl">${{ number_format($bnb->price_per_night, 2) }}</span>
-                        <span class="text-gray-300">/ night</span>
-                        <div class="text-yellow-400 flex items-center space-x-2">
-                            <i class="fas fa-star text-2xl"></i>
-                            <span class="text-2xl font-semibold">{{ number_format($bnb->avg_rating, 1) ?? 'N/A' }}</span>
+    <div class="mx-auto max-w-[1250px] px-4 sm:px-6 lg:px-8">
+        <x-stay-detail.heading
+            :name="$bnb->name"
+            kind="Bed & breakfast"
+            :host="$bnb->provider?->company_name"
+            :verified="(bool) $bnb->is_verified"
+            :rating="$rating"
+            :reviews="$bnb->reviews_count"
+            :location="$place ?: $bnb->address"
+            :facts="[
+                ['value' => $rating > 0 ? number_format($rating, 1) : 'New', 'label' => 'Guest rating', 'star' => $rating > 0],
+                ['value' => number_format((int) $bnb->reviews_count), 'label' => 'Verified reviews'],
+                ['value' => $bnb->rooms ?: '—', 'label' => 'Guest rooms'],
+            ]"
+        />
+
+        {{-- The reel walk: the host's walk through the house, played like stories. --}}
+        <x-stay-detail.reel-walk :scenes="$bnb->scenes" :name="$bnb->name" class="mt-10" />
+
+        <x-stay-detail.tabs
+            :tabs="$tabs"
+            :active="$activeTab"
+            wire-tab
+        />
+
+        <div class="lg:grid lg:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.8fr)] lg:gap-14">
+            <div class="min-w-0">
+                {{-- About --}}
+                <x-stay-detail.section id="overview">
+                    <div class="grid gap-6 md:grid-cols-[0.9fr_1.1fr] md:gap-10">
+                        <div>
+                            <p class="dv-eyebrow">The {{ $bnb->name }} experience</p>
+                            <h2 class="dv-title">{{ $bnb->city ? 'A warm welcome in '.$bnb->city : 'A warm welcome' }}</h2>
                         </div>
-                        <button wire:click="toggleWishlist"
-                                class="p-3 rounded-full bg-white bg-opacity-20 backdrop-filter backdrop-blur-sm transition-transform duration-300 hover:scale-125 focus:outline-none">
-                            <i class="fas fa-heart text-white {{ $isWishlisted ? 'text-red-500' : 'text-gray-300' }} text-2xl"></i>
-                        </button>
+                        <p class="dv-body whitespace-pre-line">{{ $bnb->description ?: 'Your hosts are still writing about their home. The details below cover what you can expect.' }}</p>
                     </div>
-                </div>
-            </div>
 
-            {{-- Main Content & Booking Form --}}
-            <div class="container mx-auto px-4 py-16 -mt-24 relative z-20">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                    {{-- Left Column: Gallery, Description, Amenities, Reviews --}}
-                    <div class="lg:col-span-2 space-y-12">
-                        {{-- Gallery Section --}}
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-3xl overflow-hidden shadow-2xl bg-white p-4">
-                            @if(count($bnb->gallery_urls) > 0)
-                                {{-- Main image (first gallery image) --}}
-                                <div class="col-span-1 md:col-span-2">
-                                    <img src="{{ $bnb->gallery_urls[0] }}"
-                                         alt="{{ $bnb->name }} main view"
-                                         class="w-full h-[60vh] object-cover rounded-2xl transition-transform duration-500 hover:scale-105 cursor-pointer">
-                                </div>
-
-                                {{-- Up to 4 extra gallery images --}}
-                                @foreach(array_slice($bnb->gallery_urls, 1, 4) as $image)
-                                    <img src="{{ $image }}"
-                                         alt="{{ $bnb->name }} gallery image"
-                                         class="w-full h-64 object-cover rounded-2xl transition-transform duration-500 hover:scale-105 cursor-pointer">
-                                @endforeach
-                            @else
-                                {{-- Fallback: show cover image or placeholder --}}
-                                <img src="{{ $bnb->cover_image_url ?? 'https://via.placeholder.com/1600x900' }}"
-                                     alt="{{ $bnb->name }}"
-                                     class="w-full h-[70vh] object-cover rounded-3xl transition-transform duration-500 hover:scale-105 cursor-pointer">
+                    @if ($welcome !== '')
+                        <figure class="mt-8 rounded-[1.2rem] border border-line bg-surface px-6 py-6 sm:px-8">
+                            <p class="dv-eyebrow">A word from your host</p>
+                            <blockquote class="mt-3 whitespace-pre-line font-dm-serif text-[clamp(1.25rem,2.2vw,1.6rem)] italic leading-snug text-forest">“{{ $welcome }}”</blockquote>
+                            @if ($bnb->provider?->company_name)
+                                <figcaption class="mt-3 text-[12px] font-extrabold text-muted">— {{ $bnb->provider->company_name }}</figcaption>
                             @endif
-                        </div>
+                        </figure>
+                    @endif
 
-                        {{-- Key Details & Description --}}
-                        <div class="bg-white rounded-3xl p-10 shadow-xl space-y-8">
-                            <div class="flex flex-col md:flex-row md:items-center md:justify-between border-b pb-6">
-                                <h2 class="text-3xl font-bold text-gray-800">
-                                    The {{ $bnb->name }} Experience
-                                </h2>
-                                <div class="mt-4 md:mt-0 text-gray-600 flex items-center space-x-4">
-                                    <span class="flex items-center space-x-2">
-                                        <i class="fas fa-bed"></i>
-                                        <span>{{ $bnb->bedrooms ?? 2 }} Bedrooms</span>
-                                    </span>
-                                    <span class="flex items-center space-x-2">
-                                        <i class="fas fa-bath"></i>
-                                        <span>{{ $bnb->bathrooms ?? 1 }} Baths</span>
-                                    </span>
-                                    <span class="flex items-center space-x-2">
-                                        <i class="fas fa-users"></i>
-                                        <span>Up to {{ $bnb->max_guests }} Guests</span>
-                                    </span>
-                                </div>
+                    <div class="mt-10 grid grid-cols-2 gap-x-4 gap-y-6 border-y border-line py-6 sm:grid-cols-3">
+                        @foreach ($specs as $spec)
+                            <div class="flex items-center gap-3">
+                                <x-line-icon :name="$spec['icon']" :size="22" class="text-clay" />
+                                <p class="flex flex-col text-[13px]"><b class="text-ink">{{ $spec['value'] }}</b><span class="mt-0.5 text-[11.5px] text-muted">{{ $spec['sub'] }}</span></p>
                             </div>
-                            <p class="text-lg text-gray-700 leading-relaxed">{{ $bnb->description }}</p>
+                        @endforeach
+                    </div>
 
-                            @if($bnb->amenities && $bnb->amenities->isNotEmpty())
-                                <hr class="my-6 border-gray-200">
-                                <h3 class="text-2xl font-semibold text-gray-800">Key Features & Amenities</h3>
-                                <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
-                                    @foreach($bnb->amenities as $amenity)
-                                        <div class="flex items-center space-x-3 text-gray-700">
-                                            <i class="fas fa-check-circle text-green-500 text-xl"></i>
-                                            <span class="text-lg">{{ $amenity->name }}</span>
+                    @if ($offers->isNotEmpty())
+                        <div class="mt-6 flex flex-col gap-3">
+                            @foreach ($offers as $offer)
+                                <div class="flex items-center gap-4 rounded-[0.9rem] bg-sand/60 px-5 py-4" wire:key="offer-{{ $offer->id }}">
+                                    <x-line-icon name="ticket" :size="22" class="text-clay" />
+                                    <p class="min-w-0 text-[12.5px] leading-snug text-muted">
+                                        <b class="block text-ink">{{ $offer->title }}@if ($offer->discount_percent) · {{ rtrim(rtrim(number_format((float) $offer->discount_percent, 2), '0'), '.') }}% off @endif</b>
+                                        {{ \Illuminate\Support\Str::limit((string) $offer->description, 140) }}
+                                    </p>
+                                </div>
+                            @endforeach
+                        </div>
+                    @elseif ($rating >= 4.7)
+                        <div class="mt-6 flex items-center gap-4 rounded-[0.9rem] bg-sand/60 px-5 py-4">
+                            <x-line-icon name="star" :size="24" filled class="text-clay" />
+                            <p class="text-[12.5px] leading-snug text-muted"><b class="block text-ink">A guest favourite</b>One of the most loved stays{{ $bnb->city ? ' in '.$bnb->city : '' }}, based on ratings and verified reviews.</p>
+                        </div>
+                    @endif
+                </x-stay-detail.section>
+
+                {{-- Breakfast --}}
+                @if ($bnb->has_breakfast)
+                    <x-stay-detail.section id="breakfast" eyebrow="Mornings here" title="Breakfast is included">
+                        <div class="grid gap-5 overflow-hidden rounded-[1.2rem] bg-[#F6EEDD]/70 p-6 sm:grid-cols-[auto_1fr] sm:p-7">
+                            <span class="grid h-14 w-14 place-items-center rounded-full bg-white text-clay"><x-line-icon name="utensils" :size="24" /></span>
+                            <div class="min-w-0">
+                                @if ($breakfast !== '')
+                                    <p class="dv-body whitespace-pre-line !text-ink">{{ $breakfast }}</p>
+                                @else
+                                    <p class="dv-body !text-ink">Breakfast is made every morning and included in your nightly rate. Ask your host about times and any dietary needs.</p>
+                                @endif
+                                <p class="mt-3 text-[12px] font-bold text-muted">Included in every night’s rate{{ $price > 0 ? ' · from '.$currency.' '.number_format($price).' per room' : '' }}</p>
+                            </div>
+                        </div>
+                    </x-stay-detail.section>
+                @endif
+
+                {{-- Availability --}}
+                <x-stay-detail.section id="availability" eyebrow="Plan your dates" title="Availability">
+                    @if ($bnb && $bnb->id)
+                        <livewire:calendar.calendar-component :bookable="$bnb" />
+                        @if ($seasons->isNotEmpty())
+                            <div class="mt-6 rounded-[1.1rem] border border-line bg-surface p-5">
+                                <p class="text-[10px] font-extrabold uppercase tracking-[0.14em] text-muted">Seasonal rates</p>
+                                <div class="mt-2 divide-y divide-line">
+                                    @foreach ($seasons as $season)
+                                        <div class="flex flex-wrap items-center justify-between gap-2 py-2.5 text-[13px]" wire:key="season-{{ $season->id }}">
+                                            <span class="font-extrabold text-ink">{{ $season->description ?: 'Seasonal rate' }}</span>
+                                            <span class="text-muted">{{ \Carbon\Carbon::parse($season->start_date)->format('j M') }} – {{ \Carbon\Carbon::parse($season->end_date)->format('j M Y') }}</span>
+                                            <span class="font-dm-serif text-[1.1rem] text-forest">{{ $currency }} {{ number_format((float) $season->rate) }}<span class="font-sans text-[11px] text-muted"> / night</span></span>
                                         </div>
                                     @endforeach
                                 </div>
-                            @endif
-                        </div>
-
-                        {{-- Reviews Section --}}
-                        <div class="bg-white rounded-3xl p-10 shadow-xl space-y-8">
-                            <h2 class="text-3xl font-bold text-gray-800">
-                                Guest Reviews ({{ $bnb->reviews_count }})
-                            </h2>
-                            @forelse($reviews as $review)
-                                <div class="p-6 bg-gray-50 rounded-2xl shadow-sm border-l-4 border-indigo-500">
-                                    <div class="flex items-center justify-between">
-                                        <p class="font-bold text-lg text-gray-900">{{ $review->user->name }}</p>
-                                        <div class="text-yellow-500 flex items-center space-x-1 text-lg">
-                                            @for($i = 0; $i < 5; $i++)
-                                                <i class="fas fa-star {{ $i < $review->rating ? '' : 'text-gray-300' }}"></i>
-                                            @endfor
-                                        </div>
-                                    </div>
-                                    <p class="mt-2 text-sm text-gray-500">{{ $review->created_at->diffForHumans() }}</p>
-                                    <p class="mt-4 text-gray-700 leading-relaxed">{{ $review->content }}</p>
-                                </div>
-                            @empty
-                                <div class="text-center p-8 text-gray-500">
-                                    <p>No reviews yet. Be the first to share your experience! 📝</p>
-                                </div>
-                            @endforelse
-                            @if($hasMoreReviews)
-                                <div class="flex justify-center mt-6">
-                                    <button wire:click="loadReviews" class="text-indigo-600 font-semibold hover:underline transition-colors duration-300">
-                                        Load More Reviews
-                                    </button>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-
-                    {{-- Right Column: Sticky Booking Sidebar --}}
-                    <div class="lg:col-span-1">
-                        <div class="sticky top-8 bg-white p-6 rounded-3xl shadow-xl border border-gray-100 space-y-6">
-                            <h3 class="text-2xl font-bold text-gray-900 text-center">Check Availability</h3>
-
-                            {{-- Calendar availability (re-usable like in Hotel) --}}
-                            @if($bnb && $bnb->id)
-                                <livewire:calendar.calendar-component :bookable="$bnb" />
-                            @else
-                                <p class="text-red-500 text-center mt-4">⚠️ Booking calendar unavailable.</p>
-                            @endif
-
-                            <hr class="border-gray-200">
-
-                            {{-- Guests Input - This is the only booking state managed by the parent --}}
-                            <div class="mt-4">
-                                <label for="guests" class="block text-sm font-medium text-gray-700">Guests</label>
-                                <input type="number" id="guests" wire:model.live="guests" min="1" max="{{ $bnb->max_guests }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                @error('guests') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                             </div>
+                        @endif
+                    @else
+                        <p class="rounded-[1.2rem] border border-dashed border-line bg-surface px-6 py-10 text-center text-[13px] text-muted">The booking calendar is unavailable right now.</p>
+                    @endif
+                </x-stay-detail.section>
+
+                {{-- Amenities --}}
+                <x-stay-detail.section id="amenities" eyebrow="Key features" title="Little things that matter">
+                    <x-stay-detail.amenities :amenities="$bnb->amenities" />
+                </x-stay-detail.section>
+
+                {{-- Reviews --}}
+                <x-stay-detail.section id="reviews" eyebrow="Guest stories" :title="'Guest reviews ('.number_format((int) $bnb->reviews_count).')'">
+                    @if ($reviews && $reviews->isNotEmpty())
+                        <div class="grid gap-4 md:grid-cols-2">
+                            @foreach ($reviews as $review)
+                                <x-stay-detail.review :review="$review" wire:key="review-{{ $review->id }}" />
+                            @endforeach
                         </div>
-                    </div>
-                </div>
+                        @if ($hasMoreReviews && $reviews->count() >= 5)
+                            <div class="mt-6 flex justify-center">
+                                <button type="button" wire:click="loadReviews" class="dv-btn dv-btn-ghost">
+                                    <span wire:loading.remove wire:target="loadReviews">Load more reviews</span>
+                                    <span wire:loading wire:target="loadReviews">Loading…</span>
+                                </button>
+                            </div>
+                        @endif
+                    @else
+                        <x-stay-detail.reviews-empty />
+                    @endif
+                </x-stay-detail.section>
+
+                {{-- Agent journeys that include this stay (renders nothing when there are none). --}}
+                @include('packages::partials.journeys-rail', ['journeysFor' => $bnb, 'journeysTitle' => 'Journeys that include '.$bnb->name, 'journeysClass' => 'scroll-mt-[150px] border-b border-line py-12 md:py-14'])
+
+                {{-- Location --}}
+                <x-stay-detail.section id="location" eyebrow="The neighbourhood" title="Where you'll stay" last>
+                    <x-stay-detail.location
+                        :address="$bnb->address"
+                        :city="$bnb->city"
+                        :country="$bnb->country"
+                        :latitude="$bnb->latitude"
+                        :longitude="$bnb->longitude"
+                        :policies="$houseRules"
+                    />
+                </x-stay-detail.section>
+            </div>
+
+            <div class="pb-12 lg:self-start lg:pb-16 lg:pt-12">
+                <x-stay-detail.booking-card
+                    :price="$price"
+                    :currency="$currency"
+                    :rating="$rating"
+                    :reviews="$bnb->reviews_count"
+                    :cancellation="$bnb->policies['cancellation'] ?? null"
+                >
+                    <x-slot:guests>
+                        <label for="bnb-guests" class="flex items-center justify-between gap-3 p-3">
+                            <span class="flex flex-col">
+                                <span class="text-[9.5px] font-extrabold uppercase tracking-[0.1em] text-ink">Guests</span>
+                                <span class="mt-1 text-[11px] text-muted">{{ $bnb->max_guests ? 'Up to '.$bnb->max_guests : 'How many are coming?' }}</span>
+                            </span>
+                            <input
+                                type="number"
+                                id="bnb-guests"
+                                wire:model.live="guests"
+                                min="1"
+                                max="{{ $bnb->max_guests }}"
+                                class="w-20 rounded-[0.6rem] border border-line bg-cream px-3 py-2 text-center text-[13px] font-bold text-ink focus:border-forest focus:outline-none focus:ring-0"
+                            >
+                        </label>
+                        @error('guests') <p class="px-3 pb-3 text-[11.5px] font-semibold text-clay-dark">{{ $message }}</p> @enderror
+                    </x-slot:guests>
+                </x-stay-detail.booking-card>
             </div>
         </div>
     </div>
+
     <livewire:forms.booking-form />
 </div>

@@ -1,23 +1,40 @@
 @props(['review'])
 
-<div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 transition-all duration-300 transform hover:scale-[1.01]">
-    <div class="flex items-start justify-between">
-        <div>
-            <h3 class="font-bold text-gray-800">{{ $review->guest?->first_name ?? 'Guest' }}</h3>
-            <p class="text-sm text-gray-500">{{ $review->created_at->diffForHumans() }}</p>
-        </div>
-        <div class="flex items-center space-x-1 text-yellow-500 text-lg">
-            @for ($i = 0; $i < 5; $i++)
-                <i class="fas fa-star {{ $i < $review->rating ? 'text-yellow-500' : 'text-gray-300' }}"></i>
-            @endfor
-        </div>
+{{-- One guest review on a destination page: serif quote, star row, initial avatar. --}}
+@php
+    $name = $review->guest?->first_name ?? 'Guest';
+    $rating = (int) round((float) $review->rating);
+    $photos = is_array($review->photos ?? null) ? $review->photos : [];
+@endphp
+
+<article {{ $attributes->merge(['class' => 'dv-panel flex h-full flex-col p-6']) }}>
+    <div class="flex items-center gap-0.5 text-clay" aria-label="{{ $rating }} out of 5 stars">
+        @for ($i = 0; $i < 5; $i++)
+            <span class="{{ $i < $rating ? 'text-clay' : 'text-line' }}">
+                <x-line-icon name="star" :size="15" :filled="true" />
+            </span>
+        @endfor
     </div>
-    <p class="mt-4 text-gray-700 leading-relaxed">{{ $review->comment }}</p>
-    @if(!empty($review->photos))
-        <div class="flex gap-2 mt-4 overflow-x-auto pb-2">
-            @foreach($review->photos as $photo)
-                <img src="{{ $photo }}" alt="Review photo" class="w-20 h-20 object-cover rounded-lg shadow-sm hover:opacity-90 transition-opacity cursor-pointer">
+
+    @if (filled($review->comment))
+        <p class="mt-4 flex-1 font-dm-serif text-[1.15rem] leading-snug text-ink">“{{ $review->comment }}”</p>
+    @else
+        <p class="mt-4 flex-1 text-[13px] italic text-muted">Rated without a written review.</p>
+    @endif
+
+    @if ($photos !== [])
+        <div class="mt-4 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+            @foreach ($photos as $photo)
+                <img src="{{ $photo }}" alt="Photo from {{ $name }}" loading="lazy" class="h-16 w-16 flex-none rounded-[0.6rem] object-cover">
             @endforeach
         </div>
     @endif
-</div>
+
+    <div class="mt-5 flex items-center gap-3 border-t border-line pt-4">
+        <span class="grid h-9 w-9 flex-none place-items-center rounded-full bg-forest text-[13px] font-extrabold text-white">{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($name, 0, 1)) }}</span>
+        <div class="min-w-0">
+            <p class="truncate text-[13px] font-extrabold text-ink">{{ $name }}</p>
+            <p class="text-[11px] text-muted">{{ $review->created_at?->diffForHumans() }}</p>
+        </div>
+    </div>
+</article>

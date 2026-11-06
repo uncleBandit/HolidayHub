@@ -18,6 +18,6 @@ class ActivitiesServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        Gate::policy(App\Modules\Activities\Domain\Models\Activity::class, ActivityPolicy::class);
+        Gate::policy(\App\Modules\Activities\Domain\Models\Activity::class, ActivityPolicy::class);
     }
 }

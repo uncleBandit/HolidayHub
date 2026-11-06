@@ -39,6 +39,18 @@ class Destination extends Model
         'cover_image',    // hero image for marketing
         'gallery',        // JSON array of images
         'meta_data',      // JSON for SEO / flexible data
+        // Real columns the admin catalogue edits; they were missing here, so
+        // mass assignment silently dropped them.
+        'short_description',
+        'tagline',
+        'thumbnail',
+        'image_url',
+        'average_cost',
+        'popularity_score',
+        'is_featured',
+        'meta_title',
+        'meta_description',
+        'tags',
     ];
 
     /**
@@ -53,6 +65,8 @@ class Destination extends Model
         'meta_data' => 'array',
         'tags' => 'array',
         'average_cost' => 'double',
+        'is_featured' => 'boolean',
+        'popularity_score' => 'integer',
     ];
 
     /**
@@ -75,6 +89,11 @@ class Destination extends Model
     public function reviews(): MorphMany
     {
         return $this->morphMany(Review::class, 'reviewable');
+    }
+
+    public function offers(): HasMany
+    {
+        return $this->hasMany(\App\Modules\Catalog\Domain\Models\Offer::class);
     }
 
     public function packages(): HasMany

@@ -19,7 +19,7 @@ class ProvidersServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        Gate::policy(App\Modules\Providers\Domain\Models\Provider::class, ProviderPolicy::class);
-        Gate::policy(App\Modules\Providers\Domain\Models\Service::class, ServicePolicy::class);
+        Gate::policy(\App\Modules\Providers\Domain\Models\Provider::class, ProviderPolicy::class);
+        Gate::policy(\App\Modules\Providers\Domain\Models\Service::class, ServicePolicy::class);
     }
 }

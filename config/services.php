@@ -39,6 +39,13 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL').'/auth/google/callback'),
+
+        // Browser key for the Maps JavaScript API, Places API (New) and the
+        // Geocoding API. It is sent to the browser, so restrict it to your
+        // domains (HTTP referrers) in Google Cloud.
+        'maps_key' => env('GOOGLE_MAPS_API_KEY'),
+        // Optional Map ID (needed for advanced markers in production).
+        'maps_id' => env('GOOGLE_MAPS_MAP_ID', 'DEMO_MAP_ID'),
     ],
 
 ];

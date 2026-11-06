@@ -111,6 +111,9 @@ services:
       - vendor:/var/www/html/vendor
       - node_modules:/var/www/html/node_modules
       - public-assets:/var/www/html/public/build
+      - ./docker/php/opcache-dev.ini:/usr/local/etc/php/conf.d/zzz-opcache-dev.ini:ro
+      # Bind the app ini too, so changes (e.g. upload limits) apply without a rebuild.
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/zz-app.ini:ro
     healthcheck:
       test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8000/up') ? 0 : 1);"]
       interval: 15s
@@ -132,17 +135,17 @@ services:
     environment:
       <<: *app-env
     volumes:
-      - .:/var/www/html:cached
-      - vendor:/var/www/html/vendor
-      - node_modules:/var/www/html/node_modules
-      - public-assets:/var/www/html/public/build
+      - .:/var/www:cached
+      - vendor:/var/www/vendor
+      - node_modules:/var/www/node_modules
+      - public-assets:/var/www/public/build
 
   # Vite dev server with hot module replacement. Started on demand:
   #   docker compose --profile dev-assets up -d vite
   vite:
     image: node:22-bookworm-slim
     profiles: ["dev-assets"]
-    working_dir: /var/www/html
+    working_dir: /var/www
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     depends_on:
       - app
@@ -152,8 +155,8 @@ services:
     ports:
       - "${VITE_PORT:-5173}:5173"
     volumes:
-      - .:/var/www/html:cached
-      - node_modules:/var/www/html/node_modules
+      - .:/var/www:cached
+      - node_modules:/var/www/node_modules
 
 volumes:
   postgres-data:

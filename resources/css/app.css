@@ -861,3 +861,443 @@
         animation-duration: 0.01ms !important;
     }
 }
+/* ────────────────────────────────────────────────────────────────────────────
+   Discover magic
+   Cinematic hero, mood spreads, the "Surprise me" card and the night finale.
+   Motion is decorative only; the reduced-motion rule above flattens all of it.
+   ──────────────────────────────────────────────────────────────────────────── */
+@layer components {
+    .dv-magic-hero {
+        @apply relative isolate flex overflow-hidden bg-[#0C1511] text-white;
+        height: calc(100dvh - 88px);
+        min-height: 38rem;
+        --mx: 70%;
+        --my: 40%;
+    }
+
+    .dv-magic-slide {
+        @apply absolute inset-0 -z-20 h-full w-full object-cover opacity-0;
+        transition: opacity 1.6s ease;
+    }
+
+    .dv-magic-slide.is-active {
+        @apply opacity-100;
+        animation: dv-kenburns 9s ease-out forwards;
+    }
+
+    .dv-magic-shade {
+        @apply absolute inset-0 -z-10;
+        background-image: linear-gradient(90deg, rgba(8, 26, 21, 0.85) 0%, rgba(8, 26, 21, 0.45) 55%, rgba(8, 26, 21, 0.15) 100%),
+            linear-gradient(0deg, rgba(8, 26, 21, 0.7), transparent 45%);
+    }
+
+    .dv-magic-spotlight {
+        @apply pointer-events-none absolute inset-0 -z-10 mix-blend-soft-light;
+        background: radial-gradient(520px circle at var(--mx) var(--my), rgba(255, 228, 190, 0.45), transparent 60%);
+        transition: background 0.2s;
+    }
+
+    .dv-magic-particles {
+        @apply pointer-events-none absolute inset-0 -z-10 overflow-hidden;
+    }
+
+    .dv-magic-particles span {
+        @apply absolute bottom-[-2rem] block rounded-full;
+        width: var(--size);
+        height: var(--size);
+        background: #ffe3c2;
+        box-shadow: 0 0 12px 2px rgba(255, 210, 160, 0.7);
+        animation: dv-float var(--duration) linear var(--delay) infinite;
+    }
+
+    .dv-magic-in {
+        animation: dv-rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+        animation-delay: calc(var(--i, 0) * 0.12s + 0.1s);
+    }
+
+    .dv-wonder {
+        @apply inline-grid align-bottom italic;
+    }
+
+    .dv-wonder > span {
+        @apply bg-gradient-to-r from-[#FFD7B5] via-[#F6A27F] to-clay bg-clip-text pr-[0.08em] text-transparent;
+        grid-area: 1 / 1;
+        opacity: 0;
+        transform: translateY(-0.3em);
+        filter: blur(10px);
+        transition: opacity 0.35s ease, transform 0.35s ease, filter 0.35s ease;
+    }
+
+    .dv-wonder > span.is-on {
+        opacity: 1;
+        transform: none;
+        filter: none;
+        transition: opacity 0.6s ease 0.3s, transform 0.6s ease 0.3s, filter 0.6s ease 0.3s;
+    }
+
+    .dv-magic-glass {
+        @apply border border-white/30 bg-white/10 text-white backdrop-blur-md hover:bg-white/20;
+    }
+
+    .dv-magic-progress {
+        @apply relative h-[3px] flex-1 overflow-hidden rounded-full bg-white/25 py-0;
+    }
+
+    .dv-magic-progress span {
+        @apply absolute inset-y-0 left-0 w-0 bg-white;
+    }
+
+    .dv-magic-progress.is-done span {
+        @apply w-full;
+    }
+
+    .dv-magic-progress.is-on span {
+        animation: dv-progress 6.5s linear forwards;
+    }
+
+    .dv-magic-cue {
+        @apply absolute bottom-7 left-1/2 z-10 hidden h-10 w-6 -translate-x-1/2 rounded-full border border-white/50 md:block;
+    }
+
+    .dv-magic-cue span {
+        @apply absolute left-1/2 top-2 h-2 w-1 -translate-x-1/2 rounded-full bg-white;
+        animation: dv-cue 1.8s ease-in-out infinite;
+    }
+
+    /* Moods: the section glow takes the colour of the chosen feeling */
+    .dv-magic-moods {
+        @apply relative isolate overflow-hidden;
+    }
+
+    .dv-magic-moods::before {
+        @apply pointer-events-none absolute -right-40 -top-40 -z-10 h-[38rem] w-[38rem] rounded-full opacity-40 blur-3xl;
+        content: '';
+        background: var(--tint);
+        transition: background 0.8s ease;
+    }
+
+    .dv-magic-rise {
+        animation: dv-rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+        animation-delay: calc(var(--i, 0) * 0.1s);
+    }
+
+    /* Surprise me */
+    .dv-magic-night {
+        @apply relative isolate bg-forest;
+        background-image: radial-gradient(1.5px 1.5px at 12% 22%, #fff 50%, transparent 51%),
+            radial-gradient(1px 1px at 28% 70%, #fff 50%, transparent 51%),
+            radial-gradient(1.5px 1.5px at 45% 12%, #fff 50%, transparent 51%),
+            radial-gradient(1px 1px at 62% 58%, #fff 50%, transparent 51%),
+            radial-gradient(1.5px 1.5px at 78% 30%, #fff 50%, transparent 51%),
+            radial-gradient(1px 1px at 90% 80%, #fff 50%, transparent 51%),
+            radial-gradient(1px 1px at 8% 88%, #fff 50%, transparent 51%),
+            radial-gradient(60rem circle at 100% 0%, rgba(216, 95, 60, 0.35), transparent 60%);
+    }
+
+    .dv-magic-night::after {
+        @apply pointer-events-none absolute inset-0 -z-10;
+        content: '';
+        background-image: radial-gradient(1px 1px at 20% 40%, #fff 50%, transparent 51%),
+            radial-gradient(1.5px 1.5px at 55% 85%, #fff 50%, transparent 51%),
+            radial-gradient(1px 1px at 70% 15%, #fff 50%, transparent 51%),
+            radial-gradient(1.5px 1.5px at 35% 50%, #fff 50%, transparent 51%);
+        animation: dv-twinkle 3.5s ease-in-out infinite alternate;
+    }
+
+    .dv-magic-shimmer {
+        @apply relative overflow-hidden;
+    }
+
+    .dv-magic-shimmer::after {
+        @apply pointer-events-none absolute inset-y-0 -left-1/2 w-1/3 skew-x-[-20deg] bg-white/25;
+        content: '';
+        animation: dv-shimmer 3.2s ease-in-out infinite;
+    }
+
+    .dv-flip {
+        @apply h-[26rem] w-[18rem] sm:h-[28rem] sm:w-[20rem];
+        perspective: 1400px;
+    }
+
+    .dv-flip-inner {
+        @apply relative h-full w-full;
+        transform-style: preserve-3d;
+        transition: transform 0.9s cubic-bezier(0.3, 1.4, 0.5, 1);
+    }
+
+    .dv-flip.is-revealed .dv-flip-inner {
+        transform: rotateY(180deg);
+    }
+
+    .dv-flip.is-shuffling .dv-flip-inner {
+        animation: dv-shuffle 0.55s ease-in-out 2;
+    }
+
+    .dv-flip-face {
+        @apply absolute inset-0 overflow-hidden rounded-[1.4rem] shadow-[0_30px_80px_rgba(0,0,0,0.45)];
+        backface-visibility: hidden;
+    }
+
+    .dv-flip-back {
+        @apply flex flex-col items-center justify-center border border-white/15 text-center;
+        background: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.04) 0 12px, transparent 12px 24px),
+            linear-gradient(160deg, #275848, #0c1511);
+    }
+
+    .dv-flip-front {
+        transform: rotateY(180deg);
+    }
+
+    /* Tilting destination cards */
+    .dv-tilt {
+        transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+        transition: transform 0.25s ease-out;
+    }
+
+    /* Finale */
+    .dv-magic-finale {
+        @apply relative isolate overflow-hidden bg-[#0C1511] py-28 md:py-36;
+    }
+
+    .dv-magic-aurora {
+        @apply absolute left-1/2 top-1/2 -z-10 h-[34rem] w-[60rem] max-w-[160vw] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-60 blur-[90px];
+        background: conic-gradient(from 0deg, #275848, #d85f3c, #e8a35a, #4fa3b5, #275848);
+        animation: dv-aurora 18s linear infinite;
+    }
+}
+
+@keyframes dv-kenburns {
+    from { transform: scale(1.12) translate3d(1.5%, 1%, 0); }
+    to { transform: scale(1) translate3d(0, 0, 0); }
+}
+
+@keyframes dv-float {
+    0% { transform: translate3d(0, 0, 0); opacity: 0; }
+    10% { opacity: 0.9; }
+    90% { opacity: 0.6; }
+    100% { transform: translate3d(var(--drift), -105vh, 0); opacity: 0; }
+}
+
+@keyframes dv-rise {
+    from { opacity: 0; transform: translateY(28px); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes dv-progress {
+    from { width: 0; }
+    to { width: 100%; }
+}
+
+@keyframes dv-cue {
+    0%, 100% { transform: translate(-50%, 0); opacity: 1; }
+    60% { transform: translate(-50%, 12px); opacity: 0; }
+}
+
+@keyframes dv-twinkle {
+    from { opacity: 0.2; }
+    to { opacity: 1; }
+}
+
+@keyframes dv-shimmer {
+    0%, 55% { left: -50%; }
+    100% { left: 130%; }
+}
+
+@keyframes dv-shuffle {
+    0%, 100% { transform: rotateY(0) rotateZ(0); }
+    25% { transform: rotateY(-18deg) rotateZ(-4deg) translateX(-10px); }
+    75% { transform: rotateY(18deg) rotateZ(4deg) translateX(10px); }
+}
+
+@keyframes dv-aurora {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Motion
+   Driven by resources/js/motion.js. Reveals use the standalone `translate`
+   property so they never fight the `transform` used by hover lifts, tilts and
+   the flip card.
+   ──────────────────────────────────────────────────────────────────────────── */
+@layer components {
+    .dv-topbar {
+        position: sticky;
+        top: 0;
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .is-scrolled .dv-topbar {
+        @apply bg-cream/85 backdrop-blur-xl;
+        box-shadow: 0 10px 30px rgba(20, 36, 28, 0.08);
+    }
+
+    .is-scrolled .dv-topbar-dark {
+        @apply bg-[#0C1511]/85;
+    }
+
+    .dv-scroll-progress {
+        @apply pointer-events-none fixed inset-x-0 top-0 z-[70] h-[3px];
+        background: linear-gradient(90deg, #d85f3c, #f6a27f, #e8a35a);
+        transform: scaleX(0);
+        transform-origin: 0 50%;
+    }
+
+    .motion-ready .reveal {
+        opacity: 0;
+        translate: 0 28px;
+        transition: opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1), translate 0.8s cubic-bezier(0.2, 0.7, 0.2, 1),
+            transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.45s ease;
+    }
+
+    .motion-ready .reveal.is-visible {
+        opacity: 1;
+        translate: 0 0;
+    }
+
+    /* Hero parallax: the image drifts slower than the page */
+    .dv-hero > img,
+    .dv-hero > video,
+    .dv-magic-slide {
+        top: -20%;
+        height: 120%;
+        translate: 0 var(--parallax, 0px);
+    }
+
+    /* Cards lift, glow and catch the light */
+    .dv-card,
+    .dv-reel-card {
+        transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.45s ease;
+    }
+
+    .dv-card::after {
+        @apply pointer-events-none absolute inset-0 z-[1];
+        content: '';
+        background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.22) 50%, transparent 65%);
+        translate: -110% 0;
+        transition: translate 0.9s ease;
+    }
+
+    .dv-reel-card.is-playing {
+        box-shadow: 0 0 0 2px #d85f3c, 0 26px 60px -20px rgba(216, 95, 60, 0.55);
+    }
+
+    .dv-reel-card.is-playing .dv-reel-play svg {
+        opacity: 0;
+    }
+
+    .dv-reel-card.is-playing .dv-reel-play::after {
+        @apply absolute inset-[30%_28%];
+        content: '';
+        background: linear-gradient(#fff, #fff) 0 100% / 3px 40% no-repeat,
+            linear-gradient(#fff, #fff) 50% 100% / 3px 80% no-repeat,
+            linear-gradient(#fff, #fff) 100% 100% / 3px 60% no-repeat;
+        animation: dv-eq 0.9s ease-in-out infinite;
+    }
+
+    .dv-btn,
+    .dv-category {
+        transition: transform 0.25s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.25s ease;
+    }
+
+    @media (hover: hover) {
+        .dv-card:not(.dv-flip-face):hover,
+        .dv-reel-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 28px 60px -22px rgba(20, 36, 28, 0.5);
+        }
+
+        .dv-tilt:hover {
+            transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-6px);
+        }
+
+        .dv-card:hover::after {
+            translate: 110% 0;
+        }
+
+        .dv-btn:hover,
+        .dv-category:hover {
+            transform: translateY(-2px);
+        }
+
+        .dv-btn-primary:hover {
+            box-shadow: 0 12px 26px -10px rgba(216, 95, 60, 0.7);
+        }
+    }
+
+    .dv-btn:active,
+    .dv-category:active {
+        transform: scale(0.97);
+    }
+}
+
+@keyframes dv-eq {
+    0%, 100% { background-size: 3px 40%, 3px 80%, 3px 60%; }
+    33% { background-size: 3px 90%, 3px 35%, 3px 75%; }
+    66% { background-size: 3px 55%, 3px 95%, 3px 30%; }
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   For you
+   ──────────────────────────────────────────────────────────────────────────── */
+@layer components {
+    .dv-foryou-head {
+        @apply relative isolate overflow-hidden;
+    }
+
+    .dv-foryou-head::before,
+    .dv-foryou-head::after {
+        @apply pointer-events-none absolute -z-10 rounded-full blur-3xl;
+        content: '';
+        animation: dv-drift 16s ease-in-out infinite alternate;
+    }
+
+    .dv-foryou-head::before {
+        @apply -right-32 -top-40 h-[30rem] w-[30rem] bg-[#F6C6B8]/60;
+    }
+
+    .dv-foryou-head::after {
+        @apply -left-40 top-24 h-[24rem] w-[24rem] bg-[#CFE3D6]/70;
+        animation-delay: -8s;
+    }
+
+    .dv-story {
+        @apply flex-none;
+    }
+
+    .dv-story-ring {
+        @apply relative grid h-[4.6rem] w-[4.6rem] place-items-center rounded-full p-[3px];
+        background: conic-gradient(from 0deg, #d85f3c, #e8a35a, #f6c6b8, #275848, #d85f3c);
+    }
+
+    .dv-story-ring img {
+        @apply h-full w-full rounded-full border-[3px] border-cream object-cover transition-transform duration-500;
+    }
+
+    .dv-story:hover .dv-story-ring {
+        animation: dv-spin 2.4s linear infinite;
+    }
+
+    .dv-story:hover .dv-story-ring img {
+        animation: dv-spin 2.4s linear infinite reverse;
+        scale: 1.06;
+    }
+
+    .dv-foryou-reason {
+        @apply absolute left-3.5 top-3.5 z-10 inline-flex max-w-[calc(100%-4.5rem)] items-center gap-1.5 truncate rounded-full border border-white/25 bg-black/35 px-2.5 py-1.5 text-[10px] font-extrabold text-white backdrop-blur-md;
+    }
+
+    .dv-foryou-filters {
+        @apply sticky top-[76px] z-20 border-y border-line bg-cream/85 py-3 backdrop-blur-xl md:top-[88px];
+        padding-inline: max(1.25rem, calc((100vw - 1350px) / 2), 5vw);
+    }
+}
+
+@keyframes dv-drift {
+    from { translate: 0 0; }
+    to { translate: 4rem 2rem; }
+}
+
+@keyframes dv-spin {
+    to { rotate: 360deg; }
+}

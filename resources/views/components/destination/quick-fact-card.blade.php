@@ -1,9 +1,12 @@
-@props(['icon', 'title', 'value'])
+@props(['icon' => 'compass', 'title', 'value'])
 
-<div class="p-6 bg-white rounded-2xl shadow-lg border border-gray-100 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl">
-    <div class="flex flex-col items-center text-center">
-        <i class="{{ $icon }} fa-3x text-indigo-500 mb-4"></i>
-        <h3 class="text-lg font-semibold text-gray-800">{{ $title }}</h3>
-        <p class="text-gray-600 mt-1">{{ $value }}</p>
+{{-- One cell of the floating quick-facts strip on a destination page. --}}
+<div {{ $attributes->merge(['class' => 'flex min-w-0 items-center gap-3 px-4 py-4 sm:px-5']) }}>
+    <span class="grid h-10 w-10 flex-none place-items-center rounded-full bg-cream text-clay">
+        <x-line-icon :name="$icon" :size="18" />
+    </span>
+    <div class="min-w-0">
+        <p class="text-[10px] font-extrabold uppercase tracking-[0.11em] text-muted">{{ $title }}</p>
+        <p class="mt-0.5 font-dm-serif text-[1.15rem] leading-tight text-ink">{{ $value }}</p>
     </div>
 </div>

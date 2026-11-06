@@ -30,7 +30,7 @@ class MediaModerationResource extends Resource
 
     protected static ?int $navigationSort = 40;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Marketplace';
+    protected static string|\UnitEnum|null $navigationGroup = 'Content & catalog';
 
     public static function canViewAny(): bool
     {

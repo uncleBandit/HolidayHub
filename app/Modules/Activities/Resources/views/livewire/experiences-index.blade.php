@@ -75,131 +75,205 @@
             @endif
         </section>
     @else
+        @php
+            $glow = 'bg-gradient-to-r from-[#FFD7B5] via-[#F6A27F] to-clay bg-clip-text text-transparent';
+            $browsing = blank($search) && $type === 'all' && $duration === 'all' && blank($destination) && blank($minPrice) && blank($maxPrice) && $paginator->currentPage() === 1;
+            $typeIcons = [
+                'safari-wildlife' => 'map', 'ocean-water' => 'waves', 'adventure-trekking' => 'mountain',
+                'culture-heritage' => 'leaf', 'food-markets' => 'utensils', 'wellness-retreats' => 'star', 'family-kids' => 'users',
+            ];
+        @endphp
+
         {{-- ──────────────────────────────  Hero  ────────────────────────── --}}
-        <section class="dv-hero">
-            @if (filled($hero))
+        <section
+            class="dv-magic-hero"
+            x-data="{
+                moments: @js(collect($moments)->map(fn ($m) => ['caption' => $m['caption']])->values()),
+                active: 0,
+                still: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+                init() {
+                    this.$nextTick(() => this.play());
+                    if (this.still || this.moments.length < 2) return;
+                    setInterval(() => { this.active = (this.active + 1) % this.moments.length; this.play() }, 7000);
+                },
+                play() {
+                    this.$el.querySelectorAll('video.dv-magic-slide').forEach((video, i) => {
+                        if (i === this.active && ! this.still) { video.play().catch(() => {}) } else { video.pause() }
+                    });
+                },
+                go(i) { this.active = i; this.play() },
+            }"
+            x-on:mousemove="const r = $el.getBoundingClientRect(); $el.style.setProperty('--mx', ($event.clientX - r.left) + 'px'); $el.style.setProperty('--my', ($event.clientY - r.top) + 'px')"
+        >
+            @forelse ($moments as $i => $moment)
                 <video
-                    x-ref="hero"
-                    class="dv-hero-video"
-                    autoplay
+                    @class(['dv-magic-slide', 'is-active' => $i === 0])
+                    :class="active === {{ $i }} && 'is-active'"
+                    src="{{ $moment['video'] }}"
+                    poster="{{ $moment['poster'] }}"
                     muted
                     loop
                     playsinline
-                    preload="none"
-                    poster="{{ $hero['poster'] }}"
+                    preload="{{ $i === 0 ? 'auto' : 'none' }}"
                     aria-hidden="true"
-                    x-init="if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) $refs.hero.pause()"
-                >
-                    <source src="{{ $hero['video'] }}" type="video/mp4">
-                </video>
-            @endif
+                ></video>
+            @empty
+                @if (filled($hero))
+                    <img src="{{ $hero['poster'] }}" alt="" class="dv-magic-slide is-active">
+                @endif
+            @endforelse
 
-            <div class="dv-hero-shade" aria-hidden="true"></div>
+            <div class="dv-magic-shade"></div>
+            <div class="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(5,14,10,0.7)_100%)]" aria-hidden="true"></div>
+            <div class="dv-magic-spotlight" aria-hidden="true"></div>
 
-            <div class="dv-hero-copy">
-                <p class="dv-eyebrow-light">Experiences, in motion</p>
-                <h1 class="dv-display">
-                    Go somewhere<br>you've never been.
+            <div class="dv-magic-particles" aria-hidden="true">
+                @php mt_srand(23); @endphp
+                @for ($p = 0; $p < 22; $p++)
+                    <span style="left: {{ mt_rand(0, 100) }}%; --size: {{ mt_rand(2, 5) }}px; --delay: -{{ mt_rand(0, 140) / 10 }}s; --duration: {{ mt_rand(100, 200) / 10 }}s; --drift: {{ mt_rand(-60, 60) }}px;"></span>
+                @endfor
+            </div>
+
+            <div class="relative z-10 flex h-full w-full flex-col justify-end px-[5vw] pb-28 md:justify-center md:pb-12">
+                <p class="dv-eyebrow-light dv-magic-in" style="--i: 0">Experiences · Once in a lifetime</p>
+                <h1 class="dv-display dv-magic-in max-w-[52rem]" style="--i: 1">
+                    Some moments<br>only happen <span class="{{ $glow }} pr-2 italic">once.</span>
                 </h1>
-                <p class="dv-hero-subtitle">
-                    Game drives, reef snorkels, market walks and night-long drum circles —
-                    the things you actually came for, filmed and sold as the day they deserve.
+                <p class="dv-hero-subtitle dv-magic-in" style="--i: 2">
+                    Drift over the Mara at sunrise. Sleep under Saharan stars. Swim with the reef. These are the stories you’ll still be telling in twenty years.
                 </p>
 
-                <form class="dv-searchbar" role="search" wire:submit="resetPage">
-                    <span class="dv-search-icon" aria-hidden="true">
-                        <x-line-icon name="search" :size="20" />
-                    </span>
-
+                <form class="dv-searchbar dv-magic-in" style="--i: 3" role="search" wire:submit="resetPage">
+                    <span class="dv-search-icon" aria-hidden="true"><x-line-icon name="star" :size="20" /></span>
                     <span class="dv-search-copy">
                         <input
                             type="search"
                             wire:model.live.debounce.500ms="search"
-                            placeholder="Search a reef, a market, a trail"
+                            placeholder="What have you always dreamed of doing?"
                             aria-label="Search experiences"
                             class="h-auto"
                         >
                         <small wire:key="experience-result-count">
                             @if (filled($search) && $resultCount > 0)
-                                {{ $resultCount }} {{ Illuminate\Support\Str::plural('experience', $resultCount) }} for “{{ $search }}”
+                                {{ $resultCount }} {{ Str::plural('experience', $resultCount) }} for “{{ $search }}”
                             @else
-                                {{ $resultCount }} {{ Illuminate\Support\Str::plural('experience', $resultCount) }} to book
+                                A safari, a summit, a sunset sail…
                             @endif
                         </small>
                     </span>
-
-                    <button type="submit" class="dv-search-go" aria-label="Search experiences">
-                        <x-line-icon name="arrow" :size="19" />
-                    </button>
+                    <button type="submit" class="dv-search-go" aria-label="Search experiences"><x-line-icon name="arrow" :size="19" /></button>
                 </form>
             </div>
 
-            <div class="dv-hero-meta">
-                <x-line-icon name="compass" :size="17" />
-                <div>
-                    <b>Seven kinds of day</b>
-                    <span>Safari · Ocean · Food · Culture · Wellness</span>
+            @if (count($moments) > 1)
+                <div class="absolute bottom-7 right-[5vw] z-10 hidden w-[18rem] md:block">
+                    <p class="text-[10px] font-extrabold uppercase tracking-[0.25em] text-[#F6D6C9]">Moment <span x-text="String(active + 1).padStart(2, '0')">01</span> / {{ str_pad((string) count($moments), 2, '0', STR_PAD_LEFT) }}</p>
+                    <p class="mt-1 font-dm-serif text-[1.3rem] text-white" x-text="moments[active].caption">{{ $moments[0]['caption'] }}</p>
+                    <div class="mt-3 flex gap-1.5">
+                        @foreach ($moments as $i => $moment)
+                            <button type="button" x-on:click="go({{ $i }})" class="dv-magic-progress" :class="{ 'is-on': active === {{ $i }}, 'is-done': active > {{ $i }} }" aria-label="Show {{ $moment['caption'] }}"><span></span></button>
+                        @endforeach
+                    </div>
                 </div>
-            </div>
+            @endif
+
+            <a href="#bucket-list" class="dv-magic-cue" aria-label="Scroll to the bucket list"><span></span></a>
         </section>
 
-        {{-- ─────────────────────────  Category pills  ─────────────────────── --}}
-        <section class="dv-section !pb-0" aria-label="Filter by experience type">
-            <div class="dv-category-row">
+        {{-- ─────────────────────────  The bucket list  ───────────────────── --}}
+        @if ($browsing && count($bucketList))
+            <section id="bucket-list" class="dv-section scroll-mt-24">
+                <div class="max-w-[44rem]">
+                    <p class="dv-eyebrow">The bucket list</p>
+                    <h2 class="dv-title">The ones travellers never stop talking about.</h2>
+                </div>
+
+                <div class="mt-14 space-y-20 md:space-y-28">
+                    @foreach ($bucketList as $rank => $moment)
+                        <article class="grid items-center gap-8 md:gap-14 lg:grid-cols-2" wire:key="bucket-{{ $moment['id'] }}">
+                            <a href="{{ $moment['url'] }}" @class(['dv-reel-card group block aspect-[4/3] lg:aspect-[5/4]', 'lg:order-2' => $rank % 2 === 1])>
+                                @if ($moment['video'])
+                                    <video src="{{ $moment['video'] }}" poster="{{ $moment['image'] }}" muted loop playsinline preload="none" data-autoplay></video>
+                                @else
+                                    <img src="{{ $moment['image'] }}" alt="{{ $moment['alt'] }}" loading="lazy">
+                                @endif
+                                <span class="dv-reel-play"><x-line-icon name="play" :size="14" filled /></span>
+                                <span class="absolute bottom-4 right-5 z-10 font-dm-serif text-[5rem] leading-none text-white/90 drop-shadow-[0_4px_20px_rgba(0,0,0,0.4)] md:text-[7rem]">{{ str_pad((string) ($rank + 1), 2, '0', STR_PAD_LEFT) }}</span>
+                            </a>
+
+                            <div @class(['lg:order-1' => $rank % 2 === 1])>
+                                <p class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-extrabold uppercase tracking-[0.22em] text-clay">
+                                    <span class="shrink-0 whitespace-nowrap font-dm-serif text-[1.6rem] normal-case tracking-normal [-webkit-text-stroke:1px_#D85F3C] text-transparent">Nº {{ $rank + 1 }}</span>
+                                    <span>{{ $moment['category_label'] }} · {{ $moment['place'] }}</span>
+                                </p>
+                                <h3 class="mt-3 font-dm-serif text-[clamp(2rem,3.6vw,3.2rem)] leading-[1.02] text-forest">{{ $moment['name'] }}</h3>
+                                @if ($moment['caption'])
+                                    <p class="mt-4 max-w-[34rem] text-[15px] leading-[1.8] text-muted">{{ $moment['caption'] }}</p>
+                                @endif
+
+                                @if ($moment['highlights'])
+                                    <ul class="mt-6 grid gap-2.5 sm:grid-cols-2">
+                                        @foreach ($moment['highlights'] as $highlight)
+                                            <li class="flex items-center gap-2.5 text-[13px] font-semibold text-ink"><span class="text-clay">✦</span> {{ $highlight }}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+
+                                <div class="mt-8 flex flex-wrap items-center gap-4">
+                                    <a href="{{ $moment['url'] }}" class="dv-btn dv-btn-primary min-h-[3.3rem] px-6 text-[13px]">Make it happen <x-line-icon name="arrow" :size="17" /></a>
+                                    <p class="text-[12px] text-muted">
+                                        @if ($moment['price'] > 0)
+                                            From <b class="font-dm-serif text-[1.3rem] font-normal text-ink">KSh {{ number_format($moment['price']) }}</b> per person
+                                        @endif
+                                        @if ($moment['rating'] > 0)
+                                            · <span class="text-clay">★</span> {{ number_format($moment['rating'], 1) }}
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        {{-- ─────────────────────  Choose your adventure  ──────────────────── --}}
+        <section id="moments" class="dv-section scroll-mt-24 bg-surface">
+            <div class="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                    <p class="dv-eyebrow">Choose your adventure</p>
+                    <h2 class="dv-title">{{ $types[$type] === 'All experiences' ? 'Every moment worth the journey' : $types[$type] }}</h2>
+                </div>
+                <button type="button" wire:click="setView('reels')" class="dv-btn dv-btn-ghost !min-h-[2.6rem] !px-4">
+                    <x-line-icon name="play" :size="14" :filled="true" /> Watch reels
+                </button>
+            </div>
+
+            <div class="dv-category-row mt-6" data-no-reveal>
                 @foreach ($types as $value => $label)
                     <button
                         type="button"
                         wire:click="setType('{{ $value }}')"
-                        @class(['dv-category', 'dv-category-active' => $type === $value])
-                        @if ($type === $value) aria-pressed="true" @else aria-pressed="false" @endif
+                        @class(['dv-category py-3', 'dv-category-active' => $type === $value])
+                        aria-pressed="{{ $type === $value ? 'true' : 'false' }}"
                     >
-                        <x-line-icon
-                            :name="match ($value) {
-                                'safari-wildlife' => 'compass',
-                                'ocean-water' => 'waves',
-                                'adventure-trekking' => 'mountain',
-                                'culture-heritage' => 'map',
-                                'food-markets' => 'utensils',
-                                'wellness-retreats' => 'leaf',
-                                'family-kids' => 'heart',
-                                default => 'compass',
-                            }"
-                            :size="19"
-                        />
-
-                        {{ $label }}
+                        <x-line-icon :name="$typeIcons[$value] ?? 'compass'" :size="17" /> {{ $label }}
                     </button>
                 @endforeach
             </div>
-        </section>
 
-        {{-- ─────────────────────  Duration, controls & grid  ──────────────── --}}
-        <section class="dv-section !pt-8">
-            <div class="flex flex-wrap items-end justify-between gap-4">
-                <div>
-                    <p class="dv-eyebrow">{{ $types[$type] ?? 'All experiences' }}</p>
-                    <p class="dv-title">Days you'll still be talking about</p>
-                </div>
-
-                <button
-                    type="button"
-                    wire:click="setView('reels')"
-                    class="dv-btn dv-btn-primary !min-h-[2.4rem] !px-4"
-                >
-                    <x-line-icon name="play" :size="14" :filled="true" />
-                    Watch reels
-                </button>
-            </div>
-
-            {{-- Duration first: an experience is bought for the day it takes. --}}
-            <div class="dv-category-row mt-6">
+            <div class="mt-3 flex flex-wrap gap-2" data-no-reveal>
                 @foreach ($durations as $value => $label)
                     <button
                         type="button"
                         wire:click="setDuration('{{ $value }}')"
-                        @class(['dv-category', 'dv-category-active' => $duration === $value])
-                        @if ($duration === $value) aria-pressed="true" @else aria-pressed="false" @endif
-                    >{{ $label }}</button>
+                        @class([
+                            'rounded-full border px-3.5 py-1.5 text-[11px] font-bold transition-colors',
+                            'border-clay bg-clay text-white' => $duration === $value,
+                            'border-line bg-white text-muted hover:border-forest hover:text-forest' => $duration !== $value,
+                        ])
+                        aria-pressed="{{ $duration === $value ? 'true' : 'false' }}"
+                    ><x-line-icon name="clock" :size="11" /> {{ $label }}</button>
                 @endforeach
             </div>
 
@@ -276,39 +350,46 @@
                 >Clear filters</button>
             </div>
 
+
             <div
-                class="dv-reel-grid mt-8"
+                class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
                 wire:loading.class="opacity-50"
                 wire:target="search,setType,setDuration,setView,sortBy,clearFilters,gotoPage,nextPage,previousPage"
             >
                 @forelse ($cards as $card)
-                    <x-experience.reel-card :card="$card" />
+                    <x-experience.moment-card :card="$card" wire:key="moment-{{ $card['id'] }}" />
                 @empty
-                    <div class="dv-panel col-span-full px-8 py-16 text-center">
-                        <p class="font-dm-serif text-[1.6rem] text-forest">No experiences found</p>
-                        <p class="mx-auto mt-3 max-w-md text-[14px] leading-relaxed text-muted">
-                            Nothing matches that search. Try another reef or market, widen the
-                            duration, or clear the filters to see every day we sell.
-                        </p>
-
+                    <div class="dv-magic-night col-span-full flex flex-col items-center rounded-[1.4rem] px-8 py-16 text-center text-white">
+                        <x-line-icon name="compass" :size="32" />
+                        <p class="mt-4 font-dm-serif text-[1.8rem]">That adventure hasn’t been written yet</p>
+                        <p class="mx-auto mt-2 max-w-md text-[14px] leading-relaxed text-white/70">Nothing matches those filters. Loosen them a little — the next great story is probably one click away.</p>
                         <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
-                            <button
-                                type="button"
-                                class="dv-btn dv-btn-primary"
-                                wire:click="$set('search', ''); $set('type', 'all')"
-                            >Show all experiences</button>
-
-                            <a href="{{ route('stays.index') }}" class="dv-btn dv-btn-ghost">Find a stay too</a>
+                            <button type="button" class="dv-btn dv-btn-primary" wire:click="clearFilters" x-on:click="$wire.set('type', 'all')">Show every experience</button>
+                            <a href="{{ route('destination.index') }}" class="dv-btn dv-magic-glass">Browse destinations</a>
                         </div>
                     </div>
                 @endforelse
             </div>
 
             @if ($paginator->hasPages())
-                <div class="mt-10">
-                    {{ $paginator->links() }}
-                </div>
+                <div class="mt-12">{{ $paginator->links() }}</div>
             @endif
+        </section>
+
+        {{-- ────────────────────────────  Finale  ─────────────────────────── --}}
+        <section class="dv-magic-finale">
+            <div class="dv-magic-aurora" aria-hidden="true"></div>
+            <div class="relative z-10 mx-auto max-w-[46rem] px-6 text-center">
+                <p class="dv-eyebrow-light">Once in a lifetime</p>
+                <h2 class="mt-5 font-dm-serif text-[clamp(2.4rem,6vw,4.8rem)] leading-[0.98] text-white">
+                    One day you’ll tell<br>this <span class="{{ $glow }} pr-2 italic">story.</span>
+                </h2>
+                <p class="mx-auto mt-5 max-w-[30rem] text-[14px] leading-relaxed text-white/65">Make sure it starts with “I actually did it.”</p>
+                <div class="mt-8 flex flex-wrap justify-center gap-3">
+                    <a href="#moments" class="dv-btn dv-btn-primary min-h-[3.4rem] px-6 text-[13px]">Find your moment <x-line-icon name="arrow" :size="18" /></a>
+                    <a href="{{ route('discover') }}" class="dv-btn dv-magic-glass min-h-[3.4rem] px-6 text-[13px]"><x-line-icon name="compass" :size="18" /> Let the globe choose</a>
+                </div>
+            </div>
         </section>
     @endif
 </div>

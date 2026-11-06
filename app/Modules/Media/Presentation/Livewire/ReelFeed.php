@@ -2,9 +2,11 @@
 
 namespace App\Modules\Media\Presentation\Livewire;
 
+use App\Modules\Accommodation\Domain\Models\Accommodation;
 use App\Modules\Media\Domain\Enums\MediaPostType;
 use App\Modules\Media\Domain\Models\MediaPost;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
@@ -57,10 +59,11 @@ class ReelFeed extends Component
             ? collect()
             : $this->feedQuery()
                 ->whereIn('id', $this->postIds)
-                ->with(['provider', 'assets'])
+                ->with(['provider', 'assets', 'targetable' => fn (MorphTo $morph) => $morph->morphWith([Accommodation::class => ['bookable']])])
                 ->orderByDesc('id')
                 ->get();
 
-        return view('livewire.media.reel-feed', compact('posts'));
+        // The full-screen feed renders under the dark reels chrome of the layout.
+        return view('livewire.media.reel-feed', compact('posts'))->layoutData(['reels' => true]);
     }
 }

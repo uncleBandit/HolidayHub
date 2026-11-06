@@ -60,12 +60,13 @@ class DestinationIndex extends Component
      * Highlight pills. The value is matched against the highlights/tags arrays.
      */
     public const MOODS = [
-        'all' => 'All moods',
+        'all' => 'Everywhere',
+        'safari' => 'Safari',
         'beaches' => 'Beaches',
-        'wild' => 'Safari',
         'mountains' => 'Mountains',
-        'cities' => 'Cities',
         'islands' => 'Islands',
+        'culture' => 'Culture',
+        'adventure' => 'Adventure',
     ];
 
     /**
@@ -236,6 +237,8 @@ class DestinationIndex extends Component
             'cards' => $this->cards($paginator),
             'paginator' => $paginator,
             'hero' => self::HERO,
+            'expeditions' => $this->expeditions(),
+            'mystery' => $this->mystery(),
             'moods' => self::MOODS,
             'tabs' => self::TABS,
             'resultCount' => $paginator->total(),
@@ -274,6 +277,10 @@ class DestinationIndex extends Component
             'name' => $item['name'],
             'kicker' => $item['mood'],
             'meta' => $item['meta'],
+            'tagline' => $item['meta'],
+            'coords' => null,
+            'season' => null,
+            'secrets' => [],
             'sub' => $item['rating'].' · '.$item['places'].' places to explore',
             'image' => $item['image'],
             'alt' => $item['name'].', '.$item['country'],
@@ -290,6 +297,10 @@ class DestinationIndex extends Component
             'name' => $destination->name,
             'kicker' => collect([$destination->city, $destination->country])->filter()->implode(' · '),
             'meta' => Str::limit((string) ($destination->description ?? ''), 90),
+            'tagline' => $destination->tagline,
+            'coords' => $this->coordinates($destination),
+            'season' => $destination->best_season,
+            'secrets' => array_slice(array_values(array_filter((array) ($destination->highlights ?? []))), 0, 2),
             'sub' => $rating > 0
                 ? number_format($rating, 1).' · '.$destination->bookings_count.' stays booked'
                 : $destination->bookings_count.' stays booked',
@@ -298,6 +309,77 @@ class DestinationIndex extends Component
             'url' => route('destination.show', $destination),
             'is_record' => true,
         ];
+    }
+
+    /**
+     * Featured places with real photography for the cinematic hero.
+     */
+    private function expeditions(): array
+    {
+        return Cache::remember('destinations.expeditions', 300, fn () => Destination::query()
+            ->orderByDesc('is_featured')
+            ->orderByDesc('popularity_score')
+            ->take(12)
+            ->get()
+            ->map(fn (Destination $destination) => [
+                'name' => $destination->name,
+                'country' => $destination->country,
+                'coords' => $this->coordinates($destination),
+                'image' => $this->resolveImage($destination),
+            ])
+            ->reject(fn ($slide) => $this->isPlaceholder($slide['image']))
+            ->take(5)
+            ->values()
+            ->all());
+    }
+
+    /**
+     * One destination kept behind a veil, changing once a day.
+     */
+    private function mystery(): ?array
+    {
+        $candidates = Cache::remember('destinations.mystery-pool', 300, fn () => Destination::query()
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Destination $destination) => [
+                'name' => $destination->name,
+                'country' => $destination->country,
+                'tagline' => $destination->tagline,
+                'coords' => $this->coordinates($destination),
+                'clue' => collect((array) ($destination->highlights ?? []))->filter()->first(),
+                'season' => $destination->best_season,
+                'image' => $this->resolveImage($destination),
+                'url' => route('destination.show', $destination),
+            ])
+            ->reject(fn ($item) => $this->isPlaceholder($item['image']))
+            ->values()
+            ->all());
+
+        return $candidates === [] ? null : $candidates[crc32(now()->toDateString()) % count($candidates)];
+    }
+
+    /**
+     * Latitude and longitude as a navigator would write them, e.g. 1°29′S 35°08′E.
+     */
+    private function coordinates(Destination $destination): ?string
+    {
+        if ($destination->latitude === null || $destination->longitude === null) {
+            return null;
+        }
+
+        $format = function (float $value, string $positive, string $negative): string {
+            $degrees = (int) floor(abs($value));
+            $minutes = (int) round((abs($value) - $degrees) * 60);
+
+            return sprintf('%d°%02d′%s', $degrees, $minutes, $value < 0 ? $negative : $positive);
+        };
+
+        return $format((float) $destination->latitude, 'N', 'S').' '.$format((float) $destination->longitude, 'E', 'W');
+    }
+
+    private function isPlaceholder(string $image): bool
+    {
+        return Str::contains($image, ['placeholder', 'placehold', 'picsum', 'welcome-screen']);
     }
 
     private function resolveImage(Destination $destination): string

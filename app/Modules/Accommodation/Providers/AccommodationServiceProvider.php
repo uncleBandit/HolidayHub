@@ -24,12 +24,12 @@ class AccommodationServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        Gate::policy(App\Modules\Accommodation\Domain\Models\Accommodation::class, AccommodationPolicy::class);
-        Gate::policy(App\Modules\Accommodation\Domain\Models\BedAndBreakfast::class, BeadandBreakfastPolicy::class);
-        Gate::policy(App\Modules\Accommodation\Domain\Models\Hotel::class, HotelPolicy::class);
-        Gate::policy(App\Modules\Accommodation\Domain\Models\Room::class, RoomPolicy::class);
-        Gate::policy(App\Modules\Accommodation\Domain\Models\RoomPrice::class, RoomPricePolicy::class);
-        Gate::policy(App\Modules\Accommodation\Domain\Models\RoomType::class, RoomTypePolicy::class);
-        Gate::policy(App\Modules\Accommodation\Domain\Models\Villa::class, VillaPolicy::class);
+        Gate::policy(\App\Modules\Accommodation\Domain\Models\Accommodation::class, AccommodationPolicy::class);
+        Gate::policy(\App\Modules\Accommodation\Domain\Models\BedAndBreakfast::class, BeadandBreakfastPolicy::class);
+        Gate::policy(\App\Modules\Accommodation\Domain\Models\Hotel::class, HotelPolicy::class);
+        Gate::policy(\App\Modules\Accommodation\Domain\Models\Room::class, RoomPolicy::class);
+        Gate::policy(\App\Modules\Accommodation\Domain\Models\RoomPrice::class, RoomPricePolicy::class);
+        Gate::policy(\App\Modules\Accommodation\Domain\Models\RoomType::class, RoomTypePolicy::class);
+        Gate::policy(\App\Modules\Accommodation\Domain\Models\Villa::class, VillaPolicy::class);
     }
 }

@@ -15,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            \App\Modules\Identity\Presentation\Http\Middleware\EnsureAccountIsActive::class,
+        ]);
+        $middleware->api(append: [
+            \App\Modules\Identity\Presentation\Http\Middleware\EnsureAccountIsActive::class,
         ]);
 
         //

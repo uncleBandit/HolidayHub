@@ -60,6 +60,7 @@ class Provider extends Model implements VerifiableProfile
      */
     protected $casts = [
         'verified_at' => 'datetime',
+        'suspended_at' => 'datetime',
         'is_verified' => 'boolean',
         'active' => 'boolean',
         'latitude' => 'decimal:7',
@@ -125,5 +126,17 @@ class Provider extends Model implements VerifiableProfile
     public function accommodations()
     {
         return $this->hasMany(Accommodation::class);
+    }
+
+    /**
+     * Whether an admin has taken this provider off the marketplace.
+     *
+     * `active` is the flag guests and the media feed read; suspended_at and
+     * suspension_reason (written only by the admin panel, via forceFill)
+     * record the decision behind it.
+     */
+    public function isSuspended(): bool
+    {
+        return ! $this->active;
     }
 }

@@ -200,6 +200,8 @@ class ExperiencesIndex extends Component
             'hero' => (array) config('experiences.clips.'.config('experiences.hero'), []),
             'feedTabs' => $this->feedTabs(),
             'places' => $this->places(),
+            'moments' => $this->moments(),
+            'bucketList' => $this->view === 'grid' ? $this->bucketList($searchQuery) : [],
         ])->layoutData(['reels' => $this->view === 'reels']);
     }
 
@@ -300,6 +302,50 @@ class ExperiencesIndex extends Component
             ->orderBy('name')
             ->pluck('name')
             ->all();
+    }
+
+    /**
+     * Footage for the hero, each with the moment it stands for.
+     */
+    private function moments(): array
+    {
+        $captions = [
+            'safari-cheetahs' => 'Cheetahs at the water’s edge',
+            'safari-elephants-river' => 'Elephants crossing the river',
+            'reef-fish' => 'Face to face on the reef',
+            'hiker-sky' => 'Above the clouds',
+            'safari-giraffes' => 'The waterhole at golden hour',
+        ];
+
+        return collect($captions)
+            ->filter(fn ($caption, $key) => config('experiences.clips.'.$key))
+            ->map(fn ($caption, $key) => ['caption' => $caption] + (array) config('experiences.clips.'.$key))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * The five experiences people rate highest: the bucket list.
+     */
+    private function bucketList(ActivitySearchQuery $searchQuery): array
+    {
+        return Cache::remember('experiences.bucket-list', 300, fn () => $searchQuery->build([
+            'search' => '',
+            'destination_id' => null,
+            'category' => null,
+            'min_price' => null,
+            'max_price' => null,
+            'sort' => null,
+        ])
+            ->with('locations')
+            ->reorder()
+            ->orderByDesc('is_featured')
+            ->orderByDesc('rating')
+            ->orderByDesc('bookings_count')
+            ->take(5)
+            ->get()
+            ->map(fn (Activity $activity) => $this->mapExperience($activity))
+            ->all());
     }
 
     /**
