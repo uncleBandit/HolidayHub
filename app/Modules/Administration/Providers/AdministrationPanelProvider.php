@@ -81,10 +81,18 @@ class AdministrationPanelProvider extends PanelProvider
                 AuditLogResource::class,
                 BookingOperationsResource::class,
             ])
-            // Widgets are not auto-discovered: PlatformOverview is listed by the
-            // Dashboard page that hosts it, so it has exactly one home. A second
-            // registration would render the same counters twice.
+            // Widgets must be registered with the panel: that is what registers
+            // them as Livewire components on every request. Without it they
+            // render on page load but Livewire can't resolve them by name on
+            // the follow-up (lazy-load / poll) request, which it reports as a
+            // release-token mismatch: "This page has expired".
             //
+            // They show only where the Dashboard page lists them, because it
+            // overrides getWidgets(), so this does not render anything twice.
+            ->discoverWidgets(
+                in: $this->discoverPath('Widgets'),
+                for: 'App\\Modules\\Administration\\Filament\\Widgets',
+            )
             // The panel has no home page until one is registered; without it
             // /admin redirects to the first navigation item instead of showing
             // the overview.
