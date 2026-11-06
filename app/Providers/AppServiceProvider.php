@@ -20,9 +20,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         // Register PolicyEngine as a singleton
-        $this->app->singleton(PolicyEngine::class, function ($app) {
-            return new PolicyEngine;
-        });
+        $this->app->singleton(PolicyEngine::class);
 
         if ($this->app->environment('local')) {
             $this->app->register(\App\Providers\TelescopeServiceProvider::class);

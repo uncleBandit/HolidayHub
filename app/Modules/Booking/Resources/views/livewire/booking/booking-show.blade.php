@@ -232,10 +232,69 @@
                         @endif
                     </div>
 
-                    <p class="mt-5 flex items-start justify-center gap-1.5 text-center text-[11px] leading-relaxed text-muted">
-                        <span class="mt-0.5 text-clay"><x-line-icon name="check" :size="13" :stroke="2.4" /></span>
-                        Please check the cancellation policy for your booking provider.
-                    </p>
+                    {{-- Cancellation: the listing's own policy and what cancelling now would refund --}}
+                    @php
+                        $cancellation = $this->cancellation;
+                        $terms = $cancellation->context;
+                    @endphp
+                    <div class="mt-6 rounded-[0.9rem] border border-line bg-cream/60 px-4 py-3.5 text-[12px] leading-relaxed text-ink">
+                        <p class="text-[10.5px] font-extrabold uppercase tracking-[0.14em] text-muted">Cancellation policy</p>
+                        @if ($booking->status === 'cancelled')
+                            <p class="mt-1.5">Cancelled{{ $booking->cancelled_at ? ' on '.$booking->cancelled_at->format('j M Y') : '' }}.
+                                @if (in_array($booking->payment_status, ['refunded', 'partially_refunded'], true))
+                                    {{ $booking->payment_status === 'refunded' ? 'Your payment was refunded.' : 'Part of your payment was refunded.' }}
+                                @endif
+                            </p>
+                        @elseif ($terms['text'] ?? null)
+                            <p class="mt-1.5">{{ $terms['text'] }}</p>
+                        @endif
+                    </div>
+
+                    @if ($booking->package_booking_id && $booking->packageBooking)
+                        <a href="{{ route('bookings-show', $booking->packageBooking) }}" class="mt-3 flex items-center justify-center gap-1.5 text-[12px] font-bold text-forest underline-offset-4 hover:underline">
+                            Part of a journey: manage it from the journey booking <x-line-icon name="arrow" :size="14" />
+                        </a>
+                    @elseif ($cancellation->allowed)
+                        <div x-data="{ open: false }" x-on:booking-cancelled.window="open = false" class="mt-3">
+                            <button type="button" x-on:click="open = true" class="w-full rounded-full py-2.5 text-[12.5px] font-bold text-clay-dark transition-colors hover:bg-[#FBE9E2]">
+                                Cancel this booking
+                            </button>
+
+                            <template x-teleport="body">
+                                <div x-show="open" x-cloak x-transition.opacity class="fixed inset-0 z-[120] flex items-center justify-center bg-[#0C1511]/60 p-4 backdrop-blur-sm" x-on:keydown.escape.window="open = false" role="dialog" aria-modal="true" aria-labelledby="cancel-title">
+                                    <div x-on:click.outside="open = false" class="w-full max-w-[28rem] rounded-[1.3rem] bg-white p-6 text-ink shadow-[0_30px_80px_rgba(8,22,17,0.35)] sm:p-7">
+                                        <p class="text-[10.5px] font-extrabold uppercase tracking-[0.16em] text-clay">Cancel booking</p>
+                                        <h2 id="cancel-title" class="mt-1.5 font-dm-serif text-[1.7rem] leading-tight text-forest">Cancel {{ $booking->bookable->name ?? 'this booking' }}?</h2>
+
+                                        <div @class([
+                                            'mt-4 rounded-[0.9rem] px-4 py-3 text-[13px] font-semibold',
+                                            'bg-[#E3EFE7] text-forest' => ($terms['percent'] ?? 0) >= 100 || ! ($terms['paid'] ?? false),
+                                            'bg-[#F6EEDD] text-[#6B5230]' => ($terms['paid'] ?? false) && ($terms['percent'] ?? 0) > 0 && ($terms['percent'] ?? 0) < 100,
+                                            'bg-[#FBE9E2] text-clay-dark' => ($terms['paid'] ?? false) && ($terms['percent'] ?? 0) === 0,
+                                        ])>{{ $cancellation->message }}</div>
+                                        <p class="mt-3 text-[12px] leading-relaxed text-muted">{{ $terms['text'] ?? '' }}</p>
+
+                                        <label for="cancel-reason" class="mt-4 block text-[12px] font-bold text-ink">Anything the host should know? <span class="font-normal text-muted">(optional)</span></label>
+                                        <textarea id="cancel-reason" wire:model="cancelReason" rows="3" maxlength="500" class="auth-input mt-1.5 w-full !rounded-[0.8rem] text-[13px]" placeholder="e.g. our flights changed"></textarea>
+
+                                        @error('cancel')
+                                            <p class="mt-3 rounded-[0.8rem] bg-[#FBE9E2] px-3 py-2 text-[12px] font-semibold text-clay-dark">{{ $message }}</p>
+                                        @enderror
+
+                                        <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                            <button type="button" x-on:click="open = false" class="dv-btn dv-btn-ghost">Keep my booking</button>
+                                            <button type="button" wire:click="cancel" wire:loading.attr="disabled" class="dv-btn bg-clay text-white hover:bg-clay-dark">
+                                                <span wire:loading.remove wire:target="cancel">Yes, cancel it</span>
+                                                <span wire:loading wire:target="cancel">Cancelling…</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    @elseif ($booking->status !== 'cancelled')
+                        <p class="mt-3 text-center text-[11.5px] leading-relaxed text-muted">{{ $cancellation->message }}</p>
+                    @endif
                 </div>
             </aside>
         </div>

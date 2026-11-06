@@ -8,36 +8,38 @@ use Illuminate\Support\Carbon;
 
 class PolicyEngine
 {
+    public function __construct(private readonly CancellationTerms $terms) {}
+
     /**
-     * Evaluate if a booking can be cancelled, returning result + reason.
+     * Whether the guest may cancel this booking now, and what they get back.
+     *
+     * The refund comes from the listing's own cancellation policy (see
+     * CancellationTerms) and is returned in the result's context:
+     * percent, amount, currency, paid, text, summary and free_until.
      */
     public function canCancel(Booking $booking): PolicyResult
     {
-        // Rule 1: Status must allow cancellation
-        if (! in_array($booking->status, ['pending_payment', 'confirmed'])) {
-            return PolicyResult::deny("This booking cannot be cancelled once {$booking->status}.");
+        if (! in_array($booking->status, ['pending', 'confirmed'], true)) {
+            return PolicyResult::deny("This booking is {$booking->status} and can no longer be cancelled.", 'STATUS');
         }
 
-        // Rule 2: Cancellation cutoff (configurable per provider or default)
-        $cutoffHours = $booking->provider->cancellation_cutoff_hours ?? config('policies.default_cutoff_hours', 48);
-        $cutoffTime = $booking->check_in->copy()->subHours($cutoffHours);
-
-        if (now()->greaterThan($cutoffTime)) {
-            return PolicyResult::deny("Cancellations must be made at least {$cutoffHours} hours before check-in.");
+        // A stay or experience inside a journey is cancelled with the journey,
+        // never on its own: the guest booked the whole trip as one.
+        if ($booking->package_booking_id !== null) {
+            return PolicyResult::deny('This is part of a journey. Cancel the journey booking instead.', 'PACKAGE_COMPONENT');
         }
 
-        // Rule 3: Promo / loyalty restrictions
-        if ($booking->promo_code && $booking->promo->non_refundable) {
-            return PolicyResult::deny('This booking was made with a non-refundable promotion.');
+        $quote = $this->terms->quote($booking);
+
+        if ($quote['started']) {
+            return PolicyResult::deny('This booking has already started, so it can no longer be cancelled online. Contact the host or our support team.', 'STARTED', $quote);
         }
 
-        // Rule 4: Special blackout periods
-        if ($this->isInBlackoutPeriod($booking->check_in)) {
-            return PolicyResult::deny('Cancellations are not allowed during blackout periods.');
+        if ($this->isInBlackoutPeriod($quote['start'])) {
+            return PolicyResult::deny('Cancellations are not allowed during blackout periods.', 'BLACKOUT', $quote);
         }
 
-        // ✅ Passed all checks
-        return PolicyResult::allow('Booking can be cancelled.');
+        return PolicyResult::allow($quote['summary'], 'ALLOWED', $quote);
     }
 
     /**
@@ -46,13 +48,13 @@ class PolicyEngine
     public function canModify(Booking $booking): PolicyResult
     {
         // Rule 1: Only modifiable when not already checked-in or cancelled
-        if (! in_array($booking->status, ['pending_payment', 'confirmed'])) {
+        if (! in_array($booking->status, ['pending', 'confirmed'], true)) {
             return PolicyResult::deny("This booking cannot be modified once {$booking->status}.");
         }
 
         // Rule 2: Restrict last-minute changes
         $cutoffHours = config('policies.modify_cutoff_hours', 24);
-        if (now()->greaterThan($booking->check_in->copy()->subHours($cutoffHours))) {
+        if (now()->greaterThan($booking->check_in_date->copy()->subHours($cutoffHours))) {
             return PolicyResult::deny("Modifications must be made at least {$cutoffHours} hours before check-in.");
         }
 
@@ -62,12 +64,12 @@ class PolicyEngine
     /**
      * Helper to check blackout periods (holidays, peak season, etc.).
      */
-    protected function isInBlackoutPeriod(Carbon $date): bool
+    protected function isInBlackoutPeriod(\DateTimeInterface $date): bool
     {
         $blackouts = config('policies.blackout_dates', []); // e.g. ['2025-12-20' => '2026-01-05']
         foreach ($blackouts as $range) {
             [$start, $end] = $range;
-            if ($date->between(Carbon::parse($start), Carbon::parse($end))) {
+            if (Carbon::instance($date)->between(Carbon::parse($start), Carbon::parse($end))) {
                 return true;
             }
         }

@@ -14,10 +14,8 @@ use Illuminate\Support\Facades\Auth;
 
 class BookingController extends Controller
 {
-    public function __construct(private BookingManager $bookingManager)
-    {
-        $this->middleware('auth:sanctum');
-    }
+    // Sign-in (auth:sanctum) is applied by the route group in routes/api.php.
+    public function __construct(private BookingManager $bookingManager) {}
 
     public function index(Request $request, BookingFilters $filters): JsonResponse
     {
@@ -53,11 +51,21 @@ class BookingController extends Controller
 
     public function cancel(int $id): JsonResponse
     {
-        $this->bookingManager->cancel($id, Auth::id());
+        try {
+            $refund = $this->bookingManager->cancel($id, Auth::id(), request()->string('reason')->toString() ?: null);
+        } catch (\DomainException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
 
         return response()->json([
             'success' => true,
             'message' => 'Booking cancelled successfully.',
+            'refund' => [
+                'percent' => $refund['percent'],
+                'amount' => $refund['amount'],
+                'currency' => $refund['currency'],
+                'summary' => $refund['summary'],
+            ],
         ]);
     }
 

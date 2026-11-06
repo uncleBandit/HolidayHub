@@ -111,9 +111,20 @@ class BookingManager
      * bookings has no user_id column; the owner is guest_id. This method used to
      * query user_id, so it always failed.
      */
-    public function cancel(int $bookingId, int $userId): void
+    /**
+     * The guest cancels one of their own bookings.
+     *
+     * Allowed until the stay or experience starts; what they get back comes
+     * from the listing's cancellation policy (PolicyEngine / CancellationTerms).
+     * Cancelling a journey cancels every stay and experience in it, and the
+     * refund is taken before anything is changed, so a failed refund leaves
+     * the booking exactly as it was.
+     *
+     * @return array<string, mixed> the refund quote that was applied
+     */
+    public function cancel(int $bookingId, int $userId, ?string $reason = null): array
     {
-        $user = \App\Modules\Identity\Domain\Models\User::findOrFail($userId);
+        $user = \App\Modules\Identity\Domain\Models\User::with('guest')->findOrFail($userId);
 
         if (! $user->guest) {
             throw new \DomainException('You must complete your guest profile before booking.');
@@ -121,29 +132,59 @@ class BookingManager
 
         $booking = Booking::where('guest_id', $user->guest->id)->findOrFail($bookingId);
 
-        if (! $this->policyEngine->canCancel($booking)) {
-            throw new \DomainException('This booking cannot be cancelled due to policy restrictions.');
+        $decision = $this->policyEngine->canCancel($booking);
+        if (! $decision->allowed) {
+            throw new \DomainException($decision->message);
         }
 
-        DB::transaction(function () use ($booking) {
-            $session = $booking->activitySession()->lockForUpdate()->first();
-            if ($session) {
-                $participants = $booking->guests_adults + $booking->guests_children;
-                $released = $session->newQuery()
-                    ->whereKey($session->id)
-                    ->where('booked_capacity', '>=', $participants)
-                    ->decrement('booked_capacity', $participants);
+        $quote = $decision->context;
 
-                if ($released !== 1) {
-                    throw new RuntimeException('Activity session capacity is inconsistent with the booking being cancelled.');
-                }
+        DB::transaction(function () use ($booking, $quote, $reason, $user) {
+            $targets = $this->withComponents($booking);
+
+            foreach ($targets as $target) {
+                $this->releaseSession($target);
             }
 
-            $booking->update(['status' => 'cancelled']);
-            $this->paymentGateway->refund($booking);
+            $paymentStatus = null;
+            if ($quote['paid'] && $quote['amount'] > 0) {
+                $refund = $this->paymentGateway->refund($booking, $quote['amount']);
+                if (! $refund->success) {
+                    throw new RuntimeException('We could not process your refund, so the booking has not been cancelled. Please try again or contact support.');
+                }
+                $paymentStatus = $quote['percent'] >= 100 ? 'refunded' : 'partially_refunded';
+            }
 
-            event(new BookingCancelled($booking));
+            foreach ($targets as $target) {
+                $target->update(array_filter([
+                    'status' => 'cancelled',
+                    'cancelled_at' => now(),
+                    'payment_status' => $paymentStatus,
+                ]));
+            }
+
+            app(\App\Modules\Audit\Application\Services\AuditRecorder::class)->record(
+                'bookings.cancelled_by_guest',
+                $booking,
+                $user,
+                before: ['status' => $booking->getOriginal('status')],
+                after: ['status' => 'cancelled'],
+                reason: $reason,
+                meta: [
+                    'refund_percent' => $quote['percent'],
+                    'refund_amount' => $quote['amount'],
+                    'currency' => $quote['currency'],
+                    'policy' => $quote['text'],
+                    'cancelled_booking_ids' => $targets->pluck('id')->all(),
+                ],
+            );
+
+            foreach ($targets as $target) {
+                event(new BookingCancelled($target, $reason));
+            }
         });
+
+        return $quote;
     }
 
     /**
@@ -162,23 +203,10 @@ class BookingManager
     public function cancelAsOperator(Booking $booking, string $reason): array
     {
         return DB::transaction(function () use ($booking, $reason): array {
-            $targets = collect([$booking])
-                ->merge(Booking::where('package_booking_id', $booking->id)->get())
-                ->filter(fn (Booking $b) => $b->status !== 'cancelled');
+            $targets = $this->withComponents($booking);
 
             foreach ($targets as $target) {
-                $session = $target->activitySession()->lockForUpdate()->first();
-                if ($session) {
-                    $participants = $target->guests_adults + $target->guests_children;
-                    $released = $session->newQuery()
-                        ->whereKey($session->id)
-                        ->where('booked_capacity', '>=', $participants)
-                        ->decrement('booked_capacity', $participants);
-
-                    if ($released !== 1) {
-                        throw new RuntimeException('Activity session capacity is inconsistent with the booking being cancelled.');
-                    }
-                }
+                $this->releaseSession($target);
 
                 $target->update(['status' => 'cancelled', 'cancelled_at' => now()]);
 
@@ -292,5 +320,38 @@ class BookingManager
         }
 
         return $bookable;
+    }
+
+    /**
+     * The booking plus, for a journey, every stay and experience booked with
+     * it; anything already cancelled is left alone.
+     *
+     * @return \Illuminate\Support\Collection<int, Booking>
+     */
+    private function withComponents(Booking $booking): \Illuminate\Support\Collection
+    {
+        return collect([$booking])
+            ->merge(Booking::where('package_booking_id', $booking->id)->get())
+            ->filter(fn (Booking $b) => $b->status !== 'cancelled')
+            ->values();
+    }
+
+    /** Give an experience booking's places back to its session. */
+    private function releaseSession(Booking $booking): void
+    {
+        $session = $booking->activitySession()->lockForUpdate()->first();
+        if (! $session) {
+            return;
+        }
+
+        $participants = $booking->guests_adults + $booking->guests_children;
+        $released = $session->newQuery()
+            ->whereKey($session->id)
+            ->where('booked_capacity', '>=', $participants)
+            ->decrement('booked_capacity', $participants);
+
+        if ($released !== 1) {
+            throw new RuntimeException('Activity session capacity is inconsistent with the booking being cancelled.');
+        }
     }
 }

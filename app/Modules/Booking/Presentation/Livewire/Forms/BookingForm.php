@@ -3,8 +3,8 @@
 namespace App\Modules\Booking\Presentation\Livewire\Forms;
 
 use App\Modules\Booking\Application\Services\BookingManager;
-use App\Modules\Payments\Infrastructure\Gateways\NullPaymentGateway;
 use App\Modules\Payments\Domain\Contracts\PaymentGateway;
+use App\Modules\Payments\Infrastructure\Gateways\NullPaymentGateway;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;

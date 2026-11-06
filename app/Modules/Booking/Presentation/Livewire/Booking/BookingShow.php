@@ -2,38 +2,69 @@
 
 namespace App\Modules\Booking\Presentation\Livewire\Booking;
 
+use App\Modules\Booking\Application\Services\BookingManager;
+use App\Modules\Booking\Application\Services\PolicyEngine;
 use App\Modules\Booking\Domain\Models\Booking;
+use App\Modules\Booking\Domain\ValueObjects\PolicyResult;
+use App\Modules\Booking\Presentation\Support\TripPresenter;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 class BookingShow extends Component
 {
     public Booking $booking;
 
-    // In App\Modules\Booking\Presentation\Livewire\Booking\BookingShow
+    /** Optional note the guest leaves when cancelling. */
+    public string $cancelReason = '';
+
     public function mount(Booking $booking): void
     {
-        // Eager load the guest relationship to access its user_id
         $booking->load('guest');
 
-        // Check if the booking's guest's user_id matches the authenticated user's id
-        if ($booking->guest->user->id !== Auth::id()) {
+        if ($booking->guest?->user_id !== Auth::id()) {
             abort(403);
         }
 
-        // Now that ownership is verified, eager load other relations.
-        $this->booking = $booking->load(['bookable', 'offer', 'destination']);
+        $this->booking = $booking->load(['bookable', 'offer', 'destination', 'activitySession', 'packageBooking']);
     }
 
-    public function rebook(): \Illuminate\Http\RedirectResponse
+    /**
+     * Whether the guest can cancel now and what they would get back, from the
+     * listing's own cancellation policy.
+     */
+    #[Computed]
+    public function cancellation(): PolicyResult
     {
-        return redirect()->route('bookables.show', [
-            'id' => $this->booking->bookable_id,
-            'checkIn' => $this->booking->check_in_date->format('Y-m-d'),
-            'checkOut' => $this->booking->check_out_date->format('Y-m-d'),
-            'adults' => $this->booking->guests_adults,
-            'children' => $this->booking->guests_children,
-        ]);
+        return app(PolicyEngine::class)->canCancel($this->booking);
+    }
+
+    public function cancel(BookingManager $bookings): void
+    {
+        $this->validate(['cancelReason' => 'nullable|string|max:500']);
+
+        try {
+            $refund = $bookings->cancel($this->booking->id, (int) Auth::id(), trim($this->cancelReason) ?: null);
+        } catch (\DomainException|\RuntimeException $e) {
+            $this->addError('cancel', $e->getMessage());
+
+            return;
+        }
+
+        $this->booking->refresh()->load(['bookable', 'offer', 'destination', 'activitySession', 'packageBooking']);
+        unset($this->cancellation);
+        $this->cancelReason = '';
+
+        session()->flash('message', 'Your booking is cancelled. '.$refund['summary']);
+        $this->dispatch('booking-cancelled');
+    }
+
+    /** Book the same listing again, from its own page. */
+    public function rebook()
+    {
+        $url = TripPresenter::url($this->booking->bookable);
+
+        return $url ? redirect()->to($url) : redirect()->route('bookings');
     }
 
     public function render()
