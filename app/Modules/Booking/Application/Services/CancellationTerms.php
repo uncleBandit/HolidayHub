@@ -25,8 +25,9 @@ use Illuminate\Support\Str;
  *   "Free cancellation within 48 hours of booking if made at least
  *    14 days ahead; non-refundable after."                          → 100% in the grace window, else 0%
  *
- * A listing without a policy gets the platform default: free cancellation
- * up to 48 hours before the start.
+ * A listing without a policy gets the platform default, set on the admin
+ * Platform settings page (free cancellation up to 48 hours before the start
+ * until an admin changes it).
  *
  * A package (journey) follows the strictest policy among the stays and
  * experiences in it, because every one of those providers is bound by it.
@@ -34,6 +35,13 @@ use Illuminate\Support\Str;
 class CancellationTerms
 {
     public const DEFAULT_TEXT = 'Free cancellation up to 48 hours before the start.';
+
+    /** The platform default (Platform settings), for listings without a policy. */
+    public function defaultText(): string
+    {
+        return (string) (app(\App\Modules\Administration\Application\Services\PlatformSettings::class)
+            ->get('bookings.default_cancellation') ?: self::DEFAULT_TEXT);
+    }
 
     /**
      * The refund a guest would get for cancelling now.
@@ -90,7 +98,7 @@ class CancellationTerms
             default => null,
         };
 
-        return filled($text) ? trim((string) $text) : self::DEFAULT_TEXT;
+        return filled($text) ? trim((string) $text) : $this->defaultText();
     }
 
     /**
@@ -170,7 +178,7 @@ class CancellationTerms
             ->get();
 
         if ($children->isEmpty()) {
-            return $this->evaluate(self::DEFAULT_TEXT, $parent, $start, $now);
+            return $this->evaluate($this->defaultText(), $parent, $start, $now);
         }
 
         $strictest = $children

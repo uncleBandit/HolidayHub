@@ -28,6 +28,10 @@ final class AgentOnboarding
             [$first, $last] = $this->names($user, $details);
 
             $agent = Agent::withTrashed()->firstOrNew(['user_id' => $user->id]);
+            if (! $agent->exists) {
+                // New agents start on the platform's default commission (Platform settings).
+                $agent->commission_rate = (float) app(\App\Modules\Administration\Application\Services\PlatformSettings::class)->get('agents.default_commission', 0);
+            }
             if ($agent->trashed()) {
                 $agent->restore();
             }

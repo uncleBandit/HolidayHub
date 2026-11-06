@@ -53,7 +53,7 @@ class LoginRequest extends FormRequest
             Auth::guard('web')->logout();
 
             throw ValidationException::withMessages([
-                'email' => 'This account has been suspended. Contact support if you think this is a mistake.',
+                'email' => 'This account has been suspended. If you think this is a mistake, contact '.app(\App\Modules\Administration\Application\Services\PlatformSettings::class)->get('support.email').'.',
             ]);
         }
 

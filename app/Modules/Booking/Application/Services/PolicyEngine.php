@@ -32,7 +32,7 @@ class PolicyEngine
         $quote = $this->terms->quote($booking);
 
         if ($quote['started']) {
-            return PolicyResult::deny('This booking has already started, so it can no longer be cancelled online. Contact the host or our support team.', 'STARTED', $quote);
+            return PolicyResult::deny('This booking has already started, so it can no longer be cancelled online. Contact the host, or our support team at '.app(\App\Modules\Administration\Application\Services\PlatformSettings::class)->get('support.email').'.', 'STARTED', $quote);
         }
 
         if ($this->isInBlackoutPeriod($quote['start'])) {
@@ -66,10 +66,17 @@ class PolicyEngine
      */
     protected function isInBlackoutPeriod(\DateTimeInterface $date): bool
     {
-        $blackouts = config('policies.blackout_dates', []); // e.g. ['2025-12-20' => '2026-01-05']
+        // Admins set blackout periods on the Platform settings page; any in
+        // config/policies.php still apply as well.
+        $blackouts = array_merge(
+            (array) app(\App\Modules\Administration\Application\Services\PlatformSettings::class)->get('bookings.blackouts', []),
+            (array) config('policies.blackout_dates', []),
+        );
+
         foreach ($blackouts as $range) {
-            [$start, $end] = $range;
-            if (Carbon::instance($date)->between(Carbon::parse($start), Carbon::parse($end))) {
+            $start = $range['start'] ?? $range[0] ?? null;
+            $end = $range['end'] ?? $range[1] ?? null;
+            if ($start && $end && Carbon::instance($date)->between(Carbon::parse($start)->startOfDay(), Carbon::parse($end)->endOfDay())) {
                 return true;
             }
         }

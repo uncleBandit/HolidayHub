@@ -8,6 +8,16 @@
     $isReels = $reels || request()->query('view') === 'reels';
 @endphp
 <body class="dv-shell antialiased @if($isReels) dv-shell-dark @endif">
+    {{-- Site-wide notice, switched on from the admin Platform settings page --}}
+    @php $platform = app(\App\Modules\Administration\Application\Services\PlatformSettings::class); @endphp
+    @if ($platform->get('banner.enabled') && filled($platform->get('banner.message')))
+        <div @class([
+            'relative z-[60] px-4 py-2.5 text-center text-[12.5px] font-semibold leading-snug',
+            'bg-forest text-white' => $platform->get('banner.tone') !== 'warning',
+            'bg-clay text-white' => $platform->get('banner.tone') === 'warning',
+        ]) role="status">{{ $platform->get('banner.message') }}</div>
+    @endif
+
     {{-- ─────────────────────  Discovery topbar (solid variant)  ───────────────────── --}}
     <header class="dv-topbar h-[76px] md:h-[88px] @if($isReels) dv-topbar-dark @endif">
         <a href="{{ route('welcome') }}" class="dv-brand" aria-label="HolidayHub home">

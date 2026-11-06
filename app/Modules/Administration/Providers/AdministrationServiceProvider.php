@@ -17,6 +17,11 @@ use Illuminate\Support\ServiceProvider;
  */
 class AdministrationServiceProvider extends ServiceProvider
 {
+    public function register(): void
+    {
+        $this->app->singleton(\App\Modules\Administration\Application\Services\PlatformSettings::class);
+    }
+
     public function boot(): void
     {
         Gate::policy(Tenant::class, TenantPolicy::class);
