@@ -3,7 +3,7 @@
 namespace App\Modules\Accommodation\Presentation\Livewire\Scenes;
 
 use App\Modules\Accommodation\Domain\Models\PropertyScene;
-use App\Shared\Support\Media;
+use App\Support\Media;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;

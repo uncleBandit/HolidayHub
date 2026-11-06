@@ -6,7 +6,7 @@ use App\Modules\Activities\Domain\Enums\ActivityStatus;
 use App\Modules\Activities\Domain\Enums\ActivityVerificationStatus;
 use App\Modules\Activities\Domain\Models\Activity;
 use App\Modules\Activities\Domain\Models\ActivitySchedule;
-use App\Shared\Support\Media;
+use App\Support\Media;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;

@@ -1,5 +1,5 @@
 @php
-    $currency = \App\Shared\Support\Currencies::symbol($bnb->getCurrency());
+    $currency = \App\Support\Currencies::symbol($bnb->getCurrency());
     $price = (float) $bnb->price_per_night;
     $place = collect([$bnb->city, $bnb->country])->filter()->implode(', ');
     $rating = (float) $bnb->avg_rating;

@@ -302,7 +302,7 @@ class BookingForm extends Component
             'nights' => $nights,
             'nightly' => $total > 0 ? $total / $nights : 0,
             'total' => $total,
-            'currency' => \App\Shared\Support\Currencies::symbol(method_exists($model, 'getCurrency') ? $model->getCurrency() : 'KES'),
+            'currency' => \App\Support\Currencies::symbol(method_exists($model, 'getCurrency') ? $model->getCurrency() : 'KES'),
         ];
     }
 

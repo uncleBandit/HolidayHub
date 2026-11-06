@@ -16,7 +16,7 @@ use App\Modules\Booking\Application\Services\BookingManager;
 use App\Modules\Booking\Domain\Models\Booking;
 use App\Modules\Packages\Domain\Models\Package;
 use App\Modules\Providers\Domain\Models\Provider;
-use App\Shared\Support\Currencies;
+use App\Support\Currencies;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;

@@ -3,7 +3,7 @@
 namespace App\Modules\Accommodation\Application\Services;
 
 use App\Modules\Accommodation\Domain\Models\BedAndBreakfast;
-use App\Shared\Support\Media;
+use App\Support\Media;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;

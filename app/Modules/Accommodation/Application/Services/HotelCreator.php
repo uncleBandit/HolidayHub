@@ -5,7 +5,7 @@ namespace App\Modules\Accommodation\Application\Services;
 use App\Modules\Accommodation\Domain\Models\Hotel;
 use App\Modules\Accommodation\Domain\Models\Room;
 use App\Modules\Accommodation\Domain\Models\RoomType;
-use App\Shared\Support\Media;
+use App\Support\Media;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;

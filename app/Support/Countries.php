@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Shared\Support;
+namespace App\Support;
 
 use Illuminate\Support\Str;
 use Locale;

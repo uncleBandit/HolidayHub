@@ -2,6 +2,7 @@
 
 namespace App\Modules\Identity\Presentation\Livewire;
 
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -20,6 +21,8 @@ class UserProfile extends Component
     public $name;
 
     public $email;
+
+    public $current_password;
 
     public $password;
 
@@ -66,12 +69,27 @@ class UserProfile extends Component
 
     public function saveAccount()
     {
-        $this->validateOnly(['name', 'email']);
+        // validateOnly() takes a single field; validate just this form's fields.
+        $this->validate(Arr::only($this->rules(), ['name', 'email']));
 
-        $this->user->update([
+        $emailChanged = $this->email !== $this->user->email;
+
+        $this->user->fill([
             'name' => $this->name,
             'email' => $this->email,
         ]);
+
+        // A new address has to be proven again, or anyone could move an
+        // account to an address they don't own and keep it "verified".
+        if ($emailChanged) {
+            $this->user->email_verified_at = null;
+        }
+
+        $this->user->save();
+
+        if ($emailChanged) {
+            $this->user->sendEmailVerificationNotification();
+        }
 
         Log::info("User [{$this->user->id}] updated account info");
 
@@ -80,20 +98,25 @@ class UserProfile extends Component
 
     public function savePassword()
     {
-        $this->validateOnly(['password', 'password_confirmation']);
+        // The current password is required, so an open session alone is not
+        // enough to take over the account.
+        $this->validate([
+            'current_password' => ['required', 'string', 'current_password'],
+            'password' => ['required', 'min:8', 'confirmed', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/'],
+        ]);
 
-        if ($this->password) {
-            $this->user->update([
-                'password' => Hash::make($this->password),
-            ]);
-            Log::info("User [{$this->user->id}] updated password");
-            session()->flash('success', 'Password updated!');
-        }
+        $this->user->update([
+            'password' => Hash::make($this->password),
+        ]);
+        $this->reset('current_password', 'password', 'password_confirmation');
+
+        Log::info("User [{$this->user->id}] updated password");
+        session()->flash('success', 'Password updated!');
     }
 
     public function saveProfile()
     {
-        $this->validateOnly(array_keys($this->profileData));
+        $this->validate(Arr::only($this->rules(), ['avatar', 'profileData.phone', 'profileData.address', 'profileData.company_name', 'profileData.bio']));
 
         if ($this->avatar) {
             // Remove old avatar

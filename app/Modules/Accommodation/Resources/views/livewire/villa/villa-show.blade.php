@@ -1,5 +1,5 @@
 @php
-    $currency = \App\Shared\Support\Currencies::symbol($villa->getCurrency());
+    $currency = \App\Support\Currencies::symbol($villa->getCurrency());
     $minNights = max(1, (int) $villa->min_nights);
     $staff = collect($villa->staffKeys())->map(fn ($key) => \App\Modules\Accommodation\Domain\Models\Villa::STAFF[$key]);
     $seasons = $villa->seasonalRates->where('active', true)->filter(fn ($rate) => \Carbon\Carbon::parse($rate->end_date)->gte(today()))->sortBy('start_date')->values();

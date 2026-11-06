@@ -319,7 +319,7 @@ class StaysIndex extends Component
                     'count' => $ofType->count(),
                     'image' => $cover ? $this->resolveImage($cover->bookable, $cover, $this->clipFor($type, $cover->id)) : null,
                     'from' => $ofType->map(fn (Accommodation $stay) => $this->priceFor($stay, $stay->bookable))->filter()->min(),
-                    'currency' => \App\Shared\Support\Currencies::symbol($cover?->bookable?->currency ?? null),
+                    'currency' => \App\Support\Currencies::symbol($cover?->bookable?->currency ?? null),
                 ];
             })->values()->all();
         });
@@ -365,12 +365,12 @@ class StaysIndex extends Component
             'rating' => $rating,
             'reviews' => $reviews,
             'price' => $this->priceFor($stay, $bookable),
-            'currency' => \App\Shared\Support\Currencies::symbol($bookable?->currency ?? null),
+            'currency' => \App\Support\Currencies::symbol($bookable?->currency ?? null),
             'guests' => (int) ($bookable?->max_guests ?? 0),
             'image' => $this->resolveImage($bookable, $stay, $clip),
             'alt' => $name,
             // A stay's own film always wins over the house footage.
-            'video' => \App\Shared\Support\Media::url($bookable?->cover_video ?? null) ?? ($clip['video'] ?? null),
+            'video' => \App\Support\Media::url($bookable?->cover_video ?? null) ?? ($clip['video'] ?? null),
             'poster' => filled($bookable?->cover_video ?? null) ? $this->resolveImage($bookable, $stay, null) : ($clip['poster'] ?? null),
             'clip_title' => $clip['title'] ?? null,
             'featured' => (bool) ($bookable?->is_featured ?? $stay->is_featured),

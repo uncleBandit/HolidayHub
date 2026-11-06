@@ -9,7 +9,7 @@
         ? $image
         : asset('storage/'.ltrim($image, '/'));
 
-    $isFilm = fn ($path) => \App\Shared\Support\Media::isVideo($path);
+    $isFilm = fn ($path) => \App\Support\Media::isVideo($path);
 
     $photos = collect($activity->getImages())
         ->prepend($activity->thumbnail)
@@ -66,7 +66,7 @@
         ->values();
 
     $host = $activity->provider?->company_name;
-    $currency = \App\Shared\Support\Currencies::symbol($activity->getCurrency());
+    $currency = \App\Support\Currencies::symbol($activity->getCurrency());
     $attributes = (array) ($activity->getAttribute('attributes') ?? []);
     $cancellation = $attributes['cancellation_policy'] ?? null;
     $accessibility = collect((array) ($activity->accessibility ?? []))->filter()->values();
@@ -451,7 +451,7 @@
                             @foreach ($activeOptions as $option)
                                 <li class="flex justify-between gap-3 text-[13px] text-ink">
                                     <span>{{ $option->name }}</span>
-                                    <b class="whitespace-nowrap">{{ \App\Shared\Support\Currencies::symbol($option->currency) }} {{ number_format((float) $option->base_price, 2) }}</b>
+                                    <b class="whitespace-nowrap">{{ \App\Support\Currencies::symbol($option->currency) }} {{ number_format((float) $option->base_price, 2) }}</b>
                                 </li>
                             @endforeach
                         </ul>

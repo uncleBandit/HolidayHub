@@ -7,7 +7,7 @@ use App\Modules\Accommodation\Domain\Models\Hotel;
 use App\Modules\Accommodation\Domain\Models\Villa;
 use App\Modules\Activities\Domain\Models\Activity;
 use App\Modules\Booking\Presentation\Support\TripPresenter;
-use App\Shared\Support\Currencies;
+use App\Support\Currencies;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;

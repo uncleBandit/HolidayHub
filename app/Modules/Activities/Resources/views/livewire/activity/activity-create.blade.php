@@ -1,5 +1,5 @@
 @php
-    use App\Shared\Support\Media;
+    use App\Support\Media;
 
     $statusLabel = $status ? match ($status->value) {
         'published' => ['Live', 'bg-forest text-white'],

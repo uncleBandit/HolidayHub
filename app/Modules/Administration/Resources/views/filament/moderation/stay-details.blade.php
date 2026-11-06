@@ -2,7 +2,7 @@
     use App\Modules\Accommodation\Domain\Models\BedAndBreakfast;
     use App\Modules\Accommodation\Domain\Models\Hotel;
     use App\Modules\Accommodation\Domain\Models\Villa;
-    use App\Shared\Support\Currencies;
+    use App\Support\Currencies;
 
     $property = $getRecord()->bookable;
     $currency = $property?->currency;

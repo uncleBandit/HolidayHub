@@ -3,10 +3,15 @@
 namespace Tests\Feature\Auth;
 
 use App\Modules\Identity\Domain\Models\User;
+use App\Modules\Identity\Presentation\Livewire\UserProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Livewire\Livewire;
 use Tests\TestCase;
 
+/**
+ * Passwords are changed on the profile page's Password tab.
+ */
 class PasswordUpdateTest extends TestCase
 {
     use RefreshDatabase;
@@ -15,37 +20,43 @@ class PasswordUpdateTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this
-            ->actingAs($user)
-            ->from('/profile')
-            ->put('/password', [
-                'current_password' => 'password',
-                'password' => 'new-password',
-                'password_confirmation' => 'new-password',
-            ]);
+        Livewire::actingAs($user)->test(UserProfile::class)
+            ->set('current_password', 'password')
+            ->set('password', 'NewPassword1')
+            ->set('password_confirmation', 'NewPassword1')
+            ->call('savePassword')
+            ->assertHasNoErrors()
+            ->assertSet('current_password', null)
+            ->assertSet('password', null);
 
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile');
-
-        $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
+        $this->assertTrue(Hash::check('NewPassword1', $user->refresh()->password));
     }
 
     public function test_correct_password_must_be_provided_to_update_password(): void
     {
         $user = User::factory()->create();
 
-        $response = $this
-            ->actingAs($user)
-            ->from('/profile')
-            ->put('/password', [
-                'current_password' => 'wrong-password',
-                'password' => 'new-password',
-                'password_confirmation' => 'new-password',
-            ]);
+        Livewire::actingAs($user)->test(UserProfile::class)
+            ->set('current_password', 'wrong-password')
+            ->set('password', 'NewPassword1')
+            ->set('password_confirmation', 'NewPassword1')
+            ->call('savePassword')
+            ->assertHasErrors(['current_password']);
 
-        $response
-            ->assertSessionHasErrors('current_password')
-            ->assertRedirect('/profile');
+        $this->assertTrue(Hash::check('password', $user->refresh()->password));
+    }
+
+    public function test_new_password_must_be_strong_and_confirmed(): void
+    {
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user)->test(UserProfile::class)
+            ->set('current_password', 'password')
+            ->set('password', 'weak')
+            ->set('password_confirmation', 'different')
+            ->call('savePassword')
+            ->assertHasErrors(['password']);
+
+        $this->assertTrue(Hash::check('password', $user->refresh()->password));
     }
 }

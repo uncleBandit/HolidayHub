@@ -15,8 +15,8 @@ use App\Modules\Packages\Application\Services\PackagePricing;
 use App\Modules\Packages\Application\Services\PackagePublicationService;
 use App\Modules\Packages\Domain\Models\Package;
 use App\Modules\Packages\Domain\Models\PackageComponent;
-use App\Shared\Support\Currencies;
-use App\Shared\Support\Media;
+use App\Support\Currencies;
+use App\Support\Media;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
@@ -990,6 +990,6 @@ class PackageCreate extends Component
 
     private function countryCodeFor(?string $country): ?string
     {
-        return blank($country) ? null : \App\Shared\Support\Countries::codeFor($country);
+        return blank($country) ? null : \App\Support\Countries::codeFor($country);
     }
 }

@@ -16,7 +16,7 @@ use App\Modules\Packages\Application\Services\PackageBuilder;
 use App\Modules\Packages\Application\Services\PackagePricing;
 use App\Modules\Packages\Application\Services\PackagePublicationService;
 use App\Modules\Packages\Domain\Models\Package;
-use App\Shared\Support\Media;
+use App\Support\Media;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;

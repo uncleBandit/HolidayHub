@@ -138,13 +138,13 @@ class Package extends Model implements AvailabilityAware, Bookable, Pricable
     /** Stored path or URL of the cover photo, as a URL (null when none). */
     public function coverUrl(): ?string
     {
-        return \App\Shared\Support\Media::url($this->cover_image);
+        return \App\Support\Media::url($this->cover_image);
     }
 
     /** The cover film as a URL, if the agent added one. */
     public function coverFilmUrl(): ?string
     {
-        return \App\Shared\Support\Media::url($this->cover_video);
+        return \App\Support\Media::url($this->cover_video);
     }
 
     /** Destination ids beyond the main one ("Zanzibar and the Serengeti"). */
@@ -357,7 +357,7 @@ class Package extends Model implements AvailabilityAware, Bookable, Pricable
         }
 
         // If already a full URL, return as-is
-        return \App\Shared\Support\Media::url($this->cover_image);
+        return \App\Support\Media::url($this->cover_image);
     }
 
     public function getGalleryImagesAttribute(): array

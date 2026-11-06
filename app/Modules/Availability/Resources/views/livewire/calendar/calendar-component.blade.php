@@ -2,7 +2,7 @@
     use Carbon\Carbon;
 
     $month = $this->currentMonth ?? now()->startOfMonth();
-    $symbol = \App\Shared\Support\Currencies::symbol($this->bookable && method_exists($this->bookable, 'getCurrency') ? $this->bookable->getCurrency() : 'KES');
+    $symbol = \App\Support\Currencies::symbol($this->bookable && method_exists($this->bookable, 'getCurrency') ? $this->bookable->getCurrency() : 'KES');
     $atStart = $month->lte(now()->startOfMonth());
     $compact = fn (float $price) => $price >= 1000
         ? rtrim(rtrim(number_format($price / 1000, 1), '0'), '.').'k'

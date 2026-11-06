@@ -163,6 +163,11 @@
                     @if ($tab === 'password')
                         <form wire:submit.prevent="savePassword" class="space-y-5">
                             <div>
+                                <label for="current_password" class="auth-label">Current Password</label>
+                                <input type="password" id="current_password" wire:model.lazy="current_password" autocomplete="current-password" @class(['auth-input', 'auth-input-error' => $errors->has('current_password')])>
+                                @error('current_password') <span class="auth-error">{{ $message }}</span> @enderror
+                            </div>
+                            <div>
                                 <label for="password" class="auth-label">New Password</label>
                                 <input type="password" id="password" wire:model.lazy="password" autocomplete="new-password" @class(['auth-input', 'auth-input-error' => $errors->has('password')])>
                                 @error('password') <span class="auth-error">{{ $message }}</span> @enderror

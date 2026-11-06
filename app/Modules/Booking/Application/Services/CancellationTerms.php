@@ -204,7 +204,7 @@ class CancellationTerms
             return 'Nothing has been charged for this booking, so there is nothing to refund.';
         }
 
-        $money = \App\Shared\Support\Currencies::format($amount, $currency, 2);
+        $money = \App\Support\Currencies::format($amount, $currency, 2);
 
         return match (true) {
             $percent >= 100 => "You get a full refund of {$money}"

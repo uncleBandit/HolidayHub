@@ -15,6 +15,23 @@ jobs:
     runs-on: ubuntu-latest
     environment: Testing
 
+    # The suite runs against Postgres (see phpunit.xml: 127.0.0.1:5432,
+    # database holidayhub_test, user/password holidayhub).
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: holidayhub_test
+          POSTGRES_USER: holidayhub
+          POSTGRES_PASSWORD: holidayhub
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U holidayhub -d holidayhub_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,6 +40,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.4
+          extensions: pdo_pgsql, pgsql, intl
           tools: composer:v2
           coverage: xdebug
 

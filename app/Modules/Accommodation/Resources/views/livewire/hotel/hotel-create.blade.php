@@ -1,5 +1,5 @@
 @php
-    use App\Shared\Support\Media;
+    use App\Support\Media;
 
     $src = fn (?string $path) => blank($path) ? null : (Str::startsWith($path, ['http://', 'https://', '/']) ? $path : asset('storage/'.ltrim($path, '/')));
     $statusLabel = $status ? match ($status->value) {

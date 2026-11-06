@@ -1,7 +1,7 @@
 <div>
     @php
         $max = max(1, collect($months)->max('total'));
-        $symbol = \App\Shared\Support\Currencies::symbol($kpis['currency']);
+        $symbol = \App\Support\Currencies::symbol($kpis['currency']);
         $statusStyles = [
             'pending' => 'bg-[#F6D6C9] text-clay-dark',
             'confirmed' => 'bg-forest/10 text-forest',
@@ -78,7 +78,7 @@
                 <p class="mt-2 whitespace-nowrap font-dm-serif text-[clamp(1.3rem,3vw,2.3rem)] leading-none text-forest">{{ $symbol }} {{ number_format($kpis['commission']) }}</p>
                 <p class="mt-2 text-[12px] text-muted">
                     @forelse ($kpis['commission_other'] as $code => $amount)
-                        + {{ \App\Shared\Support\Currencies::format($amount, $code) }}@if (! $loop->last), @endif
+                        + {{ \App\Support\Currencies::format($amount, $code) }}@if (! $loop->last), @endif
                     @empty
                         Your margin on confirmed bookings
                     @endforelse

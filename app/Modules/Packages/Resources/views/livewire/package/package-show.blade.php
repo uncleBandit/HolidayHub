@@ -2,8 +2,8 @@
      itinerary day by day (each part links to its listing), what's included,
      and a booking card that quotes the whole journey live. --}}
 @php
-    use App\Shared\Support\Currencies;
-    use App\Shared\Support\Media;
+    use App\Support\Currencies;
+    use App\Support\Media;
 
     $images = collect([$p->cover_image])->concat((array) ($p->gallery ?? []))->filter()->values()->all();
     $code = $p->getCurrency();

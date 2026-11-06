@@ -1,5 +1,5 @@
 @php
-    use App\Shared\Support\Currencies;
+    use App\Support\Currencies;
 
     $activity = $getRecord();
     $sessions = $activity->relationLoaded('sessions') ? $activity->sessions : collect();

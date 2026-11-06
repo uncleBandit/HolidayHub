@@ -1,6 +1,6 @@
 @php
     use App\Modules\Accommodation\Domain\Models\Accommodation;
-    use App\Shared\Support\Media;
+    use App\Support\Media;
 
     $record = $getRecord();
     $owner = $record instanceof Accommodation ? $record->bookable : $record;

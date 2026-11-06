@@ -178,9 +178,9 @@ class RoomType extends Model implements AvailabilityAware, Bookable, HasUnitCapa
         }
 
         // Otherwise the first photo the host uploaded (films can't be posters).
-        $photo = collect($this->gallery_images ?? [])->first(fn ($path) => is_string($path) && ! \App\Shared\Support\Media::isVideo($path));
+        $photo = collect($this->gallery_images ?? [])->first(fn ($path) => is_string($path) && ! \App\Support\Media::isVideo($path));
 
-        return \App\Shared\Support\Media::url($photo) ?? asset('storage/roomtypes/default-hero.jpg');
+        return \App\Support\Media::url($photo) ?? asset('storage/roomtypes/default-hero.jpg');
     }
 
     /**

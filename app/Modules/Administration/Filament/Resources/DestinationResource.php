@@ -8,7 +8,7 @@ use App\Modules\Destinations\Application\Services\DestinationMerger;
 use App\Modules\Destinations\Application\Services\DestinationResolver;
 use App\Modules\Destinations\Domain\Models\Destination;
 use App\Modules\Providers\Domain\Models\Provider;
-use App\Shared\Support\Countries;
+use App\Support\Countries;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;

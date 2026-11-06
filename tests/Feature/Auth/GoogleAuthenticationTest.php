@@ -121,7 +121,7 @@ it('makes Google the default login method and keeps credentials behind the staff
     $this->get(route('login'))
         ->assertOk()
         ->assertSee('Continue with Google')
-        ->assertSee('Service provider or administrator? Sign in with email and password')
+        ->assertSee('Sign in with email')
         ->assertDontSee('id="password"', false);
 
     Volt::test('auth.login')

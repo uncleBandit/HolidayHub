@@ -15,7 +15,7 @@ use App\Modules\Audit\Application\Services\AuditRecorder;
 use App\Modules\Audit\Domain\Models\AuditLog;
 use App\Modules\Booking\Domain\Models\Booking;
 use App\Modules\Providers\Domain\Models\Provider;
-use App\Shared\Support\Countries;
+use App\Support\Countries;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Textarea;

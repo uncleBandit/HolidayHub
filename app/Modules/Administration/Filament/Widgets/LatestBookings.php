@@ -4,7 +4,7 @@ namespace App\Modules\Administration\Filament\Widgets;
 
 use App\Modules\Administration\Filament\Resources\BookingOperationsResource;
 use App\Modules\Booking\Domain\Models\Booking;
-use App\Shared\Support\Currencies;
+use App\Support\Currencies;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;

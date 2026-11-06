@@ -2,7 +2,8 @@
 
 namespace App\Modules\Accommodation\Domain\Models;
 
-use App\Shared\Support\Media;
+use App\Support\Media;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class PropertyScene extends Model
 {
+    use HasFactory;
+
     /** Spaces a scene can show, keyed as stored. */
     public const SPACES = [
         'arrival' => 'Arrival',

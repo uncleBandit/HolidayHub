@@ -1,6 +1,6 @@
 @php
-    use App\Shared\Support\Currencies;
-    use App\Shared\Support\Media;
+    use App\Support\Currencies;
+    use App\Support\Media;
 
     $statusLabel = $status ? match ($status) {
         'published' => ['Live', 'bg-forest text-white'],

@@ -9,7 +9,7 @@ use App\Modules\Activities\Domain\Models\Activity;
 use App\Modules\Booking\Domain\Models\Booking;
 use App\Modules\Identity\Domain\Models\User;
 use App\Modules\Packages\Domain\Models\Package;
-use App\Shared\Support\Currencies;
+use App\Support\Currencies;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Builder;

@@ -1,5 +1,5 @@
 @php
-    $currency = \App\Shared\Support\Currencies::symbol($hotel->getCurrency());
+    $currency = \App\Support\Currencies::symbol($hotel->getCurrency());
     $roomTypes = $hotel->roomTypes->sortBy('price_per_night')->values();
     $fromPrice = $selectedRoomType?->price_per_night
         ?: ($roomTypes->min('price_per_night') ?: $hotel->avg_price_per_night);
@@ -92,9 +92,9 @@
                                 ])
                             >
                                 <div class="relative h-56 overflow-hidden sm:h-auto sm:min-h-[19rem]">
-                                    @php $roomFilm = collect($roomType->gallery_images ?? [])->first(fn ($path) => \App\Shared\Support\Media::isVideo($path)); @endphp
+                                    @php $roomFilm = collect($roomType->gallery_images ?? [])->first(fn ($path) => \App\Support\Media::isVideo($path)); @endphp
                                     @if ($roomFilm)
-                                        <video src="{{ \App\Shared\Support\Media::url($roomFilm) }}" poster="{{ $roomImage($roomType) }}" class="absolute inset-0 h-full w-full object-cover" muted loop playsinline preload="none" data-autoplay aria-label="{{ $roomType->name }} walk-through"></video>
+                                        <video src="{{ \App\Support\Media::url($roomFilm) }}" poster="{{ $roomImage($roomType) }}" class="absolute inset-0 h-full w-full object-cover" muted loop playsinline preload="none" data-autoplay aria-label="{{ $roomType->name }} walk-through"></video>
                                         <span class="pointer-events-none absolute bottom-3 left-3 z-10 inline-flex items-center gap-1 rounded-full bg-black/45 px-2.5 py-1 text-[10px] font-extrabold text-white backdrop-blur-md"><x-line-icon name="play" :size="10" filled /> Room walk-through</span>
                                     @else
                                         <img src="{{ $roomImage($roomType) }}" alt="{{ $roomType->name }}" class="absolute inset-0 h-full w-full object-cover" loading="lazy">

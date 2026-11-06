@@ -5,7 +5,7 @@ namespace App\Modules\Administration\Filament\Pages;
 use App\Modules\Administration\Application\Services\BookingLedger;
 use App\Modules\Administration\Filament\Resources\BookingOperationsResource;
 use App\Modules\Audit\Application\Services\AuditRecorder;
-use App\Shared\Support\Currencies;
+use App\Support\Currencies;
 use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Livewire\Attributes\Url;

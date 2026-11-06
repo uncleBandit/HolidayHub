@@ -3,7 +3,7 @@
 namespace App\Modules\Administration\Filament\Widgets;
 
 use App\Modules\Booking\Domain\Models\Booking;
-use App\Shared\Support\Currencies;
+use App\Support\Currencies;
 use Filament\Widgets\ChartWidget;
 
 /**

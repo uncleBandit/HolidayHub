@@ -8,8 +8,8 @@ use App\Modules\Administration\Filament\Resources\Concerns\ModeratesBusinessProf
 use App\Modules\Agents\Domain\Models\Agent;
 use App\Modules\Audit\Application\Services\AuditRecorder;
 use App\Modules\Packages\Domain\Models\Package;
-use App\Shared\Support\Countries;
-use App\Shared\Support\Currencies;
+use App\Support\Countries;
+use App\Support\Currencies;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Textarea;

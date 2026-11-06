@@ -2,7 +2,7 @@
     use App\Modules\Administration\Filament\Resources\AccommodationModerationResource;
     use App\Modules\Administration\Filament\Resources\ActivityModerationResource;
     use App\Modules\Packages\Domain\Models\PackageComponent;
-    use App\Shared\Support\Currencies;
+    use App\Support\Currencies;
 
     $record = $getRecord();
     $review = \App\Modules\Administration\Filament\Resources\PackageModerationResource::review($record);

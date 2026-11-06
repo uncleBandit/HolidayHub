@@ -2,7 +2,7 @@
      shows the provider subtotal and the margin; guests see one price per line
      (margin spread proportionally) and the total. --}}
 @php
-    use App\Shared\Support\Currencies;
+    use App\Support\Currencies;
 
     $agentView = $agentView ?? false;
     $code = $quote['currency'];

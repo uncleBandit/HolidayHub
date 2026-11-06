@@ -1,5 +1,5 @@
 @php
-    use App\Shared\Support\Media;
+    use App\Support\Media;
     $record = $getRecord();
     $hero = $record ? Media::url($record->image_url ?: $record->thumbnail) : null;
 @endphp

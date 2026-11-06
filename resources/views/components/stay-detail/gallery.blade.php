@@ -50,8 +50,8 @@
         ]);
     }
 
-    $isFilm = fn (?string $url) => \App\Shared\Support\Media::isVideo($url);
-    $film = \App\Shared\Support\Media::url($video);
+    $isFilm = fn (?string $url) => \App\Support\Media::isVideo($url);
+    $film = \App\Support\Media::url($video);
     $poster = $photos->first(fn ($url) => ! $isFilm($url));
 
     // The lightbox walks the cover film first, then every photo and film.

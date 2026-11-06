@@ -4,8 +4,8 @@ namespace App\Modules\Packages\Application\Services;
 
 use App\Modules\Destinations\Domain\Models\Destination;
 use App\Modules\Packages\Domain\Models\Package;
-use App\Shared\Support\Currencies;
-use App\Shared\Support\Media;
+use App\Support\Currencies;
+use App\Support\Media;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;

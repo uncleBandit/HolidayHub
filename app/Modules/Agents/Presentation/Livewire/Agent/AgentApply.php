@@ -3,7 +3,7 @@
 namespace App\Modules\Agents\Presentation\Livewire\Agent;
 
 use App\Modules\Agents\Application\Services\AgentOnboarding;
-use App\Shared\Support\Countries;
+use App\Support\Countries;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;

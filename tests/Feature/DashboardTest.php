@@ -9,10 +9,14 @@ test('guests are redirected to the login page', function () {
     $response->assertRedirect('/login');
 });
 
-test('authenticated users can visit the dashboard', function () {
-    $user = User::factory()->create();
-    $this->actingAs($user);
+test('the old dashboard address leads to the For you feed', function () {
+    $this->actingAs(User::factory()->create())
+        ->get('/dashboard')
+        ->assertRedirect('/for-you');
+});
 
-    $response = $this->get('/dashboard');
-    $response->assertStatus(200);
+test('authenticated users can visit their For you feed', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('dashboard'))
+        ->assertOk();
 });

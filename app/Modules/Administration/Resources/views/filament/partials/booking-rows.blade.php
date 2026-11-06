@@ -1,6 +1,6 @@
 @php
     use App\Modules\Administration\Filament\Resources\BookingOperationsResource;
-    use App\Shared\Support\Currencies;
+    use App\Support\Currencies;
 @endphp
 @if ($bookings->isEmpty())
     <p class="text-sm text-gray-500 dark:text-gray-400">{{ $empty }}</p>

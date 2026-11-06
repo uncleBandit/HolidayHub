@@ -7,7 +7,7 @@ use App\Modules\Audit\Application\Services\AuditRecorder;
 use App\Modules\Packages\Application\Services\PackagePricing;
 use App\Modules\Packages\Application\Services\PackagePublicationService;
 use App\Modules\Packages\Domain\Models\Package;
-use App\Shared\Support\Currencies;
+use App\Support\Currencies;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Textarea;

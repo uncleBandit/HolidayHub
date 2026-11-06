@@ -1,6 +1,6 @@
 @php
     use App\Modules\Administration\Filament\Resources\ProviderResource;
-    use App\Shared\Support\Currencies;
+    use App\Support\Currencies;
 
     $revenue = ProviderResource::revenueFor($getRecord());
 @endphp
