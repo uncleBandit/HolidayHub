@@ -298,6 +298,8 @@ class ProviderDashboard extends Component
                     default => null,
                 } : null,
                 'in_setup' => $bookable?->setup_step !== null,
+                // Why the review team sent it back or took it down.
+                'note' => in_array($status, ['rejected', 'suspended'], true) ? $stay->suspension_reason : null,
                 'url' => $status === 'published' && $bookable ? match ($stay->bookable_type) {
                     'hotel' => route('hotel-show', $bookable),
                     'villa' => route('villa.show', $bookable),
@@ -323,6 +325,11 @@ class ProviderDashboard extends Component
                 'bookings' => ($byListing->get('activity:'.$activity->id) ?? collect())->whereIn('status', self::EARNING)->count(),
                 'manage' => route('provider.activity-manage', $activity),
                 'in_setup' => $activity->setup_step !== null,
+                'note' => match ($status) {
+                    'rejected' => $activity->rejection_reason,
+                    'suspended' => $activity->suspension_reason,
+                    default => null,
+                },
                 'url' => $status === 'published' ? route('activity.show', $activity) : null,
             ];
         });
@@ -361,6 +368,7 @@ class ProviderDashboard extends Component
 
         return match (true) {
             filled($model->suspended_at ?? null) || $status === 'suspended' => 'suspended',
+            $status === 'rejected' => 'rejected',
             $status === 'published' && in_array($verification, ['approved', ''], true) => 'published',
             in_array($verification, ['pending', 'in_review'], true) || $status === 'pending_review' => 'review',
             default => 'draft',

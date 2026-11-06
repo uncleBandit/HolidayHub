@@ -12,6 +12,7 @@
             'published' => ['Live', 'bg-forest text-white'],
             'review' => ['In review', 'bg-[#F6EEDD] text-[#8A6A3A]'],
             'draft' => ['Draft', 'bg-white/90 text-ink'],
+            'rejected' => ['Changes requested', 'bg-[#F6D6C9] text-clay-dark'],
             'suspended' => ['Suspended', 'bg-clay text-white'],
         ];
     @endphp
@@ -279,6 +280,9 @@
                     <div class="p-4">
                         <p class="truncate font-dm-serif text-[1.2rem] leading-tight text-ink">{{ $listing['name'] }}</p>
                         <p class="truncate text-[11.5px] text-muted">{{ $listing['place'] }}</p>
+                        @if (filled($listing['note'] ?? null))
+                            <p class="mt-1.5 line-clamp-2 rounded-[0.6rem] bg-[#FBE9E2] px-2.5 py-1.5 text-[11px] leading-snug text-clay-dark"><b>{{ $listing['status'] === 'suspended' ? 'Taken down' : 'Changes requested' }}:</b> {{ $listing['note'] }}</p>
+                        @endif
                         <dl class="mt-3 grid grid-cols-3 gap-2 border-t border-line pt-3 text-center">
                             <div><dt class="text-[9.5px] font-extrabold uppercase tracking-[0.1em] text-muted">Rating</dt><dd class="mt-0.5 text-[13px] font-extrabold text-ink">{{ $listing['rating'] > 0 ? number_format($listing['rating'], 1) : '—' }}</dd></div>
                             <div><dt class="text-[9.5px] font-extrabold uppercase tracking-[0.1em] text-muted">Bookings</dt><dd class="mt-0.5 text-[13px] font-extrabold text-ink">{{ $listing['bookings'] }}</dd></div>

@@ -51,6 +51,10 @@
         </div>
     </section>
 
+    @if ($managing)
+        <x-host.moderation-note :listing="$bnb?->accommodation" class="mb-4" />
+    @endif
+
     @if ($resumed)
         <div class="px-5 md:px-[max(5vw,calc((100vw-1350px)/2))]">
             <div class="flex flex-wrap items-center justify-between gap-3 rounded-[1rem] border border-forest/20 bg-[#E7EEE8] px-4 py-3 text-[13px] text-forest">
