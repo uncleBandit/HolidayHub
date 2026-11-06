@@ -106,8 +106,7 @@ if [ "${1:-}" = "queue" ]; then
     log "Starting queue worker…"
     exec php artisan queue:work \
         --queue="${QUEUE_NAME:-default},bookings,payments,notifications" \
-        --sleep=2 --tries=3 --max-time=3600 \
-        --max-exceptions=5 "${@:-}"
+        --sleep=2 --tries=3 --max-time=3600 "$@"
 
 elif [ "${1:-}" = "scheduler" ]; then
     shift
