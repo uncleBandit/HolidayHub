@@ -5,6 +5,7 @@ namespace App\Modules\Packages\Application\Services;
 use App\Modules\Accommodation\Domain\Models\BedAndBreakfast;
 use App\Modules\Accommodation\Domain\Models\RoomType;
 use App\Modules\Accommodation\Domain\Models\Villa;
+use App\Modules\Activities\Application\Services\ExperiencePricing;
 use App\Modules\Activities\Domain\Models\Activity;
 use App\Modules\Activities\Domain\Models\ActivitySession;
 use App\Modules\Availability\Application\Services\AvailabilityEngine;
@@ -23,8 +24,9 @@ use Throwable;
  * whether every part of it can be booked then.
  *
  * Each stay and experience is priced live, exactly as its own booking service
- * prices it (PricingEngine: seasonal rates, weekends, extra guests, demand,
- * offers), in the listing's own currency; availability uses the same checks
+ * prices it (stays: PricingEngine with seasonal rates, weekends, extra guests,
+ * demand and offers; experiences: ExperiencePricing, per person or per private
+ * group), in the listing's own currency; availability uses the same checks
  * those services make (AvailabilityEngine for stays, a bookable session with
  * room for the party for experiences). So the quote a guest sees is what the
  * component bookings record when they book.
@@ -40,6 +42,7 @@ class PackagePricing
     public function __construct(
         private readonly PricingEngine $pricing,
         private readonly AvailabilityEngine $availability,
+        private readonly ExperiencePricing $experiences,
     ) {}
 
     /**
@@ -333,7 +336,7 @@ class PackagePricing
 
         if (! $session) {
             // Still show what it would cost, from the listing price.
-            $line = $this->priced($line, $this->pricing->calculateTotal($option ?? $activity, $date, $date->copy()->addDay(), $guests), ($option ?? $activity)->getCurrency(), $currency);
+            $line = $this->priced($line, $this->experiences->total($option ?? $activity, $date, $guests), ($option ?? $activity)->getCurrency(), $currency);
             $line['available'] = false;
             $line['reason'] = 'No session with room for '.$guests.' on '.$date->format('D j M').'.';
 
@@ -349,7 +352,7 @@ class PackagePricing
         $line['bookable_type'] = $bookable->getMorphClass();
         $line['bookable_id'] = (int) $bookable->getKey();
 
-        $line = $this->priced($line, $this->pricing->calculateTotal($bookable, $sessionDay, $sessionDay->copy()->addDay(), $guests), $bookable->getCurrency(), $currency);
+        $line = $this->priced($line, $this->experiences->total($bookable, $sessionDay, $guests), $bookable->getCurrency(), $currency);
 
         $maximum = $session->option?->max_participants ?? $activity->capacity;
         if ($maximum && $guests > (int) $maximum) {

@@ -8,7 +8,6 @@ use App\Modules\Booking\Domain\Events\BookingCreated;
 use App\Modules\Booking\Domain\Models\Booking;
 use App\Modules\Identity\Domain\Models\User;
 use App\Modules\Payments\Domain\Contracts\PaymentGateway;
-use App\Modules\Pricing\Application\Services\PricingEngine;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 class ActivitySessionBookingService
 {
     public function __construct(
-        private readonly PricingEngine $pricingEngine,
+        private readonly ExperiencePricing $pricing,
         private readonly PaymentGateway $paymentGateway
     ) {}
 
@@ -97,7 +96,7 @@ class ActivitySessionBookingService
                 $bookable = $option ?? $activity;
                 $checkIn = $startsAt->copy()->startOfDay();
                 $checkOut = $checkIn->copy()->addDay();
-                $total = $this->pricingEngine->calculateTotal($bookable, $checkIn, $checkOut, $participants);
+                $total = $this->pricing->total($bookable, $startsAt, $participants);
 
                 $booking = Booking::create([
                     'guest_id' => $user->guest->id,

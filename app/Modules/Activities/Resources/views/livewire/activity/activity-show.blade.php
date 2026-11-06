@@ -72,6 +72,9 @@
     $accessibility = collect((array) ($activity->accessibility ?? []))->filter()->values();
     $fitness = $activity->requirements->firstWhere('type', 'fitness');
     $price = (float) $activity->base_price;
+    // Shared experiences are priced per person; a private one is one price for the group.
+    $private = app(\App\Modules\Activities\Application\Services\ExperiencePricing::class)->isPrivate($activity);
+    $unit = $private ? 'group' : 'person';
     $rating = (float) $activity->rating;
     $activeOptions = $activity->options->where('is_active', true);
     $highlights = collect((array) ($activity->highlights ?? []))->filter()->values();
@@ -434,7 +437,7 @@
                     <p class="font-dm-serif text-[1.8rem] leading-none text-ink">
                         <span class="text-[12px] font-sans font-bold text-muted">From</span>
                         {{ $currency }} {{ number_format($price, 2) }}
-                        <small class="font-sans text-[12px] text-muted">/ person</small>
+                        <small class="font-sans text-[12px] text-muted">/ {{ $unit }}</small>
                     </p>
                     @if ($rating > 0)
                         <span class="flex items-center gap-1 text-[12px] font-bold text-ink"><span class="text-clay"><x-line-icon name="star" :size="13" :filled="true" /></span> {{ number_format($rating, 1) }} · {{ (int) $activity->reviews_count }}</span>
@@ -495,9 +498,9 @@
                 @if ($price > 0)
                     <div class="mt-5 space-y-2.5 text-[12px] text-muted">
                         <p class="flex justify-between"><span>{{ $currency }} {{ number_format($price, 2) }} × <span x-text="people">{{ (int) $participants }}</span> <span x-text="people === 1 ? 'person' : 'people'">{{ \Illuminate\Support\Str::plural('person', (int) $participants) }}</span></span>
-                            <b class="text-ink" x-text="'{{ $currency }} ' + ({{ $price }} * Math.max(people, 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })">{{ $currency }} {{ number_format($price * max((int) $participants, 0), 2) }}</b>
+                            <b class="text-ink" x-text="'{{ $currency }} ' + ({{ $price }} * ({{ $private ? 'Math.min(people, 1)' : 'Math.max(people, 0)' }})).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })">{{ $currency }} {{ number_format($private ? $price : $price * max((int) $participants, 0), 2) }}</b>
                         </p>
-                        <p class="flex justify-between border-t border-line pt-3 text-[13px] font-extrabold text-ink"><span>Estimated total</span><span x-text="'{{ $currency }} ' + ({{ $price }} * Math.max(people, 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })">{{ $currency }} {{ number_format($price * max((int) $participants, 0), 2) }}</span></p>
+                        <p class="flex justify-between border-t border-line pt-3 text-[13px] font-extrabold text-ink"><span>Estimated total</span><span x-text="'{{ $currency }} ' + ({{ $price }} * ({{ $private ? 'Math.min(people, 1)' : 'Math.max(people, 0)' }})).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })">{{ $currency }} {{ number_format($private ? $price : $price * max((int) $participants, 0), 2) }}</span></p>
                         <p class="text-[11px]">Final price depends on the option and session; confirmed at checkout.</p>
                     </div>
                 @endif
@@ -514,7 +517,7 @@
     <div class="fixed inset-x-0 bottom-[4.8rem] z-40 flex items-center justify-between gap-3 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur-xl md:bottom-0 lg:hidden" data-no-reveal>
         <div class="min-w-0">
             <span class="text-[11px] text-muted">From</span>
-            <p class="font-dm-serif text-[1.15rem] leading-tight text-ink">{{ $currency }} {{ number_format($price) }} <small class="font-sans text-[11px] text-muted">/ person</small></p>
+            <p class="font-dm-serif text-[1.15rem] leading-tight text-ink">{{ $currency }} {{ number_format($price) }} <small class="font-sans text-[11px] text-muted">/ {{ $unit }}</small></p>
         </div>
         <a href="#book" class="dv-btn dv-btn-primary flex-none">{{ $availability === [] ? 'See availability' : 'Choose a session' }}</a>
     </div>
