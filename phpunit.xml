@@ -18,10 +18,22 @@
         </include>
     </source>
     <php>
-        <env name="APP_ENV" value="testing"/>
-        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
-        <env name="BCRYPT_ROUNDS" value="4"/>
-        <env name="CACHE_STORE" value="array"/>
+        <!--
+            Test isolation settings are forced (and set on $_SERVER too, which
+            Laravel reads first): inside Docker these are real environment
+            variables (APP_ENV=local, Redis cache/session/queue, SMTP mail), and
+            without force the suite would keep them - CSRF stays on (419s), and
+            tests would use the dev Redis, send mail to Mailpit and push jobs to
+            the queue the dev worker runs.
+        -->
+        <env name="APP_ENV" value="testing" force="true"/>
+        <server name="APP_ENV" value="testing" force="true"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file" force="true"/>
+        <server name="APP_MAINTENANCE_DRIVER" value="file" force="true"/>
+        <env name="BCRYPT_ROUNDS" value="4" force="true"/>
+        <server name="BCRYPT_ROUNDS" value="4" force="true"/>
+        <env name="CACHE_STORE" value="array" force="true"/>
+        <server name="CACHE_STORE" value="array" force="true"/>
         <!--
             Tests deliberately run against PostgreSQL, the same engine used in
             production. Running them on SQLite hides real defects: unsigned
@@ -38,11 +50,17 @@
         <server name="DB_DATABASE" value="holidayhub_test" force="true"/>
         <env name="DB_USERNAME" value="holidayhub"/>
         <env name="DB_PASSWORD" value="holidayhub"/>
-        <env name="MAIL_MAILER" value="array"/>
-        <env name="PULSE_ENABLED" value="false"/>
-        <env name="QUEUE_CONNECTION" value="sync"/>
-        <env name="SESSION_DRIVER" value="array"/>
-        <env name="TELESCOPE_ENABLED" value="false"/>
-        <env name="BOOKING_TEST_MODE" value="true"/>
+        <env name="MAIL_MAILER" value="array" force="true"/>
+        <server name="MAIL_MAILER" value="array" force="true"/>
+        <env name="PULSE_ENABLED" value="false" force="true"/>
+        <server name="PULSE_ENABLED" value="false" force="true"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <server name="QUEUE_CONNECTION" value="sync" force="true"/>
+        <env name="SESSION_DRIVER" value="array" force="true"/>
+        <server name="SESSION_DRIVER" value="array" force="true"/>
+        <env name="TELESCOPE_ENABLED" value="false" force="true"/>
+        <server name="TELESCOPE_ENABLED" value="false" force="true"/>
+        <env name="BOOKING_TEST_MODE" value="true" force="true"/>
+        <server name="BOOKING_TEST_MODE" value="true" force="true"/>
     </php>
 </phpunit>
