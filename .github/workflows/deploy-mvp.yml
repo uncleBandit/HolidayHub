@@ -1,0 +1,107 @@
+name: deploy-mvp
+
+# Deploys this app to the shared MVP server (see deploy/mvp/README.md).
+# The same file works for every MVP: only the repository variables differ.
+#
+# Runs after the tests pass on main, or by hand (Actions → deploy-mvp → Run
+# workflow), where "Reset the demo data" rebuilds the database and reseeds it.
+#
+# Settings → Secrets and variables → Actions:
+#   secret    DEPLOY_SSH_KEY   private key whose public half is on the server
+#   variables DEPLOY_HOST      the server's static IP
+#             DEPLOY_USER      ubuntu (Lightsail) or your deploy user
+#             MVP_APP          this app's name on the server, e.g. holidayhub
+#             APP_URL          https://holidayhub.unclecanvas.com
+
+on:
+  workflow_run:
+    workflows: [tests]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      reset_demo:
+        description: Reset the demo data (drops the database and reseeds it)
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-mvp
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Skipped (not failed) until the server is set up and DEPLOY_HOST is set.
+    if: vars.DEPLOY_HOST != '' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    environment:
+      name: mvp
+      url: ${{ vars.APP_URL }}
+    env:
+      HOST: ${{ vars.DEPLOY_HOST }}
+      USER: ${{ vars.DEPLOY_USER || 'ubuntu' }}
+      APP: ${{ vars.MVP_APP }}
+    steps:
+      - name: Checkout the tested commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Release id
+        id: release
+        run: echo "id=$(date -u +%Y%m%d%H%M%S)-$(git rev-parse --short=8 HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_pgsql, intl, gd, zip, bcmath, redis
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # Built here, not on the server: a small server runs out of memory doing it.
+      - name: Build the release
+        run: |
+          composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
+          composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+          npm ci
+          npm run build
+          tar -czf "$RUNNER_TEMP/release.tgz" \
+            --exclude=./.git --exclude=./node_modules --exclude=./tests --exclude=./.github \
+            --exclude=./storage --exclude=./.env --exclude='./.env.*' --exclude=./public/storage \
+            --exclude='./bootstrap/cache/*.php' --exclude=./docker --exclude='./compose*.yaml' \
+            .
+
+      - name: SSH key
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload and activate
+        env:
+          ID: ${{ steps.release.outputs.id }}
+          RESET: ${{ inputs.reset_demo && '--reset-demo' || '' }}
+        run: |
+          scp -i ~/.ssh/id_deploy "$RUNNER_TEMP/release.tgz" "$USER@$HOST:/var/www/$APP/releases/$ID.tgz"
+          ssh -i ~/.ssh/id_deploy "$USER@$HOST" "set -e
+            cd /var/www/$APP/releases
+            mkdir $ID && tar -xzf $ID.tgz -C $ID && rm $ID.tgz
+            bash $ID/deploy/mvp/release.sh $APP $ID $RESET"
+
+      - name: Check the site from outside
+        run: |
+          for i in $(seq 1 10); do
+            if curl -fsS --max-time 10 "${{ vars.APP_URL }}/up" >/dev/null; then
+              echo "Live: ${{ vars.APP_URL }}"; exit 0
+            fi
+            sleep 6
+          done
+          echo "${{ vars.APP_URL }}/up did not answer after the deploy." >&2
+          exit 1

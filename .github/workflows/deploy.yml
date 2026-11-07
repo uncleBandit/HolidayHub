@@ -1,6 +1,10 @@
-name: deploy
+name: deploy-production
 
-# Ships main to the Lightsail server once the tests have passed on it.
+# For when an MVP graduates to its own server: the Docker stack in
+# compose.prod.yaml (deploy/README.md). Manual only; day-to-day MVP deploys go
+# to the shared server through deploy-mvp.yml.
+#
+# Ships main to a dedicated server.
 # Images are built here (the server only pulls), tagged with the commit SHA and
 # "latest", then the server pulls them, migrates, and restarts.
 #
@@ -12,10 +16,6 @@ name: deploy
 #             APP_URL            https://holidayhub.unclecanvas.com
 
 on:
-  workflow_run:
-    workflows: [tests]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -27,7 +27,6 @@ env:
 
 jobs:
   build:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read

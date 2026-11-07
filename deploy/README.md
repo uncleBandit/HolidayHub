@@ -1,4 +1,8 @@
-# Deploying HolidayHub to AWS Lightsail
+# Deploying HolidayHub to its own server (production, later)
+
+> **MVP showcase:** HolidayHub currently runs on the shared MVP server. See
+> [`mvp/README.md`](mvp/README.md). This page is for when it graduates to a
+> dedicated server; its workflow (`deploy-production`) only runs by hand.
 
 Production: **https://holidayhub.unclecanvas.com**, one Lightsail Ubuntu instance
 running the stack in [`compose.prod.yaml`](../compose.prod.yaml):
@@ -11,7 +15,7 @@ running the stack in [`compose.prod.yaml`](../compose.prod.yaml):
 | `postgres`, `redis` | Database; cache, sessions and queue |
 | `backup` | Nightly `pg_dump` into the `postgres-backups` volume (kept 14 days) |
 
-How a release happens: push to `main` → **tests** pass → **deploy** builds the
+How a release happens: run **deploy-production** by hand; it builds the
 `app` and `web` images, pushes them to GHCR (`ghcr.io/unclebandit/holidayhub`),
 then over SSH the server pulls them, runs migrations and the production seeder,
 and restarts. The job fails if `https://holidayhub.unclecanvas.com/up` does not
